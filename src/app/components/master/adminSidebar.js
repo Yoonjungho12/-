@@ -1,16 +1,17 @@
-'use client';
+"use client";
 import React, { useState } from 'react';
 import Link from 'next/link';
+// 기존 Heroicons 외에 EnvelopeIcon 추가
 import {
   HomeIcon,
   UsersIcon,
   Cog6ToothIcon,
   ArrowLeftOnRectangleIcon,
   PaperAirplaneIcon,
+  EnvelopeIcon,
 } from '@heroicons/react/24/outline';
 
 export default function AdminSidebar() {
-  // 모바일 사이즈에서 사이드바를 접었다 폈다 할 수 있는 상태
   const [isOpen, setIsOpen] = useState(true);
 
   return (
@@ -69,11 +70,18 @@ export default function AdminSidebar() {
             label="설정"
             isOpen={isOpen}
           />
-          {/* 제휴신청 메뉴 추가 */}
+          {/* 제휴신청 */}
           <NavItem
             href="/master/partnership"
             icon={<PaperAirplaneIcon className="h-5 w-5" />}
             label="제휴신청"
+            isOpen={isOpen}
+          />
+          {/* 쪽지함 메뉴 추가 */}
+          <NavItem
+            href="/master/messages" // 실제 라우트 경로에 맞춰 수정
+            icon={<EnvelopeIcon className="h-5 w-5" />}
+            label="쪽지함"
             isOpen={isOpen}
           />
         </nav>
@@ -88,8 +96,6 @@ export default function AdminSidebar() {
           />
         </div>
       </aside>
-
-
     </div>
   );
 }
@@ -110,7 +116,7 @@ function NavItem({ href, icon, label, isOpen }) {
     >
       {/* 아이콘 */}
       <div className="text-gray-500">{icon}</div>
-      {/* 라벨 (사이드바가 열려있을 때만 보임) */}
+      {/* 라벨 (사이드바 열림 상태에 따라 표시) */}
       {isOpen && <span className="text-sm font-medium">{label}</span>}
     </Link>
   );

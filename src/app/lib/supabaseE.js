@@ -11,5 +11,7 @@ if (!supabaseKey) {
   throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY environment variable');
 }
 
+console.log('DEBUG: supabaseUrl =', supabaseUrl);
+console.log('DEBUG: supabaseKey =', supabaseKey);
 
 export const supabase = createClient(supabaseUrl, supabaseKey);

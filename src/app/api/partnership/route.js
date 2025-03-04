@@ -60,9 +60,9 @@ export async function POST(request) {
     }
 
     // -------------------------------
-    // 여기부터 세션 JWT를 이용하여 글쓴이(user_id) 추출
+    // 세션 JWT를 이용하여 글쓴이(user_id) 추출
     // -------------------------------
-    // Authorization 헤더에서 Bearer 토큰 추출
+    // Authorization 헤더에서 Bearer 토큰 추출 (예: "Bearer <token>")
     const authHeader = request.headers.get('authorization') || '';
     const token = authHeader.replace('Bearer ', '');
     if (!token) {
@@ -70,32 +70,17 @@ export async function POST(request) {
       return new NextResponse('인증 토큰이 필요합니다.', { status: 401 });
     }
 
-    // (A) 먼저 setSession으로 토큰을 반영
-    const { error: sessionError } = await supabase.auth.setSession({
-      access_token: token,
-      // refresh_token: '',  // refresh 토큰이 필요하다면 추가
-    });
-    if (sessionError) {
-      console.error('[DEBUG] 세션 설정 에러:', sessionError);
-      return new NextResponse('세션 설정 중 에러가 발생했습니다.', { status: 401 });
-    }
-
-    // (B) 이제 getUser() 호출
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    // Supabase Auth에서 getUser(token)을 사용하여 사용자 정보 가져오기
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     if (authError || !user) {
       console.error('[DEBUG] 사용자 정보를 가져오지 못했습니다.', authError);
       return new NextResponse('인증 정보가 올바르지 않습니다.', { status: 401 });
     }
-
     console.log('[DEBUG] 인증된 사용자:', user);
-    // 글쓴이 UUID
     const user_id = user.id;
 
     // -------------------------------
-    // DB에 Insert할 최종 Payload
+    // DB에 Insert할 최종 Payload 준비
     // -------------------------------
     const insertPayload = {
       ad_type,
@@ -116,7 +101,7 @@ export async function POST(request) {
       program_info,
       post_title,
       manager_desc,
-      user_id, // 글쓴이 UUID
+      user_id, // 글쓴이의 UUID
     };
 
     // 4) partnershipSubmit 테이블에 INSERT

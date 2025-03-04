@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import AdminSidebar from '../components/master/adminSidebar';
+import AdminSidebar from '../../components/master/adminSidebar';
 
 export default function MasterLayout({ children }) {
   return (

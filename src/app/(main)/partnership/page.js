@@ -53,7 +53,6 @@ export default function NewListingPage() {
         .select('*')
         .is('parent_id', null)
         .order('sort_order', { ascending: true });
-
       if (error) {
         console.error('지역 가져오기 에러:', error);
       } else {
@@ -74,7 +73,6 @@ export default function NewListingPage() {
           .select('*')
           .eq('parent_id', selectedRegionId)
           .order('sort_order', { ascending: true });
-
         if (error) {
           console.error('하위 지역 가져오기 에러:', error);
           setChildRegions([]);
@@ -116,22 +114,18 @@ export default function NewListingPage() {
   function initMap(lat, lng) {
     const kakao = window.kakao;
     if (!kakao || !kakao.maps) return;
-
     const container = mapRef.current;
     const options = { center: new kakao.maps.LatLng(lat, lng), level: 3 };
     const map = new kakao.maps.Map(container, options);
     mapObjectRef.current = map;
-
     const markerPositionObj = new kakao.maps.LatLng(lat, lng);
     const marker = new kakao.maps.Marker({ position: markerPositionObj });
     marker.setMap(map);
     markerRef.current = marker;
-
     kakao.maps.event.addListener(map, 'click', (mouseEvent) => {
       const latlng = mouseEvent.latLng;
       marker.setPosition(latlng);
       setMarkerPosition({ lat: latlng.getLat(), lng: latlng.getLng() });
-
       const geocoder = new kakao.maps.services.Geocoder();
       geocoder.coord2Address(latlng.getLng(), latlng.getLat(), (result, status) => {
         if (status === kakao.maps.services.Status.OK) {
@@ -151,14 +145,12 @@ export default function NewListingPage() {
   function handleAddressSearch() {
     const { kakao } = window;
     if (!kakao || !kakao.maps) return;
-
     const geocoder = new kakao.maps.services.Geocoder();
     geocoder.addressSearch(addressInput, (result, status) => {
       if (status === kakao.maps.services.Status.OK) {
         const newLat = result[0].y;
         const newLng = result[0].x;
         setMarkerPosition({ lat: newLat, lng: newLng });
-
         if (mapObjectRef.current && markerRef.current) {
           const moveLatLng = new kakao.maps.LatLng(newLat, newLng);
           mapObjectRef.current.setCenter(moveLatLng);
@@ -227,10 +219,22 @@ export default function NewListingPage() {
       manager_desc: managerDesc,
       marker_position: markerPosition,
     };
+
+    // 클라이언트에서 현재 세션 토큰 가져오기
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData?.session?.access_token;
+    if (!token) {
+      alert('로그인 상태가 아닙니다.');
+      return;
+    }
+
     try {
       const res = await fetch('/api/partnership', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify(payload),
       });
       if (!res.ok) {
