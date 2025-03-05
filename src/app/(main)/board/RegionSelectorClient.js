@@ -10,7 +10,7 @@ export default function RegionSelectorClient({ regionSlug, themeName }) {
   const [isLoadingTopItems, setIsLoadingTopItems] = useState(false);
   const [isLoadingThemes, setIsLoadingThemes] = useState(false);
 
-  // 상위·하위 지역
+  // 상위·하위 지역git branch -M main
   const [topItems, setTopItems] = useState([]);
   const [childItems, setChildItems] = useState([]);
   const [selectedParentId, setSelectedParentId] = useState(null);
@@ -341,7 +341,7 @@ export default function RegionSelectorClient({ regionSlug, themeName }) {
           <>
             <h3>지역 세부지역</h3>
             {selectedParentId === 0 ? (
-              <p>"전체"를 선택하셨습니다. 하위 지역 없음</p>
+              <p>전체를 선택하셨습니다. 하위 지역 없음</p>
             ) : childItems.length === 0 ? (
               <p>하위 지역이 없습니다.</p>
             ) : (

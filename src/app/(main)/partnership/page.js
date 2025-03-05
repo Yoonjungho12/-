@@ -187,7 +187,7 @@ export default function NewListingPage() {
         });
       }
     }
-  }, []);
+  }, [markerPosition.lat]);
 
   function initMap(lat, lng) {
     const kakao = window.kakao;
