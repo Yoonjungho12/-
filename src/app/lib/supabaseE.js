@@ -1,3 +1,5 @@
+// src/app/lib/supabaseE.js
+
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -11,7 +13,5 @@ if (!supabaseKey) {
   throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY environment variable');
 }
 
-console.log('DEBUG: supabaseUrl =', supabaseUrl);
-console.log('DEBUG: supabaseKey =', supabaseKey);
 
 export const supabase = createClient(supabaseUrl, supabaseKey);

@@ -1,7 +1,7 @@
 "use client";
-import React, { useState } from 'react';
-import Link from 'next/link';
-// 기존 Heroicons 외에 EnvelopeIcon 추가
+import React, { useEffect, useState } from "react";
+import Link from "next/link";
+// Heroicons
 import {
   HomeIcon,
   UsersIcon,
@@ -9,24 +9,55 @@ import {
   ArrowLeftOnRectangleIcon,
   PaperAirplaneIcon,
   EnvelopeIcon,
-} from '@heroicons/react/24/outline';
+} from "@heroicons/react/24/outline";
+
+import { supabase } from "../../lib/supabaseF"; // ← 경로 맞춰주세요!
 
 export default function AdminSidebar() {
   const [isOpen, setIsOpen] = useState(true);
+
+  // ---------------------------------
+  // 1) 읽지 않은 제휴신청 건수 (is_read = false)
+  // ---------------------------------
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    loadUnreadCount();
+  }, []);
+
+  async function loadUnreadCount() {
+    try {
+      // is_read가 false인 것들의 개수만 가져온다
+      const { count, error } = await supabase
+        .from("partnershipsubmit") // 테이블명 정확히
+        .select("id", { count: "exact", head: true }) // head: true → 실제 rows 안 불러오고 count만!
+        .eq("is_read", false);
+
+      if (error) {
+        console.error("미확인 제휴신청 카운트 조회 에러:", error);
+        return;
+      }
+      if (count !== null) {
+        setUnreadCount(count);
+      }
+    } catch (err) {
+      console.error("unreadCount 조회 중 오류:", err);
+    }
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-100">
       {/* 사이드바 (왼쪽) */}
       <aside
         className={`${
-          isOpen ? 'w-64' : 'w-20'
+          isOpen ? "w-64" : "w-20"
         } relative flex flex-col border-r border-gray-200 bg-white transition-all duration-300`}
       >
         {/* 로고 영역 */}
         <div className="flex items-center justify-between p-4">
           <div
             className={`${
-              isOpen ? 'opacity-100' : 'opacity-0'
+              isOpen ? "opacity-100" : "opacity-0"
             } overflow-hidden transition-opacity duration-200`}
           >
             <span className="text-xl font-bold text-blue-600">Admin Panel</span>
@@ -38,14 +69,18 @@ export default function AdminSidebar() {
           >
             <svg
               className={`h-5 w-5 transform transition-transform ${
-                isOpen ? '' : 'rotate-180'
+                isOpen ? "" : "rotate-180"
               }`}
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
               viewBox="0 0 24 24"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M15 19l-7-7 7-7"
+              />
             </svg>
           </button>
         </div>
@@ -80,7 +115,20 @@ export default function AdminSidebar() {
           {/* 쪽지함 메뉴 추가 */}
           <NavItem
             href="/master/messages" // 실제 라우트 경로에 맞춰 수정
-            icon={<EnvelopeIcon className="h-5 w-5" />}
+            icon={
+              <div className="relative">
+                <EnvelopeIcon className="h-5 w-5" />
+                {unreadCount > 0 && (
+                  <span
+                    className="absolute -top-2 -right-2 flex h-4 w-4
+                      items-center justify-center rounded-full bg-red-500
+                      text-xs font-bold text-white"
+                  >
+                    {unreadCount}
+                  </span>
+                )}
+              </div>
+            }
             label="쪽지함"
             isOpen={isOpen}
           />

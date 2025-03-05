@@ -77,11 +77,38 @@ export default function PartnershipList() {
   }, [router]);
 
   // 2) 세션 확인 후, 파트너십 데이터 불러오기
+  //   + (추가) is_read = false → true로 업데이트
   useEffect(() => {
-    if (authChecked) {
-      fetchPartnershipData(sortOrder);
-    }
+    if (!authChecked) return;
+
+    // (1) 읽지 않은 항목들 is_read = true 로 업데이트
+    markAllAsRead();
+
+    // (2) 목록을 불러온다
+    fetchPartnershipData(sortOrder);
+
   }, [authChecked, sortOrder]);
+
+  // 추가: 읽음처리 함수
+  async function markAllAsRead() {
+    try {
+      // 원하시는 조건에 맞게 eq('is_read', false) 등의 조건을 넣어주세요.
+      // 여기서는 "모두"라고 하셨으니 user 구분 없이 전부 업데이트하는 예시를 작성했지만,
+      // 필요하다면 eq('user_id', sessionUserId)도 섞어서 조정하세요.
+      const { error } = await supabase
+        .from("partnershipsubmit")
+        .update({ is_read: true })
+        .eq("is_read", false);
+
+      if (error) {
+        console.error("읽음 처리 실패:", error);
+      } else {
+        console.log("읽지 않은 제휴신청을 모두 읽음 처리했습니다.");
+      }
+    } catch (err) {
+      console.error("읽음 처리 중 에러:", err);
+    }
+  }
 
   // 정렬 옵션 변경 핸들러
   const handleSortChange = (e) => {
