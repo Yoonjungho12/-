@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import {supabase} from '../../lib/supabaseE';
+import {supabase} from '@/lib/supabaseE';
 
 export async function POST(request) {
   try {
