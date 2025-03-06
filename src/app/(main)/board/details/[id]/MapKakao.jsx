@@ -1,12 +1,18 @@
-// src/app/(main)/board/details/[id]/MapKakao.jsx
 "use client";
 import React, { useEffect, useRef } from "react";
 
+/**
+ * MapKakao Component:
+ * - Renders a Kakao Map for the given address
+ * - Ensure you replace "YOUR_KAKAO_MAP_KEY" with your actual Kakao REST key
+ */
 export default function MapKakao({ address }) {
   const mapRef = useRef(null);
 
   useEffect(() => {
     if (!address || !mapRef.current) return;
+
+    // Dynamically load Kakao Maps script
     const script = document.createElement("script");
     script.src =
       "//dapi.kakao.com/v2/maps/sdk.js?appkey=3be0573fb7f2f9b128b58dc1b0342b97&libraries=services&autoload=false";

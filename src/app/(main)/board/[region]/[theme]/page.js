@@ -11,6 +11,7 @@ export default async function BoardPage(ctx) {
 
   return (
     <>
+    <div className="flex flex-col items-center w-full">
     <RegionSelectorClient
       regionSlug={regionDecoded} // "전체" (진짜 한글)
       themeName={themeDecoded}   // "전체" (진짜 한글)
@@ -19,6 +20,8 @@ export default async function BoardPage(ctx) {
       regionSlug={regionDecoded} // "전체" (진짜 한글)
       themeName={themeDecoded}   // "전체" (진짜 한글)
     />  
+
+    </div>
     </>
   );
 }

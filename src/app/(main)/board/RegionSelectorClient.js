@@ -3,6 +3,57 @@ import React, { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabaseF";
 import { useRouter } from "next/navigation";
 
+// 부모 컨테이너 스타일 (가운데 정렬 + 최대폭)
+const outerStyle = {
+  maxWidth: "1000px", // 원하는 대로 조정 (예: 1000px)
+  margin: "0 auto",   // 수평 가운데 정렬
+};
+
+// 테이블 스타일 (폭 100%, 칼럼 균등 분배)
+const tableStyle = {
+  width: "100%",
+  tableLayout: "fixed",  // ★ 고정 테이블 레이아웃
+  borderCollapse: "collapse",
+  marginBottom: "1rem",
+};
+
+// td 스타일: 선택되면 배경/글자색 변경
+function getTdStyle(isSelected) {
+  return {
+    border: "1px solid #ddd",
+    padding: "8px",
+    cursor: "pointer",
+    backgroundColor: isSelected ? "#f9665e" : "#fff",
+    color: isSelected ? "#fff" : "#333",
+    textAlign: "center",
+    verticalAlign: "middle",
+  };
+}
+
+// 스켈레톤 (테이블)
+function SkeletonTable({ columnCount = 7, rowCount = 2 }) {
+  const rows = Array.from({ length: rowCount }, (_, rowIdx) => {
+    const cells = Array.from({ length: columnCount }, (_, cellIdx) => (
+      <td
+        key={cellIdx}
+        style={{
+          border: "1px solid #ddd",
+          padding: "8px",
+          backgroundColor: "#eee",
+          textAlign: "center",
+          verticalAlign: "middle",
+        }}
+      />
+    ));
+    return <tr key={rowIdx}>{cells}</tr>;
+  });
+  return (
+    <table style={tableStyle}>
+      <tbody>{rows}</tbody>
+    </table>
+  );
+}
+
 export default function RegionSelectorClient({ regionSlug, themeName }) {
   const router = useRouter();
 
@@ -10,7 +61,7 @@ export default function RegionSelectorClient({ regionSlug, themeName }) {
   const [isLoadingTopItems, setIsLoadingTopItems] = useState(false);
   const [isLoadingThemes, setIsLoadingThemes] = useState(false);
 
-  // 상위·하위 지역git branch -M main
+  // 상위·하위 지역
   const [topItems, setTopItems] = useState([]);
   const [childItems, setChildItems] = useState([]);
   const [selectedParentId, setSelectedParentId] = useState(null);
@@ -20,9 +71,9 @@ export default function RegionSelectorClient({ regionSlug, themeName }) {
   const [themes, setThemes] = useState([]);
   const [selectedThemeIds, setSelectedThemeIds] = useState([]);
 
-  // ----------------------------------
-  // 초기 로드
-  // ----------------------------------
+  // ─────────────────────────────────────────────────────────
+  // 1) 초기 로드
+  // ─────────────────────────────────────────────────────────
   useEffect(() => {
     setIsLoadingTopItems(true);
     fetchTopRegions().finally(() => {
@@ -35,9 +86,6 @@ export default function RegionSelectorClient({ regionSlug, themeName }) {
     });
   }, []);
 
-  // ----------------------------------
-  // DB fetch: 상위 지역
-  // ----------------------------------
   async function fetchTopRegions() {
     try {
       const { data, error } = await supabase
@@ -49,6 +97,7 @@ export default function RegionSelectorClient({ regionSlug, themeName }) {
         console.error("Error fetching top regions:", error);
       } else {
         const items = data || [];
+        // '전체' 추가
         const allItem = { id: 0, name: "전체", region_slug: "전체" };
         setTopItems([allItem, ...items]);
       }
@@ -57,9 +106,6 @@ export default function RegionSelectorClient({ regionSlug, themeName }) {
     }
   }
 
-  // ----------------------------------
-  // DB fetch: 테마
-  // ----------------------------------
   async function fetchThemes() {
     try {
       const { data, error } = await supabase
@@ -71,6 +117,7 @@ export default function RegionSelectorClient({ regionSlug, themeName }) {
         console.error("Error fetching themes:", error);
       } else {
         const items = data || [];
+        // '전체' 추가
         const allTheme = { id: 0, name: "전체" };
         setThemes([allTheme, ...items]);
       }
@@ -79,9 +126,9 @@ export default function RegionSelectorClient({ regionSlug, themeName }) {
     }
   }
 
-  // ----------------------------------
-  // regionSlug / themeName 변경 시
-  // ----------------------------------
+  // ─────────────────────────────────────────────────────────
+  // 2) regionSlug / themeName 변경 시
+  // ─────────────────────────────────────────────────────────
   useEffect(() => {
     if (!regionSlug || !themeName) return;
     if (!topItems.length || !themes.length) return;
@@ -103,9 +150,6 @@ export default function RegionSelectorClient({ regionSlug, themeName }) {
     }
   }, [regionSlug, themeName, topItems, themes]);
 
-  // ----------------------------------
-  // region_slug → 상위 or 하위 구분
-  // ----------------------------------
   async function fetchRegionBySlug(slug) {
     try {
       const { data: regionRow, error } = await supabase
@@ -113,7 +157,6 @@ export default function RegionSelectorClient({ regionSlug, themeName }) {
         .select("*")
         .eq("region_slug", slug)
         .single();
-
       if (error) {
         console.error("region_slug 조회 실패:", error);
         return;
@@ -169,9 +212,6 @@ export default function RegionSelectorClient({ regionSlug, themeName }) {
     }
   }
 
-  // ----------------------------------
-  // themeName → themes.id
-  // ----------------------------------
   async function fetchThemeByName(name) {
     try {
       const { data: themeRow, error } = await supabase
@@ -190,9 +230,9 @@ export default function RegionSelectorClient({ regionSlug, themeName }) {
     }
   }
 
-  // ----------------------------------
-  // 클릭 → 라우팅
-  // ----------------------------------
+  // ─────────────────────────────────────────────────────────
+  // 3) 셀 클릭 → 라우팅
+  // ─────────────────────────────────────────────────────────
   function handleParentClick(parentId) {
     if (parentId === 0) {
       router.push(`/board/전체/${themeName}`);
@@ -225,176 +265,125 @@ export default function RegionSelectorClient({ regionSlug, themeName }) {
     router.push(`/board/${regionSlug}/${themeItem.name}`);
   }
 
-  // ----------------------------------
-  // 스타일
-  // ----------------------------------
-  const containerStyle = {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "8px",
-    marginTop: "1rem",
-  };
-
-  const buttonBaseStyle = {
-    flex: "1",
-    minWidth: "80px",
-    padding: "8px 12px",
-    borderRadius: "4px",
-    border: "1px solid #ccc",
-    cursor: "pointer",
-    textAlign: "center",
-    backgroundColor: "#fff",
-  };
-
-  function getButtonStyle(isSelected) {
-    return {
-      ...buttonBaseStyle,
-      backgroundColor: isSelected ? "#f9665e" : "#fff",
-      color: isSelected ? "#fff" : "#333",
-    };
+  // ─────────────────────────────────────────────────────────
+  // 4) N개씩 나누기
+  // ─────────────────────────────────────────────────────────
+  function chunkArray(array, size) {
+    const result = [];
+    for (let i = 0; i < array.length; i += size) {
+      result.push(array.slice(i, i + size));
+    }
+    return result;
   }
 
-  // ----------------------------------
-  // 스켈레톤: Shimmer 애니메이션
-  // ----------------------------------
-  // 1) 공통 스타일
-  const skeletonButtonStyle = {
-    ...buttonBaseStyle,
-    position: "relative",
-    overflow: "hidden",
-    backgroundColor: "#eee",
-    color: "transparent", // 텍스트 안 보이게
-  };
-
-  // 2) 실제로 움직이는 배경을 위한 스타일 (자식 div)
-  const skeletonShimmerStyle = {
-    width: "100%",
-    height: "100%",
-    background: "linear-gradient(to right, #eee 8%, #ddd 18%, #eee 33%)",
-    backgroundSize: "800px 100px",
-    animation: "skeleton-loading 1.3s infinite linear",
-  };
-
-  function SkeletonBox({ count = 4 }) {
-    return (
-      <div style={containerStyle}>
-        {Array.from({ length: count }).map((_, i) => (
-          <div key={i} style={skeletonButtonStyle}>
-            {/* 가짜 텍스트로 크기 확보 */}
-            {"길이가조금길은가짜텍스트"}
-            {/* Shimmer 레이어 */}
-            <div style={skeletonShimmerStyle}></div>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  // ----------------------------------
-  // 렌더링
-  // ----------------------------------
+  // ─────────────────────────────────────────────────────────
+  // 5) 렌더링
+  // ─────────────────────────────────────────────────────────
   return (
-    <div style={{ padding: "1rem" }}>
-      {/* 전역 CSS 애니메이션 정의 */}
-      <style jsx global>{`
-        @keyframes skeleton-loading {
-          0% {
-            background-position: -800px 0;
-          }
-          100% {
-            background-position: 800px 0;
-          }
-        }
-      `}</style>
-
-      {/* 지역별 샵 선택 */}
-      <h2>지역별 샵 선택</h2>
-      <p style={{ color: "#666", marginBottom: "1rem" }}>
+    <div style={outerStyle}>
+      {/* 상단 제목 */}
+      <h2 style={{ textAlign: "center" }}>지역별 샵 선택</h2>
+      <p style={{ color: "#666", marginBottom: "1rem", textAlign: "center" }}>
         인기있는 지역들을 보기쉽게 모아봤어요!
       </p>
 
-      {/* 상위 지역 */}
-      <div style={containerStyle}>
-        {isLoadingTopItems ? (
-          <SkeletonBox count={5} />
-        ) : topItems.length === 0 ? (
-          <p style={{ flex: "1" }}>상위 지역이 없습니다.</p>
-        ) : (
-          topItems.map((item) => {
-            const isSelected = selectedParentId === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => handleParentClick(item.id)}
-                style={getButtonStyle(isSelected)}
-              >
-                {item.name}
-              </button>
-            );
-          })
-        )}
-      </div>
-
-      {/* 지역 세부지역 */}
-      <div style={{ marginTop: "1rem" }}>
-        {selectedParentId !== null ? (
-          <>
-            <h3>지역 세부지역</h3>
-            {selectedParentId === 0 ? (
-              <p>전체를 선택하셨습니다. 하위 지역 없음</p>
-            ) : childItems.length === 0 ? (
-              <p>하위 지역이 없습니다.</p>
-            ) : (
-              <div style={containerStyle}>
-                {childItems.map((child) => {
-                  const isChildSelected = selectedChildId === child.id;
+      {/* ── 상위 지역: 7개 칼럼 ── */}
+      {isLoadingTopItems ? (
+        <SkeletonTable columnCount={7} rowCount={2} />
+      ) : topItems.length === 0 ? (
+        <p style={{ textAlign: "center" }}>상위 지역이 없습니다.</p>
+      ) : (
+        <table style={tableStyle}>
+          <tbody>
+            {chunkArray(topItems, 7).map((rowItems, rowIdx) => (
+              <tr key={rowIdx}>
+                {rowItems.map((item) => {
+                  const isSelected = selectedParentId === item.id;
                   return (
-                    <button
-                      key={child.id}
-                      onClick={() => handleChildClick(child.id)}
-                      style={getButtonStyle(isChildSelected)}
+                    <td
+                      key={item.id}
+                      style={getTdStyle(isSelected)}
+                      onClick={() => handleParentClick(item.id)}
                     >
-                      {child.name}
-                    </button>
+                      {item.name}
+                    </td>
                   );
                 })}
-              </div>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      {/* ── 세부 지역: 7개 칼럼 ── */}
+      <div style={{ marginBottom: "2rem" }}>
+        {selectedParentId !== null && (
+          <>
+        
+            {selectedParentId === 0 ? (
+              <p style={{ textAlign: "center" }}>
+            
+              </p>
+            ) : childItems.length === 0 ? (
+              <p style={{ textAlign: "center" }}>하위 지역이 없습니다.</p>
+            ) : (
+                
+              <table style={tableStyle}>
+                <tbody>
+                  {chunkArray(childItems, 7).map((rowItems, rowIdx) => (
+                    <tr key={rowIdx}>
+                      {rowItems.map((child) => {
+                        const isChildSelected = selectedChildId === child.id;
+                        return (
+                          <td
+                            key={child.id}
+                            style={getTdStyle(isChildSelected)}
+                            onClick={() => handleChildClick(child.id)}
+                          >
+                            {child.name}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             )}
           </>
-        ) : (
-          <p style={{ marginTop: "1rem" }}>
-            상위 지역을 먼저 선택해주세요.
-          </p>
         )}
       </div>
 
-      {/* 테마별 샵 선택 */}
-      <div style={{ marginTop: "2rem" }}>
-        <h2>테마별 샵 선택</h2>
-        <p style={{ color: "#666", marginBottom: "1rem" }}>
-          테마를 선택 해보세요!
-        </p>
-        <div style={containerStyle}>
-          {isLoadingThemes ? (
-            <SkeletonBox count={7} />
-          ) : themes.length === 0 ? (
-            <p style={{ flex: "1" }}>테마가 없습니다.</p>
-          ) : (
-            themes.map((theme) => {
-              const isSelected = selectedThemeIds.includes(theme.id);
-              return (
-                <button
-                  key={theme.id}
-                  onClick={() => handleThemeClick(theme.id)}
-                  style={getButtonStyle(isSelected)}
-                >
-                  {theme.name}
-                </button>
-              );
-            })
-          )}
-        </div>
-      </div>
+      {/* ── 테마별 샵 선택: 10개 칼럼 ── */}
+      <h2 style={{ textAlign: "center" }}>테마별 샵 선택</h2>
+      <p style={{ color: "#666", marginBottom: "1rem", textAlign: "center" }}>
+        테마를 선택 해보세요!
+      </p>
+      {isLoadingThemes ? (
+        <SkeletonTable columnCount={10} rowCount={2} />
+      ) : themes.length === 0 ? (
+        <p style={{ textAlign: "center" }}>테마가 없습니다.</p>
+      ) : (
+        <table style={tableStyle}>
+          <tbody>
+            {chunkArray(themes, 10).map((rowItems, rowIdx) => (
+              <tr key={rowIdx}>
+                {rowItems.map((theme) => {
+                  const isSelected = selectedThemeIds.includes(theme.id);
+                  return (
+                    <td
+                      key={theme.id}
+                      style={getTdStyle(isSelected)}
+                      onClick={() => handleThemeClick(theme.id)}
+                    >
+                      {theme.name}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }

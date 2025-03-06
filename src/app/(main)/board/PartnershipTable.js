@@ -2,18 +2,54 @@
 import { supabase } from "../../lib/supabaseE";
 import Link from "next/link";
 
-// 커스텀 슬러그 생성 함수 (입력값이 없거나 빈 문자열일 경우 기본값 반환)
+// 커스텀 슬러그 생성 함수
 function createSlug(text) {
   if (typeof text !== "string" || text.trim() === "") {
     return "no-slug";
   }
   const slug = text
     .trim()
-    .replace(/\s+/g, '-') // 연속 공백을 하이픈으로 변환
-    .replace(/[^ㄱ-ㅎ가-힣a-zA-Z0-9\-]/g, '') // 한글, 영문, 숫자, 하이픈 이외 제거
+    .replace(/\s+/g, "-")
+    .replace(/[^ㄱ-ㅎ가-힣a-zA-Z0-9-]/g, "")
     .toLowerCase();
-  return slug || "no-slug"; // 빈 문자열이면 기본값 반환
+  return slug || "no-slug";
 }
+
+// ★ 테이블 스타일들
+const tableStyle = {
+  width: "100%",
+  borderCollapse: "collapse",
+};
+
+const theadStyle = {
+  backgroundColor: "#f0f0f0",
+};
+
+const thStyle = {
+  padding: "10px",
+  border: "1px solid #ccc",
+  textAlign: "center",
+};
+
+const trStyle = {
+  backgroundColor: "#fff5f0", // 살짝 피치색
+};
+
+const tdStyle = {
+  padding: "10px",
+  border: "1px solid #eee",
+  verticalAlign: "middle",
+};
+
+const leftCellStyle = {
+  ...tdStyle,
+  width: "60px",
+  textAlign: "center",
+  fontWeight: "bold",
+  color: "#fff",
+  backgroundColor: "#c23e2d", // 진한 빨색 배경 (VIP)
+  border: "1px solid #c23e2d",
+};
 
 export default async function PartnershipTable({ regionSlug, themeName }) {
   // 1) regionId 찾기
@@ -24,7 +60,6 @@ export default async function PartnershipTable({ regionSlug, themeName }) {
       .select("*")
       .eq("region_slug", regionSlug)
       .single();
-
     if (regionErr) {
       console.error("regionErr:", regionErr);
     } else if (regionRow) {
@@ -40,7 +75,6 @@ export default async function PartnershipTable({ regionSlug, themeName }) {
       .select("*")
       .eq("name", themeName)
       .single();
-
     if (themeErr) {
       console.error("themeErr:", themeErr);
     } else if (themeRow) {
@@ -84,8 +118,8 @@ export default async function PartnershipTable({ regionSlug, themeName }) {
   if (regionId) {
     query = query.eq("region_id", regionId);
   }
-  
-  // 최종 승인된 게시글만 (final_admitted=true)
+
+  // 최종 승인된 게시글만
   query = query.eq("final_admitted", true);
 
   const { data: posts, error: postError } = await query;
@@ -94,28 +128,34 @@ export default async function PartnershipTable({ regionSlug, themeName }) {
   }
 
   return (
-    <div style={{ padding: "1rem" }}>
+    <div className="w-full"style={{ padding: "1rem" }}>
       <h2>파트너십 목록 (SSR + supabase / M:N)</h2>
       <p>
         현재 지역: <b>{regionSlug}</b> / 테마: <b>{themeName}</b>
       </p>
 
+      {/* 데이터 없을 때 */}
       {!posts || posts.length === 0 ? (
         <p>데이터가 없습니다.</p>
       ) : (
-        <table style={{ borderCollapse: "collapse", width: "100%" }}>
-          <thead>
-            <tr style={{ borderBottom: "1px solid #ccc" }}>
-              <th style={{ textAlign: "left", padding: "8px" }}>Post Title</th>
+        <table style={tableStyle}>
+          <thead style={theadStyle}>
+            <tr>
+              <th style={thStyle}>구분</th>
+              <th style={thStyle}>제목</th>
             </tr>
           </thead>
           <tbody>
             {posts.map((item) => {
-              // company_name을 기반으로 슬러그 생성
               const slug = createSlug(item.company_name);
+
               return (
-                <tr key={item.id} style={{ borderBottom: "1px solid #eee" }}>
-                  <td style={{ padding: "8px" }}>
+                <tr key={item.id} style={trStyle}>
+                  {/* 왼쪽 VIP 셀 */}
+                  <td style={leftCellStyle}>VIP</td>
+
+                  {/* 오른쪽 제목 셀 */}
+                  <td style={tdStyle}>
                     <Link href={`/board/details/${item.id}-${slug}`}>
                       {item.post_title}
                     </Link>
