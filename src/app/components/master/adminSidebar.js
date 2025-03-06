@@ -10,6 +10,7 @@ import {
   PaperAirplaneIcon,
   EnvelopeIcon,
   CheckBadgeIcon,
+  ChatBubbleOvalLeftEllipsisIcon,
 } from "@heroicons/react/24/outline";
 import { supabase } from "../../lib/supabaseF";
 
@@ -56,9 +57,7 @@ export default function AdminSidebar() {
               isOpen ? "opacity-100" : "opacity-0"
             } overflow-hidden transition-opacity duration-200`}
           >
-            <span className="text-xl font-bold text-blue-600">
-              Admin Panel
-            </span>
+            <span className="text-xl font-bold text-blue-600">Admin Panel</span>
           </div>
           <button
             onClick={() => setIsOpen(!isOpen)}
@@ -87,9 +86,16 @@ export default function AdminSidebar() {
           {/* 일반 회원 그룹 */}
           <NavCategory label="일반 회원" isOpen={isOpen} />
           <NavItem
-            href="/admin/users"
+            href="/master/users"
             icon={<UsersIcon className="h-5 w-5" />}
             label="사용자 관리"
+            isOpen={isOpen}
+          />
+          {/* ==== 새로 추가된 "전체 댓글" 아이템 ==== */}
+          <NavItem
+            href="/master/comments" // 원하는 경로로 설정
+            icon={<ChatBubbleOvalLeftEllipsisIcon className="h-5 w-5" />}
+            label="전체 댓글"
             isOpen={isOpen}
           />
 
@@ -154,15 +160,15 @@ export default function AdminSidebar() {
 function NavCategory({ label, isOpen }) {
   if (!isOpen) return null;
   return (
-    <div className="px-2 text-xs font-bold uppercase text-gray-400">
-      {label}
-    </div>
+    <div className="px-2 text-xs font-bold uppercase text-gray-400">{label}</div>
   );
 }
 
 function NavItem({ href, icon, label, isOpen, badge }) {
   const pathname = usePathname();
+  // 현재 경로가 이 아이템의 href(또는 하위 경로)와 일치하면 active 상태
   const isActive = pathname === href || pathname.startsWith(href);
+
   return (
     <Link
       href={href}
