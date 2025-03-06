@@ -1,9 +1,10 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseF";
 import { PaperAirplaneIcon } from "@heroicons/react/24/outline";
 import { CheckCircleIcon } from "@heroicons/react/24/solid";
+import Image from "next/image"; // Import Image from next/image
 
 /** 
  * Supabase 스토리지 public URL 빌더 
@@ -30,7 +31,7 @@ function formatLocalTime(isoString) {
  * 팝업 상세 페이지
  * URL 파라미터 id에 해당하는 partnershipsubmit 행과 관련 조인 데이터(region, profiles)를 출력합니다.
  */
-export default function PartnershipPopupPage() {
+function PartnershipPopupPageContent() {
   const searchParams = useSearchParams();
   const rowId = searchParams.get("id");
 
@@ -333,9 +334,11 @@ export default function PartnershipPopupPage() {
           <div className="mb-4">
             <strong>썸네일: </strong>
             {row.thumbnail_url ? (
-              <img
+              <Image
                 src={buildPublicImageUrl(row.thumbnail_url)}
                 alt="썸네일"
+                width={128}
+                height={128}
                 className="w-32 h-auto border cursor-pointer mt-1"
                 onClick={() => handleImageClick(row.thumbnail_url)}
               />
@@ -351,10 +354,12 @@ export default function PartnershipPopupPage() {
             {images.length > 0 ? (
               <div className="flex gap-2 flex-wrap mt-1">
                 {images.map((img, idx) => (
-                  <img
+                  <Image
                     key={idx}
                     src={buildPublicImageUrl(img.image_url)}
                     alt={`추가이미지-${idx}`}
+                    width={96}
+                    height={96}
                     className="w-24 h-24 object-cover border cursor-pointer"
                     onClick={() => handleImageClick(img.image_url)}
                   />
@@ -422,6 +427,14 @@ export default function PartnershipPopupPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function PartnershipPopupPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <PartnershipPopupPageContent />
+    </Suspense>
   );
 }
 
