@@ -10,6 +10,12 @@ const nextConfig = {
         port: '',
         pathname: '/storage/v1/object/public/gunma/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'cdn.vipgunma.com',
+        port: '',
+        pathname: '/assets/banner/**',
+      },
     ],
   },
 };

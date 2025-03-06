@@ -9,7 +9,13 @@ export default function Home() {
      
       <div className="container mx-auto">
        
-      <img src="https://cdn.vipgunma.com/assets/banner/1675135222banner2.jpg" alt=""/>
+
+      <Image
+        src="https://cdn.vipgunma.com/assets/banner/1675135222banner2.jpg"
+        alt="Banner"
+        width={1250}
+        height={450}
+      />
       <Mainone/>
       <RecommendedShops/>
       </div>
