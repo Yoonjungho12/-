@@ -1,23 +1,31 @@
-/** @type {import('next').NextConfig} */
+// next.config.mjs
+import bundleAnalyzer from "@next/bundle-analyzer";
+
+// 1) bundleAnalyzer를 import한 뒤 옵션을 넘겨준다.
+const withBundleAnalyzer = bundleAnalyzer({
+  enabled: process.env.ANALYZE === "true",
+});
+
+// 2) Next.js 설정(ESM 형식)
 const nextConfig = {
-  // 기존 설정들...
   images: {
-    // domains: ['vejthvawsbsitttyiwzv.supabase.co'], // 간단 설정
     remotePatterns: [
       {
-        protocol: 'https',
-        hostname: 'vejthvawsbsitttyiwzv.supabase.co',
-        port: '',
-        pathname: '/storage/v1/object/public/gunma/**',
+        protocol: "https",
+        hostname: "vejthvawsbsitttyiwzv.supabase.co",
+        port: "",
+        pathname: "/storage/v1/object/public/gunma/**",
       },
       {
-        protocol: 'https',
-        hostname: 'cdn.vipgunma.com',
-        port: '',
-        pathname: '/assets/banner/**',
+        protocol: "https",
+        hostname: "cdn.vipgunma.com",
+        port: "",
+        pathname: "/assets/banner/**",
       },
     ],
   },
+  // etc ...
 };
 
-export default nextConfig;
+// 3) withBundleAnalyzer로 감싸서 export
+export default withBundleAnalyzer(nextConfig);
