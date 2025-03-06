@@ -25,8 +25,9 @@ export async function POST(request) {
       program_info,
       post_title,
       manager_desc,
-      // marker_position 제거
-      themes, // [1, 3, 5] 등
+      themes, 
+      lat,
+      lng,
     } = payload;
 
     // 필수 체크
@@ -47,7 +48,9 @@ export async function POST(request) {
       !post_title ||
       !manager_desc ||
       !Array.isArray(themes) ||
-      themes.length === 0
+     themes.length === 0 ||
+      lat == null ||
+      lng == null
     ) {
       return NextResponse.json({ error: "필수 필드 누락" }, { status: 400 });
     }
@@ -88,6 +91,8 @@ export async function POST(request) {
       manager_desc,
       user_id,
       // marker_position 제거
+            lat: parseFloat(lat),
+      lng: parseFloat(lng),
     };
 
     // 1) partnershipsubmit에 insert

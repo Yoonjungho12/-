@@ -386,6 +386,8 @@ export default function NewListingPage() {
       post_title: postTitle,
       manager_desc: managerDesc,
       themes: selectedThemeIds,
+      lat: markerPosition.lat,
+      lng: markerPosition.lng
     };
 
     const { data: sessionData } = await supabase.auth.getSession();

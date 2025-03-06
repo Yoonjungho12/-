@@ -25,6 +25,9 @@ export default function NavBar() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [myNickname, setMyNickname] = useState("(닉네임 없음)");
 
+  // 메가메뉴 열고 닫기 상태
+  const [showMegaMenu, setShowMegaMenu] = useState(false);
+
   // --- 마운트 시에 세션 로드 ---
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -100,7 +103,11 @@ export default function NavBar() {
     }
     // showMsgPopup 토글
     setShowMsgPopup((prev) => !prev);
-    // 버튼 눌렀을 때만 MessagePopupLazy가 실제로 로드됨
+  };
+
+  // “전체 카테고리” 버튼 클릭 시 메가메뉴 열고 닫기
+  const toggleMegaMenu = () => {
+    setShowMegaMenu((prev) => !prev);
   };
 
   return (
@@ -228,7 +235,6 @@ export default function NavBar() {
                 </svg>
                 <span className="text-sm">1:1 쪽지</span>
 
-                {/* 읽지 않은 쪽지 개수 배지 */}
                 {unreadCount > 0 && (
                   <div
                     className="absolute -top-2 -right-2 flex h-5 w-5
@@ -239,7 +245,6 @@ export default function NavBar() {
                   </div>
                 )}
 
-                {/* 동적 import한 MessagePopupLazy → showMsgPopup가 true일 때만 로드 */}
                 {showMsgPopup && (
                   <MessagePopupLazy
                     onClose={() => setShowMsgPopup(false)}
@@ -358,8 +363,7 @@ export default function NavBar() {
                        -2.293a1 1
                        0 011.414
                        -1.414L14
-                       11.586l
-                       2.293-2.293z"
+                       11.586l2.293-2.293z"
                   />
                 </svg>
                 <span className="text-sm">나의활동</span>
@@ -389,8 +393,7 @@ export default function NavBar() {
                          h10a2 2
                          0
                          012 2v14
-                         a2 2
-                         0
+                         a2 2 0
                          01-2 2
                          h-2"
                     />
@@ -405,12 +408,17 @@ export default function NavBar() {
 
       {/* 하단 바 (카테고리 메뉴) */}
       <div className="border-t border-gray-200 bg-white">
-        <div className="mx-auto flex max-w-7xl items-center px-6 py-2 space-x-4">
-          {/* 전체 카테고리 버튼 (드롭다운 등 구현 가능) */}
-          <button className="flex items-center space-x-1 text-gray-700 hover:text-red-500">
+        <div className="mx-auto flex max-w-7xl items-center px-6 py-2 space-x-4 relative">
+          {/* 전체 카테고리 버튼 (메가메뉴 토글) */}
+          <button
+            className="flex items-center space-x-1 text-gray-700 hover:text-red-500"
+            onClick={toggleMegaMenu}
+          >
             <span className="font-medium">전체 카테고리</span>
             <svg
-              className="h-4 w-4"
+              className={`h-4 w-4 transition-transform ${
+                showMegaMenu ? "rotate-180" : ""
+              }`}
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
@@ -420,7 +428,7 @@ export default function NavBar() {
             </svg>
           </button>
 
-          {/* 메뉴 항목들 */}
+          {/* 기존 단일 메뉴 항목들 */}
           <Link href="/board/전체/전체" className="text-gray-700 hover:text-red-500">
             지역별 샵
           </Link>
@@ -436,6 +444,183 @@ export default function NavBar() {
           <Link href="/community" className="text-gray-700 hover:text-red-500">
             커뮤니티
           </Link>
+
+          {/* 메가메뉴 드롭다운 (z-50 추가!) */}
+          {showMegaMenu && (
+            <div
+              className="absolute left-0 top-full mt-2 w-full bg-white border border-gray-200 shadow-lg z-50"
+            >
+              <div className="mx-auto max-w-7xl px-6 py-4 grid grid-cols-4 gap-4">
+                {/* 지역별 샵 (슬러그 처리된 Link) */}
+                <div>
+                  <h2 className="mb-2 font-semibold text-red-500">지역별 샵</h2>
+                  <ul className="space-y-1 text-sm text-gray-700">
+                    <li>
+                      <Link
+                        href="/board/강남-서초-송파/전체"
+                        onClick={() => setShowMegaMenu(false)}
+                      >
+                        강남/서초/송파
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/board/서울/전체"
+                        onClick={() => setShowMegaMenu(false)}
+                      >
+                        서울
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/board/수원-동탄-용인-화성-평택-오산/전체"
+                        onClick={() => setShowMegaMenu(false)}
+                      >
+                        수원/동탄/용인/화성/평택/오산
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/board/분당-성남-위례-경기광주-하남/전체"
+                        onClick={() => setShowMegaMenu(false)}
+                      >
+                        분당/성남/위례/경기광주/하남
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/board/안양-군포-시흥-의왕/전체"
+                        onClick={() => setShowMegaMenu(false)}
+                      >
+                        안양/광명/안산/군포/시흥/의왕
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/board/인천-부천-부평/전체"
+                        onClick={() => setShowMegaMenu(false)}
+                      >
+                        인천/부천/부평
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/board/일산-김포-파주-고양/전체"
+                        onClick={() => setShowMegaMenu(false)}
+                      >
+                        고양/일산/김포/파주
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/board/의정부-구리-남양주-포천-동두천/전체"
+                        onClick={() => setShowMegaMenu(false)}
+                      >
+                        의정부/구리/남양주/포천/동두천
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/board/대전-천안-세종-충청-강원/전체"
+                        onClick={() => setShowMegaMenu(false)}
+                      >
+                        대전/천안/세종/충청/강원
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/board/부산-대구-울산-경상도-전라도-광주/전체"
+                        onClick={() => setShowMegaMenu(false)}
+                      >
+                        부산/대구/울산/경상도/전라도/광주
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/board/제주도/전체"
+                        onClick={() => setShowMegaMenu(false)}
+                      >
+                        제주도
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/board/홈케어-방문관리/전체"
+                        onClick={() => setShowMegaMenu(false)}
+                      >
+                        홈케어/방문관리
+                      </Link>
+                    </li>
+                  </ul>
+                </div>
+
+                {/* 출근부 */}
+                <div>
+                  <h2 className="mb-2 font-semibold text-red-500">출근부</h2>
+                  <ul className="space-y-1 text-sm text-gray-700">
+                    <li>
+                      <Link
+                        href="/board"
+                        onClick={() => setShowMegaMenu(false)}
+                      >
+                        전체
+                      </Link>
+                    </li>
+                    <li>경기</li>
+                    <li>서울</li>
+                    <li>강원</li>
+                    <li>인천</li>
+                    <li>충북</li>
+                    <li>대전</li>
+                    <li>충남</li>
+                    <li>세종</li>
+                    <li>전북</li>
+                    <li>광주</li>
+                    <li>전남</li>
+                    <li>대구</li>
+                    <li>경북</li>
+                    <li>울산</li>
+                    <li>경남</li>
+                    <li>부산</li>
+                    <li>제주</li>
+                  </ul>
+                </div>
+
+                {/* 내주변 */}
+                <div>
+                  <h2 className="mb-2 font-semibold text-red-500">내주변</h2>
+                  <ul className="space-y-1 text-sm text-gray-700">
+                    <li>
+                      <Link
+                        href="/near-me"
+                        onClick={() => setShowMegaMenu(false)}
+                      >
+                        내주변
+                      </Link>
+                    </li>
+                  </ul>
+                </div>
+
+                {/* 커뮤니티 */}
+                <div>
+                  <h2 className="mb-2 font-semibold text-red-500">커뮤니티</h2>
+                  <ul className="space-y-1 text-sm text-gray-700">
+                    <li>공지사항</li>
+                    <li>이벤트</li>
+                    <li>SNS</li>
+                    <li>아쉬워요</li>
+                    <li>매니저찾기</li>
+                    <li>익명게시판</li>
+                    <li>중고거래</li>
+                    <li>임대/매매</li>
+                    <li>예약/콜대행</li>
+                    <li>오류/건의</li>
+                    <li>마사지정보</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </header>
