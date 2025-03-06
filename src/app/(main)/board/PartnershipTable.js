@@ -1,6 +1,19 @@
 // src/app/(main)/board/PartnershipTable.js (서버 컴포넌트)
+import { supabase } from "../../lib/supabaseE";
+import Link from "next/link";
 
-import {supabase} from "../../lib/supabaseE";
+// 커스텀 슬러그 생성 함수 (입력값이 없거나 빈 문자열일 경우 기본값 반환)
+function createSlug(text) {
+  if (typeof text !== "string" || text.trim() === "") {
+    return "no-slug";
+  }
+  const slug = text
+    .trim()
+    .replace(/\s+/g, '-') // 연속 공백을 하이픈으로 변환
+    .replace(/[^ㄱ-ㅎ가-힣a-zA-Z0-9\-]/g, '') // 한글, 영문, 숫자, 하이픈 이외 제거
+    .toLowerCase();
+  return slug || "no-slug"; // 빈 문자열이면 기본값 반환
+}
 
 export default async function PartnershipTable({ regionSlug, themeName }) {
   // 1) regionId 찾기
@@ -43,6 +56,7 @@ export default async function PartnershipTable({ regionSlug, themeName }) {
       .select(
         `
           id,
+          company_name,
           post_title,
           region_id,
           partnershipsubmit_themes!inner (
@@ -57,6 +71,7 @@ export default async function PartnershipTable({ regionSlug, themeName }) {
       .select(
         `
           id,
+          company_name,
           post_title,
           region_id,
           partnershipsubmit_themes!left (
@@ -69,6 +84,9 @@ export default async function PartnershipTable({ regionSlug, themeName }) {
   if (regionId) {
     query = query.eq("region_id", regionId);
   }
+  
+  // 최종 승인된 게시글만 (final_admitted=true)
+  query = query.eq("final_admitted", true);
 
   const { data: posts, error: postError } = await query;
   if (postError) {
@@ -92,11 +110,19 @@ export default async function PartnershipTable({ regionSlug, themeName }) {
             </tr>
           </thead>
           <tbody>
-            {posts.map((item) => (
-              <tr key={item.id} style={{ borderBottom: "1px solid #eee" }}>
-                <td style={{ padding: "8px" }}>{item.post_title}</td>
-              </tr>
-            ))}
+            {posts.map((item) => {
+              // company_name을 기반으로 슬러그 생성
+              const slug = createSlug(item.company_name);
+              return (
+                <tr key={item.id} style={{ borderBottom: "1px solid #eee" }}>
+                  <td style={{ padding: "8px" }}>
+                    <Link href={`/board/details/${item.id}-${slug}`}>
+                      {item.post_title}
+                    </Link>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       )}
