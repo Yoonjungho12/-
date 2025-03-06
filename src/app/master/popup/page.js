@@ -9,6 +9,8 @@ import { CheckCircleIcon } from "@heroicons/react/24/solid";
  * Supabase 스토리지 public URL 빌더 
  * (버킷명: gunma, PROJECT_URL 은 본인 프로젝트 주소로 교체)
  */
+
+export const dynamic = "force-dynamic";
 const PROJECT_URL = "https://vejthvawsbsitttyiwzv.supabase.co";
 function buildPublicImageUrl(path) {
   return `${PROJECT_URL}/storage/v1/object/public/gunma/${path}`;
