@@ -1,6 +1,6 @@
 // 예시: /app/api/messages/route.js
 import { NextResponse } from 'next/server';
-import {supabase} from '.@/lib/supabaseE';
+import {supabase} from '@/lib/supabaseE';
 
 export async function POST(req) {
   try {
