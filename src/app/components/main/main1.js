@@ -91,6 +91,15 @@ export async function getServerSideProps() {
 }
 
 export default function PopularShops({ shopCards = [] }) {
+  // 여기서 React 상태나 use client 없이, 단순히 SSR로 받은 shopCards만 렌더하고
+  // 지역 탭은 아래 script에서 처리합니다.
+  
+  // 지역 목록(17개) - script 내에서 참조할 예정
+  const regionTabs = [
+    '서울', '인천', '대전', '세종', '광주', '대구', '울산', '부산',
+    '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주',
+  ];
+
   return (
     <div className="w-full bg-white">
       {/* 상단 제목 영역 */}
@@ -104,9 +113,13 @@ export default function PopularShops({ shopCards = [] }) {
         </p>
       </div>
 
-      {/* 지역 탭 (화살표 + 서울, 인천, 대전, …) */}
+      {/* 지역 탭 (왼쪽 화살표 + 11개 버튼 + 오른쪽 화살표) */}
       <div className="mx-auto mt-6 flex max-w-5xl items-center space-x-2 px-4">
-        <button className="rounded-full bg-red-500 p-2 text-white hover:bg-red-600">
+        {/* 왼쪽 화살표 버튼 */}
+        <button
+          id="prevBtn"
+          className="rounded-full bg-red-500 p-2 text-white hover:bg-red-600"
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className="h-4 w-4"
@@ -119,65 +132,16 @@ export default function PopularShops({ shopCards = [] }) {
           </svg>
         </button>
 
-        <ul className="flex flex-wrap items-center space-x-2 text-sm font-medium">
-          <li>
-            <button className="rounded-full bg-red-500 px-4 py-2 text-white hover:bg-red-600">
-              서울
-            </button>
-          </li>
-          <li>
-            <button className="rounded-full border border-gray-300 px-4 py-2 text-gray-600 hover:bg-gray-100">
-              인천
-            </button>
-          </li>
-          <li>
-            <button className="rounded-full border border-gray-300 px-4 py-2 text-gray-600 hover:bg-gray-100">
-              대전
-            </button>
-          </li>
-          <li>
-            <button className="rounded-full border border-gray-300 px-4 py-2 text-gray-600 hover:bg-gray-100">
-              세종
-            </button>
-          </li>
-          <li>
-            <button className="rounded-full border border-gray-300 px-4 py-2 text-gray-600 hover:bg-gray-100">
-              광주
-            </button>
-          </li>
-          <li>
-            <button className="rounded-full border border-gray-300 px-4 py-2 text-gray-600 hover:bg-gray-100">
-              대구
-            </button>
-          </li>
-          <li>
-            <button className="rounded-full border border-gray-300 px-4 py-2 text-gray-600 hover:bg-gray-100">
-              울산
-            </button>
-          </li>
-          <li>
-            <button className="rounded-full border border-gray-300 px-4 py-2 text-gray-600 hover:bg-gray-100">
-              부산
-            </button>
-          </li>
-          <li>
-            <button className="rounded-full border border-gray-300 px-4 py-2 text-gray-600 hover:bg-gray-100">
-              경기
-            </button>
-          </li>
-          <li>
-            <button className="rounded-full border border-gray-300 px-4 py-2 text-gray-600 hover:bg-gray-100">
-              강원
-            </button>
-          </li>
-          <li>
-            <button className="rounded-full border border-gray-300 px-4 py-2 text-gray-600 hover:bg-gray-100">
-              충북
-            </button>
-          </li>
+        {/* 지역 탭들이 들어갈 부분 (처음에는 비워두고, script에서 DOM 조작으로 채움) */}
+        <ul id="regionTabsList" className="flex flex-wrap items-center space-x-2 text-sm font-medium">
+          {/* 자바스크립트로 채울 예정 */}
         </ul>
 
-        <button className="ml-auto rounded-full bg-gray-200 p-2 text-gray-500 hover:bg-gray-300">
+        {/* 오른쪽 화살표 버튼 */}
+        <button
+          id="nextBtn"
+          className="ml-auto rounded-full bg-gray-200 p-2 text-gray-500 hover:bg-gray-300"
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className="h-4 w-4"
@@ -235,6 +199,61 @@ export default function PopularShops({ shopCards = [] }) {
           더보기 +
         </button>
       </div>
+
+      {/* 순수 자바스크립트로 지역 탭을 제어하는 스크립트 (dangerouslySetInnerHTML 이용) */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `
+            (function() {
+              // 지역 목록
+              const regionTabs = ${JSON.stringify(regionTabs)};
+              // 한 번에 보여줄 탭 개수
+              const SHOW_COUNT = 11;
+              // 현재 시작 인덱스
+              let startIndex = 0;
+
+              // DOM 요소
+              const prevBtn = document.getElementById('prevBtn');
+              const nextBtn = document.getElementById('nextBtn');
+              const regionTabsList = document.getElementById('regionTabsList');
+
+              // 탭을 렌더링하는 함수
+              function renderTabs() {
+                // regionTabsList 내의 내용을 새로 채웁니다.
+                let html = '';
+                for (let i = 0; i < SHOW_COUNT; i++) {
+                  const tabIndex = (startIndex + i) % regionTabs.length;
+                  const region = regionTabs[tabIndex];
+                  html += \`
+                    <li>
+                      <button
+                        class="rounded-full border border-gray-300 px-4 py-2 text-gray-600 hover:bg-gray-100"
+                      >
+                        \${region}
+                      </button>
+                    </li>\`;
+                }
+                regionTabsList.innerHTML = html;
+              }
+
+              // 이전 버튼 클릭
+              prevBtn.addEventListener('click', function() {
+                startIndex = (startIndex - 1 + regionTabs.length) % regionTabs.length;
+                renderTabs();
+              });
+
+              // 다음 버튼 클릭
+              nextBtn.addEventListener('click', function() {
+                startIndex = (startIndex + 1) % regionTabs.length;
+                renderTabs();
+              });
+
+              // 초기 렌더링
+              renderTabs();
+            })();
+          `,
+        }}
+      />
     </div>
   );
 }
