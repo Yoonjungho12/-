@@ -1,4 +1,5 @@
-import React from 'react';
+'use client';
+import React, { useState } from 'react';
 
 // SSR 데이터를 가져오는 함수
 export async function getServerSideProps() {
@@ -91,14 +92,33 @@ export async function getServerSideProps() {
 }
 
 export default function PopularShops({ shopCards = [] }) {
-  // 여기서 React 상태나 use client 없이, 단순히 SSR로 받은 shopCards만 렌더하고
-  // 지역 탭은 아래 script에서 처리합니다.
-  
-  // 지역 목록(17개) - script 내에서 참조할 예정
+  // 17개 지역 목록
   const regionTabs = [
     '서울', '인천', '대전', '세종', '광주', '대구', '울산', '부산',
     '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주',
   ];
+
+  // 한 번에 보여줄 탭 개수
+  const SHOW_COUNT = 11;
+  // 현재 시작 인덱스
+  const [startIndex, setStartIndex] = useState(0);
+
+  // startIndex부터 SHOW_COUNT개를 순환하며 잘라낸 배열
+  const visibleTabs = [];
+  for (let i = 0; i < SHOW_COUNT; i++) {
+    const tabIndex = (startIndex + i) % regionTabs.length;
+    visibleTabs.push(regionTabs[tabIndex]);
+  }
+
+  // 이전 버튼 클릭
+  const handlePrev = () => {
+    setStartIndex((prev) => (prev - 1 + regionTabs.length) % regionTabs.length);
+  };
+
+  // 다음 버튼 클릭
+  const handleNext = () => {
+    setStartIndex((prev) => (prev + 1) % regionTabs.length);
+  };
 
   return (
     <div className="w-full bg-white">
@@ -113,46 +133,63 @@ export default function PopularShops({ shopCards = [] }) {
         </p>
       </div>
 
-      {/* 지역 탭 (왼쪽 화살표 + 11개 버튼 + 오른쪽 화살표) */}
-      <div className="mx-auto mt-6 flex max-w-5xl items-center space-x-2 px-4">
-        {/* 왼쪽 화살표 버튼 */}
-        <button
-          id="prevBtn"
-          className="rounded-full bg-red-500 p-2 text-white hover:bg-red-600"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth="2"
+      {/* 지역 탭 (좌우 화살표 + 11개 탭) */}
+      <div className="mx-auto mt-6 max-w-5xl px-4">
+        {/* 이 래퍼를 flex + justify-between으로 잡아주어, 왼쪽 버튼과 오른쪽 버튼이 
+            컨테이너 양 끝에 붙고, 가운데에 탭들이 꽉 차도록 만듭니다. */}
+        <div className="flex w-full items-center justify-between">
+          {/* 왼쪽 화살표 버튼 */}
+          <button
+            onClick={handlePrev}
+            className="rounded-full bg-red-500 p-2 text-white hover:bg-red-600"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
 
-        {/* 지역 탭들이 들어갈 부분 (처음에는 비워두고, script에서 DOM 조작으로 채움) */}
-        <ul id="regionTabsList" className="flex flex-wrap items-center space-x-2 text-sm font-medium">
-          {/* 자바스크립트로 채울 예정 */}
-        </ul>
+          {/* 탭 목록 - flex-1로 공간을 넉넉하게 차지해주고, 
+              justify-evenly나 justify-between 등을 취향대로 선택해서 간격 조절 가능 */}
+          <ul className="mx-4 flex flex-1 flex-wrap items-center justify-evenly gap-3">
+            {visibleTabs.map((region, idx) => (
+              <li key={idx}>
+                <button
+                  className={`rounded-full border px-4 py-2 ${
+                    region === '서울'
+                      ? 'border-red-500 bg-red-500 text-white hover:bg-red-600'
+                      : 'border-gray-300 text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  {region}
+                </button>
+              </li>
+            ))}
+          </ul>
 
-        {/* 오른쪽 화살표 버튼 */}
-        <button
-          id="nextBtn"
-          className="ml-auto rounded-full bg-gray-200 p-2 text-gray-500 hover:bg-gray-300"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth="2"
+          {/* 오른쪽 화살표 버튼 */}
+          <button
+            onClick={handleNext}
+            className="rounded-full bg-gray-200 p-2 text-gray-500 hover:bg-gray-300"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-          </svg>
-        </button>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       {/* 카드 그리드 */}
@@ -199,61 +236,6 @@ export default function PopularShops({ shopCards = [] }) {
           더보기 +
         </button>
       </div>
-
-      {/* 순수 자바스크립트로 지역 탭을 제어하는 스크립트 (dangerouslySetInnerHTML 이용) */}
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `
-            (function() {
-              // 지역 목록
-              const regionTabs = ${JSON.stringify(regionTabs)};
-              // 한 번에 보여줄 탭 개수
-              const SHOW_COUNT = 11;
-              // 현재 시작 인덱스
-              let startIndex = 0;
-
-              // DOM 요소
-              const prevBtn = document.getElementById('prevBtn');
-              const nextBtn = document.getElementById('nextBtn');
-              const regionTabsList = document.getElementById('regionTabsList');
-
-              // 탭을 렌더링하는 함수
-              function renderTabs() {
-                // regionTabsList 내의 내용을 새로 채웁니다.
-                let html = '';
-                for (let i = 0; i < SHOW_COUNT; i++) {
-                  const tabIndex = (startIndex + i) % regionTabs.length;
-                  const region = regionTabs[tabIndex];
-                  html += \`
-                    <li>
-                      <button
-                        class="rounded-full border border-gray-300 px-4 py-2 text-gray-600 hover:bg-gray-100"
-                      >
-                        \${region}
-                      </button>
-                    </li>\`;
-                }
-                regionTabsList.innerHTML = html;
-              }
-
-              // 이전 버튼 클릭
-              prevBtn.addEventListener('click', function() {
-                startIndex = (startIndex - 1 + regionTabs.length) % regionTabs.length;
-                renderTabs();
-              });
-
-              // 다음 버튼 클릭
-              nextBtn.addEventListener('click', function() {
-                startIndex = (startIndex + 1) % regionTabs.length;
-                renderTabs();
-              });
-
-              // 초기 렌더링
-              renderTabs();
-            })();
-          `,
-        }}
-      />
     </div>
   );
 }
