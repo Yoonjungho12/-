@@ -19,8 +19,8 @@ export default function Home() {
                (max-width: 1200px) 75vw, 
                1250px"
       />
-      {/* <Mainone/>
-      <RecommendedShops/> */}
+      <Mainone/>
+      <RecommendedShops/>
       </div>
     </>
   );

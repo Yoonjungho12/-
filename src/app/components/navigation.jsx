@@ -28,7 +28,7 @@ export default function NavBar() {
   // 메가메뉴 열고 닫기 상태
   const [showMegaMenu, setShowMegaMenu] = useState(false);
 
-  // --- 마운트 시에 세션 로드 ---
+  // --- 세션, 프로필, 쪽지 로드 ---
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
@@ -38,7 +38,6 @@ export default function NavBar() {
       }
     });
 
-    // 세션 변화 감지
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (_event, newSession) => {
         setSession(newSession);
@@ -60,7 +59,7 @@ export default function NavBar() {
   // 로그인 여부
   const isLoggedIn = !!session;
 
-  // 내 닉네임
+  // 프로필 닉네임
   async function fetchMyProfile(userId) {
     try {
       const { data } = await supabase
@@ -75,7 +74,7 @@ export default function NavBar() {
     }
   }
 
-  // 읽지 않은 쪽지개수
+  // 읽지 않은 쪽지 개수
   async function fetchUnreadCount(userId) {
     try {
       const { data } = await supabase
@@ -95,19 +94,28 @@ export default function NavBar() {
     router.push("/");
   };
 
-  // 쪽지 아이콘
+  // 쪽지 팝업
   const handleMessageIconClick = () => {
     if (!session?.user?.id) {
       alert("로그인 필요");
       return;
     }
-    // showMsgPopup 토글
     setShowMsgPopup((prev) => !prev);
   };
 
-  // “전체 카테고리” 버튼 클릭 시 메가메뉴 열고 닫기
+  // 전체 카테고리 버튼 클릭 → 메가메뉴 토글
   const toggleMegaMenu = () => {
     setShowMegaMenu((prev) => !prev);
+  };
+
+  // ★ 검색 처리 로직 (Enter 입력 시)
+  // 여기서는 /api/search로 fetch하지 않고, /search?q=검색어 로 라우팅만 수행
+  const handleSearchKeyDown = (e) => {
+    if (e.key === "Enter") {
+      const query = e.target.value.trim();
+      if (!query) return;
+      router.push(`/search?q=${encodeURIComponent(query)}`);
+    }
   };
 
   return (
@@ -129,6 +137,7 @@ export default function NavBar() {
             placeholder="지역, 업종, 상호명을 검색하세요"
             className="w-full rounded-full border border-red-300 py-3 pl-6 pr-14 text-base
                        focus:outline-none focus:ring-2 focus:ring-red-400"
+            onKeyDown={handleSearchKeyDown}
           />
           <svg
             className="absolute right-4 top-1/2 h-6 w-6 -translate-y-1/2 text-red-400"
@@ -163,9 +172,9 @@ export default function NavBar() {
                     strokeLinejoin="round"
                     d="M15.75 9V5.25A2.25 2.25 0
                        0013.5 3h-7.5A2.25 2.25 0
-                       003.75 5.25v13.5A2.25 2.25
-                       0 006 21h7.5a2.25 2.25
-                       0 002.25-2.25V15"
+                       003.75 5.25v13.5A2.25
+                       2.25 0 006 21h7.5a2.25
+                       2.25 0 002.25-2.25V15"
                   />
                   <path
                     strokeLinecap="round"
@@ -188,22 +197,38 @@ export default function NavBar() {
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    d="M12 8c1.657 0 3 .843 3 1.882
-                       v4.235c0 1.04-1.343 1.883-3 1.883
-                       s-3-.843-3-1.883v-4.235
-                       C9 8.843 10.343 8 12 8z"
+                    d="M12 8c1.657
+                       0 3 .843
+                       3 1.882v4.235c0
+                       1.04-1.343
+                       1.883-3 1.883
+                       s-3-.843-3
+                       -1.883v-4.235
+                       C9 8.843
+                       10.343 8
+                       12 8z"
                   />
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    d="M17.293 9.293a1 1 0
-                       011.414 1.414L16.414 13l2.293 2.293
-                       a1 1 0 01-1.414 1.414
-                       l-2.293-2.293-2.293 2.293
-                       a1 1 0 01-1.414-1.414
-                       L13 13l-2.293-2.293
-                       a1 1 0 011.414-1.414
-                       L14 11.586l2.293-2.293z"
+                    d="M17.293
+                       9.293a1 1
+                       0 011.414
+                       1.414L16.414
+                       13l2.293
+                       2.293a1 1
+                       0 01-1.414
+                       1.414l-2.293
+                       -2.293-2.293
+                       2.293a1 1
+                       0 01-1.414
+                       -1.414L13
+                       13l-2.293
+                       -2.293a1 1
+                       0 011.414
+                       -1.414L14
+                       11.586l2.293
+                       -2.293z"
                   />
                 </svg>
                 <span className="text-sm">나의활동</span>
@@ -223,14 +248,17 @@ export default function NavBar() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     d="M3 8l7.89
-                       5.26a3 3 0 003.22 0
-                       L22 8m-9 13H7
-                       a2 2 0 01-2-2V5
-                       a2 2 0 012-2
-                       h10a2 2 0 012 2
-                       v14a2 2 0
-                       01-2 2
-                       h-2"
+                       5.26a3 3
+                       0 003.22 0
+                       L22 8m-9
+                       13H7
+                       a2 2 0
+                       01-2-2V5
+                       a2 2 0
+                       012-2h10a2
+                       2 0 012 2v14a2
+                       2 0 01-2
+                       2h-2"
                   />
                 </svg>
                 <span className="text-sm">1:1 쪽지</span>
@@ -270,17 +298,15 @@ export default function NavBar() {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       d="M3 8l7.89
-                         5.26a3 3 0
-                         003.22 0
-                         L22 8m-9 13H7
+                         5.26a3 3
+                         0 003.22
+                         0L22 8m-9
+                         13H7a2 2
+                         0 01-2-2V5
                          a2 2 0
-                         01-2-2V5
-                         a2 2 0 012-2
-                         h10a2 2 0
-                         012 2v14
-                         a2 2 0
-                         01-2 2
-                         h-2"
+                         012-2h10a2
+                         2 0 012 2v14a2
+                         2 0 01-2 2h-2"
                     />
                   </svg>
                   <span className="text-sm">제휴문의</span>
@@ -304,18 +330,26 @@ export default function NavBar() {
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    d="M15.75 9V5.25A2.25 2.25
-                       0 0013.5 3h-7.5A2.25
-                       2.25 0 003.75 5.25
-                       v13.5A2.25 2.25 0
-                       006 21h7.5a2.25
+                    d="M15.75
+                       9V5.25A2.25
+                       2.25 0
+                       0013.5
+                       3h-7.5A2.25
+                       2.25 0
+                       003.75
+                       5.25v13.5A2.25
+                       2.25 0
+                       006
+                       21h7.5a2.25
                        2.25 0
                        002.25-2.25V15"
                   />
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    d="M9 9l6 3-6 3V9z"
+                    d="M9
+                       9l6 3-6
+                       3V9z"
                   />
                 </svg>
                 <span className="text-sm">로그인</span>
@@ -332,17 +366,21 @@ export default function NavBar() {
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    d="M12 8c1.657
-                       0 3 .843
-                       3 1.882v4.235
+                    d="M12
+                       8c1.657
+                       0 3
+                       .843 3
+                       1.882v4.235
                        c0 1.04-1.343
-                       1.883-3 1.883
-                       s-3-.843
-                       -3-1.883
+                       1.883-3
+                       1.883s-3
+                       -.843-3-1.883
                        v-4.235
-                       C9 8.843
-                       10.343 8
-                       12 8z"
+                       C9
+                       8.843
+                       10.343
+                       8 12
+                       8z"
                   />
                   <path
                     strokeLinecap="round"
@@ -362,8 +400,9 @@ export default function NavBar() {
                        13l-2.293
                        -2.293a1 1
                        0 011.414
-                       -1.414L14
-                       11.586l2.293-2.293z"
+                       -1.414
+                       L14 11.586l2.293
+                       -2.293z"
                   />
                 </svg>
                 <span className="text-sm">나의활동</span>
@@ -381,21 +420,25 @@ export default function NavBar() {
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      d="M3 8l7.89
-                         5.26a3 3
-                         0
-                         003.22 0
-                         L22 8
-                         m-9 13H7
-                         a2 2 0
-                         01-2-2V5
-                         a2 2 0 012-2
+                      d="M3
+                         8l7.89
+                         5.26a3
+                         3 0
+                         003.22
+                         0L22
+                         8m-9
+                         13H7a2
+                         2 0
+                         01-2
+                         -2V5a2
+                         2 0
+                         012-2
                          h10a2 2
-                         0
-                         012 2v14
-                         a2 2 0
-                         01-2 2
-                         h-2"
+                         0 012
+                         2v14a2
+                         2 0
+                         01-2
+                         2h-2"
                     />
                   </svg>
                   <span className="text-sm">제휴문의</span>
@@ -408,8 +451,8 @@ export default function NavBar() {
 
       {/* 하단 바 (카테고리 메뉴) */}
       <div className="border-t border-gray-200 bg-white">
-        <div className="mx-auto flex max-w-7xl items-center px-6 py-2 space-x-4 relative">
-          {/* 전체 카테고리 버튼 (메가메뉴 토글) */}
+        <div className="relative mx-auto flex max-w-7xl items-center space-x-4 px-6 py-2">
+          {/* 전체 카테고리 버튼 */}
           <button
             className="flex items-center space-x-1 text-gray-700 hover:text-red-500"
             onClick={toggleMegaMenu}
@@ -428,7 +471,7 @@ export default function NavBar() {
             </svg>
           </button>
 
-          {/* 기존 단일 메뉴 항목들 */}
+          {/* 기존 단일 메뉴 링크들 */}
           <Link href="/board/전체/전체" className="text-gray-700 hover:text-red-500">
             지역별 샵
           </Link>
@@ -438,20 +481,22 @@ export default function NavBar() {
           <Link href="/near-me" className="text-gray-700 hover:text-red-500">
             내주변
           </Link>
-          <Link href="/home-care" className="text-gray-700 hover:text-red-500">
+          <Link
+            href="/board/홈케어-방문관리/전체"
+            className="text-gray-700 hover:text-red-500"
+          >
             홈케어
           </Link>
           <Link href="/community" className="text-gray-700 hover:text-red-500">
             커뮤니티
           </Link>
 
-          {/* 메가메뉴 드롭다운 (z-50 추가!) */}
           {showMegaMenu && (
             <div
-              className="absolute left-0 top-full mt-2 w-full bg-white border border-gray-200 shadow-lg z-50"
+              className="z-50 absolute left-0 top-full mt-2 w-full border border-gray-200 bg-white shadow-lg"
             >
-              <div className="mx-auto max-w-7xl px-6 py-4 grid grid-cols-4 gap-4">
-                {/* 지역별 샵 (슬러그 처리된 Link) */}
+              <div className="mx-auto grid max-w-7xl grid-cols-4 gap-4 px-6 py-4">
+                {/* 예: 지역별 샵 */}
                 <div>
                   <h2 className="mb-2 font-semibold text-red-500">지역별 샵</h2>
                   <ul className="space-y-1 text-sm text-gray-700">

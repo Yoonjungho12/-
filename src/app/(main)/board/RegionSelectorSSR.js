@@ -7,8 +7,10 @@ import Link from "next/link";
  *
  * - DB 대신, 지역(REGIONS) / 테마(THEMES)를 하드코딩
  * - 상위 지역, 하위 지역, 테마 각각 "전체"를 포함
+ * - "홈케어/방문관리" (id=12) 제거
+ * - 상위 지역 표는 6칸씩, 하위 지역 표는 7칸씩, 테마는 9칸씩 나눔
  * - 클릭 시 /board/[regionSlug]/[themeName] 라우팅
- * - SSR 전용이므로 "use client"도 없고, useState/useEffect도 없음
+ * - SSR 전용(서버 컴포넌트)
  */
 
 // ─────────────────────────────────────────────────────────
@@ -19,7 +21,7 @@ import Link from "next/link";
  * REGIONS:
  *  - parent_id가 null → 상위 카테고리
  *  - region_slug → URL에서 쓰이는 슬러그 (예: "강남-서초-송파")
- *  - 아래 테이블은 id=1~100까지 전부 삽입 (사용자님이 주신 표 그대로)
+ *  - 아래 테이블은 id=1~100 중 "홈케어/방문관리"(id=12)와 그 하위(98, 99, 100)는 제거!
  */
 const REGIONS = [
   { id: 1,   name: "강남/서초/송파",           parent_id: null, sort_order: 1,  region_slug: "강남-서초-송파" },
@@ -33,7 +35,7 @@ const REGIONS = [
   { id: 9,   name: "대전/천안/세종/충청/강원",     parent_id: null, sort_order: 9,  region_slug: "대전-천안-세종-충청-강원" },
   { id: 10,  name: "부산/대구/울산/경상도/전라도/광주", parent_id: null, sort_order: 10, region_slug: "부산-대구-울산-경상도-전라도-광주" },
   { id: 11,  name: "제주도",                  parent_id: null, sort_order: 11, region_slug: "제주도" },
-  { id: 12,  name: "홈케어/방문관리",             parent_id: null, sort_order: 12, region_slug: "홈케어-방문관리" },
+  // (id: 12, 홈케어/방문관리)는 제거
 
   { id: 13,  name: "강남구",                parent_id: 1,  sort_order: 1,  region_slug: "강남구" },
   { id: 14,  name: "서초구",                parent_id: 1,  sort_order: 2,  region_slug: "서초구" },
@@ -120,9 +122,7 @@ const REGIONS = [
   { id: 95,  name: "광주",                parent_id: 10, sort_order: 8,  region_slug: "광주" },
   { id: 96,  name: "제주시",               parent_id: 11, sort_order: 1,  region_slug: "제주시" },
   { id: 97,  name: "서귀포시",              parent_id: 11, sort_order: 2,  region_slug: "서귀포시" },
-  { id: 98,  name: "서울홈케어",            parent_id: 12, sort_order: 1,  region_slug: "서울홈케어" },
-  { id: 99,  name: "경기홈케어",            parent_id: 12, sort_order: 2,  region_slug: "경기홈케어" },
-  { id: 100, name: "인천홈케어",            parent_id: 12, sort_order: 3,  region_slug: "인천홈케어" },
+  // (id: 98~100) 홈케어 하위도 제거
 ];
 
 /**
@@ -163,6 +163,7 @@ export default function RegionSelectorSSR({ regionSlug, themeName }) {
 
   // ─────────────────────────────────────────────────────
   // (A) 상위 지역 목록 + "전체"
+  // (홈케어 id=12 제거됨)
   // ─────────────────────────────────────────────────────
   const parentRegions = REGIONS.filter((r) => r.parent_id === null)
     .sort((a, b) => a.sort_order - b.sort_order);
@@ -272,20 +273,20 @@ export default function RegionSelectorSSR({ regionSlug, themeName }) {
   // (F) 실제 렌더링
   // ─────────────────────────────────────────────────────
   return (
-    <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
+    <div style={{ maxWidth: "1000px", margin: "0 auto" }} >
       {/* ─ 상단 안내 ─ */}
-      <h2 style={{ textAlign: "center" }}>지역별 샵 선택 (SSR)</h2>
-      <p style={{ color: "#666", marginBottom: "1rem", textAlign: "center" }}>
-        (DB 없이 하드코딩된 데이터를 서버에서 렌더링)
+      <h2 className="font-bold text-2xl mt-5" >지역별 샵 선택</h2>
+      <p style={{ color: "#666", marginBottom: "1rem"}} className="text-lg">
+       인기있는 지역들을 보기쉽게 모아놨어요!
       </p>
 
-      {/* ─ 상위 지역 (7칸씩) ─ */}
+      {/* ─ 상위 지역 (6칸씩!) ─ */}
       {topItems.length === 0 ? (
-        <p style={{ textAlign: "center" }}>상위 지역이 없습니다.</p>
+     <></>
       ) : (
         <table style={tableStyle}>
           <tbody>
-            {chunkArray(topItems, 7).map((rowItems, rowIdx) => (
+            {chunkArray(topItems, 6).map((rowItems, rowIdx) => (
               <tr key={rowIdx}>
                 {rowItems.map((item) => {
                   const isSelected = selectedParentId === item.id;
@@ -310,10 +311,10 @@ export default function RegionSelectorSSR({ regionSlug, themeName }) {
           <>
             {selectedParentId === 0 ? (
               // 상위 = "전체" → 하위 X
-              <p style={{ textAlign: "center" }}>하위 지역이 없습니다.</p>
+              <></>
             ) : childItems.length === 0 ? (
               // 하위 목록이 전혀 없음
-              <p style={{ textAlign: "center" }}>하위 지역이 없습니다.</p>
+            <></>
             ) : (
               // 하위 목록 존재
               <table style={tableStyle}>
@@ -341,8 +342,8 @@ export default function RegionSelectorSSR({ regionSlug, themeName }) {
       </div>
 
       {/* ─ 테마 선택 (9칸씩) ─ */}
-      <h2 style={{ textAlign: "center" }}>테마별 샵 선택 (SSR)</h2>
-      <p style={{ color: "#666", marginBottom: "1rem", textAlign: "center" }}>
+      <h2 className="text-2xl font-bold">테마별 샵 선택</h2>
+      <p style={{ color: "#666", marginBottom: "1rem"}} className="text-lg">
         원하는 테마를 골라보세요!
       </p>
 

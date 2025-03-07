@@ -29,7 +29,6 @@ function loadKakaoMapScript(callback) {
   // SSR 환경이면 종료
   if (typeof window === "undefined") return;
 
-  // .env 설정 확인
   const KAKAO_APP_KEY = process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY;
   if (!KAKAO_APP_KEY) {
     console.error("Kakao Map Key is not defined. Check .env file.");
@@ -76,15 +75,17 @@ function getDistanceFromLatLng(lat1, lng1, lat2, lng2) {
  */
 export default function NearMeListPage() {
   const mapRef = useRef(null);         // 지도 컨테이너 ref
+  const markerRef = useRef(null);      // "내 위치" 마커 ref
   const searchInputRef = useRef(null); // 주소 검색창 ref
 
+  // 지도 객체
   const [mapObj, setMapObj] = useState(null);
 
-  // 사용자 실제 위치 (geolocation)
+  // 사용자 첫 위치 (geolocation)
   const [userLat, setUserLat] = useState(null);
   const [userLng, setUserLng] = useState(null);
 
-  // 지도 중심 (드래그 / 검색 등으로 바뀔 수 있음)
+  // "현재 중심점" = 마커 위치
   const [centerLat, setCenterLat] = useState(null);
   const [centerLng, setCenterLng] = useState(null);
 
@@ -95,7 +96,9 @@ export default function NearMeListPage() {
   // 사용자 현재 주소 (reverse geocoding)
   const [address, setAddress] = useState("");
 
-  // ① 브라우저에서 geolocation으로 내 위치 가져오기
+  // ─────────────────────────────────────────────────────
+  // ① 브라우저에서 geolocation으로 내 위치 가져오기 (최초)
+  // ─────────────────────────────────────────────────────
   useEffect(() => {
     if (!navigator.geolocation) {
       alert("위치 기반 서비스를 지원하지 않는 브라우저입니다.");
@@ -115,7 +118,9 @@ export default function NearMeListPage() {
     );
   }, []);
 
+  // ─────────────────────────────────────────────────────
   // ② Supabase에서 partnershipsubmit 테이블 조회
+  // ─────────────────────────────────────────────────────
   useEffect(() => {
     async function fetchShops() {
       const { data, error } = await supabase
@@ -139,7 +144,9 @@ export default function NearMeListPage() {
     fetchShops();
   }, []);
 
+  // ─────────────────────────────────────────────────────
   // ③ 지도 초기화 (userLat/userLng 확보 후)
+  // ─────────────────────────────────────────────────────
   useEffect(() => {
     if (userLat && userLng) {
       loadKakaoMapScript(() => {
@@ -148,7 +155,9 @@ export default function NearMeListPage() {
     }
   }, [userLat, userLng]);
 
-  // 실제 지도 생성 + dragend 핸들러
+  // ─────────────────────────────────────────────────────
+  // 지도 생성 + 이벤트 (click/dragend) + 초기 마커
+  // ─────────────────────────────────────────────────────
   function initMap(lat, lng) {
     if (!window.kakao || !window.kakao.maps) return;
 
@@ -161,26 +170,68 @@ export default function NearMeListPage() {
     const map = new window.kakao.maps.Map(container, options);
     setMapObj(map);
 
+    // "내 위치" 마커
+    const markerPosition = new kakao.maps.LatLng(lat, lng);
+    const marker = new window.kakao.maps.Marker({ position: markerPosition });
+    marker.setMap(map);
+    markerRef.current = marker;
+
     // 초기 주소 변환
     convertCoordToAddress(lng, lat, (addr) => {
       setAddress(addr);
     });
 
-    // 내 위치 마커
-    const marker = new window.kakao.maps.Marker({
-      position: new window.kakao.maps.LatLng(lat, lng),
-    });
-    marker.setMap(map);
+    // (A) 지도 클릭 => 마커 이동 + 주소/필터
+    kakao.maps.event.addListener(map, "click", (mouseEvent) => {
+      const latlng = mouseEvent.latLng;
+      const clickedLat = latlng.getLat();
+      const clickedLng = latlng.getLng();
 
-    // 드래그 끝나면 지도 중심 좌표 갱신
+      // 마커 이동
+      moveMarker(clickedLat, clickedLng);
+      // state 업데이트
+      setCenterLat(clickedLat);
+      setCenterLng(clickedLng);
+
+      // 주소 변환
+      convertCoordToAddress(clickedLng, clickedLat, (addr) => {
+        setAddress(addr);
+      });
+
+      // 30km 필터
+      filterShopsByDistance(clickedLat, clickedLng);
+    });
+
+    // (B) 지도 드래그 끝 => 지도 중심 = 새 위치 => 마커 이동 + 주소/필터
     kakao.maps.event.addListener(map, "dragend", () => {
       const center = map.getCenter();
-      setCenterLat(center.getLat());
-      setCenterLng(center.getLng());
+      const newLat = center.getLat();
+      const newLng = center.getLng();
+
+      // 마커 이동
+      moveMarker(newLat, newLng);
+      // state 업데이트
+      setCenterLat(newLat);
+      setCenterLng(newLng);
+
+      // 주소 변환
+      convertCoordToAddress(newLng, newLat, (addr) => {
+        setAddress(addr);
+      });
+
+      // 30km 필터
+      filterShopsByDistance(newLat, newLng);
     });
   }
 
-  // 위/경도를 주소로 변환
+  // 마커 이동
+  function moveMarker(lat, lng) {
+    if (!markerRef.current) return;
+    const newPosition = new kakao.maps.LatLng(lat, lng);
+    markerRef.current.setPosition(newPosition);
+  }
+
+  // (공통) 위/경도를 주소로 변환
   function convertCoordToAddress(lng, lat, callback) {
     if (!window.kakao || !window.kakao.maps) return;
     const geocoder = new window.kakao.maps.services.Geocoder();
@@ -194,7 +245,9 @@ export default function NearMeListPage() {
     });
   }
 
-  // ④ 30km 내 필터링 (처음엔 userLat, userLng 기준)
+  // ─────────────────────────────────────────────────────
+  // ④ 초기에 userLat/userLng 기준 30km 필터
+  // ─────────────────────────────────────────────────────
   useEffect(() => {
     if (userLat && userLng && shops.length > 0) {
       filterShopsByDistance(userLat, userLng);
@@ -221,7 +274,7 @@ export default function NearMeListPage() {
     filterShopsByDistance(centerLat, centerLng);
   }
 
-  // (추가) 검색창: 입력한 주소 -> 지도 중심 이동
+  // (추가) 검색창: 입력한 주소 -> 지도/마커 이동
   function handleSearchAddress() {
     const keyword = searchInputRef.current?.value.trim();
     if (!keyword) {
@@ -242,18 +295,33 @@ export default function NearMeListPage() {
         const newLat = result[0].y;
         // 지도 중심 갱신
         setCenterLat(newLat);
-        setCenterLng(newLng);
+        setCenterLng(newLat);
+
+        // 마커 이동
+        moveMarker(newLat, newLng);
+
         // 지도 이동
         const moveLatLng = new window.kakao.maps.LatLng(newLat, newLng);
         mapObj.setCenter(moveLatLng);
+
         // 주소 표시
         convertCoordToAddress(newLng, newLat, (addr) => {
           setAddress(addr);
         });
+
+        // 필터
+        filterShopsByDistance(newLat, newLng);
       } else {
         alert("해당 주소를 찾지 못했어요!");
       }
     });
+  }
+
+  // 검색창에서 Enter 키 누르면 검색
+  function handleKeyDown(e) {
+    if (e.key === "Enter") {
+      handleSearchAddress();
+    }
   }
 
   return (
@@ -268,7 +336,8 @@ export default function NearMeListPage() {
 
       <p className="text-sm text-center text-gray-500 mb-4">
         내 주변 가까운 순으로 샵 리스트를 소개해 드릴게요. <br/>
-        지도에서 직접 위치를 선택하시거나 주소 검색을 통해도 이동 가능합니다!
+        지도에서 직접 위치를 선택하시거나, 드래그해서 옮기거나,<br/>
+        주소 검색으로 이동해도 즉시 30km 필터가 적용됩니다!
       </p>
 
       {/* 지도 */}
@@ -276,11 +345,12 @@ export default function NearMeListPage() {
         <div ref={mapRef} className="w-full h-72 bg-gray-200 rounded" />
       </div>
 
-      {/* (추가) 검색창 */}
+      {/* 검색창 */}
       <div className="flex items-center gap-2 mb-4">
         <input
           type="text"
           ref={searchInputRef}
+          onKeyDown={handleKeyDown} // 엔터 입력
           className="flex-1 border border-gray-300 rounded px-2 py-1"
           placeholder="예) 서울 강남구 역삼동..."
         />
@@ -342,8 +412,8 @@ export default function NearMeListPage() {
           <ShopCard
             key={shop.id}
             shop={shop}
-            userLat={userLat}
-            userLng={userLng}
+            userLat={centerLat} // 현재 중심을 기준으로 거리 계산
+            userLng={centerLng}
           />
         ))}
       </div>
@@ -353,14 +423,18 @@ export default function NearMeListPage() {
 
 /** 
  * (4) ShopCard: 카드 클릭 시 `/board/details/${id}-${createSlug(company_name)}` 로 이동
+ * 거리 계산 시 "현재 중심점(centerLat/centerLng)"을 기준
  */
 function ShopCard({ shop, userLat, userLng }) {
   // 썸네일 경로
   const url = `https://vejthvawsbsitttyiwzv.supabase.co/storage/v1/object/public/gunma/${shop.thumbnail_url}`;
 
   // 거리 계산
-  let dist = getDistanceFromLatLng(userLat, userLng, shop.lat, shop.lng);
-  if (dist < 0.05) dist = 0;
+  let dist = 99999;
+  if (userLat && userLng && shop.lat && shop.lng) {
+    dist = getDistanceFromLatLng(userLat, userLng, shop.lat, shop.lng);
+  }
+  if (dist < 0.05) dist = 0; // 50m 이하 → 0km로 표시
   const distanceStr = dist.toFixed(1) + "Km";
 
   // 디테일 링크
