@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Mainone from "../components/main/main1";
-import RecommendedShops from "@/components/main/recommendedShop";
+import RecommendedShopsServer from "@/components/main/RecommendedShopsServer";
 import NewArrivalsSection from "@/components/main/newbie";
 import Footer from "@/components/Footer";
 import MainoneServer from "@/components/main/MainoneServer";
@@ -32,7 +32,7 @@ export default function Home() {
       </div>
 
      <MainoneServer />
-      <RecommendedShops />
+     <RecommendedShopsServer />
       <NewArrivalsSection />
 
     </div>
