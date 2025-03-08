@@ -1,7 +1,7 @@
-// 예: app/components/main/RecommendedShopsClient.jsx
 "use client";
 import React, { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { supabase } from "@/lib/supabaseF";
 
 export default function RecommendedShopsClient({
@@ -104,35 +104,101 @@ export default function RecommendedShopsClient({
           })}
         </div>
 
-        {/* 카드 그리드 */}
-        <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
-          {shops.map((shop) => (
+        {/* 
+          (A) 모바일(<640px) 슬라이드 
+          (B) 데스크톱(≥640px) 그리드 
+        */}
+        <div className="mt-8">
+          {/* (A) 모바일 슬라이드 */}
+          <div className="block sm:hidden px-2">
             <div
-              key={shop.id}
-              className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow"
+              className="
+                flex
+                overflow-x-auto
+                gap-6
+                snap-x snap-mandatory
+              "
+              style={{ scrollBehavior: "smooth" }}
             >
-              <div className="h-[153px] w-[263px] mx-auto overflow-hidden mt-4 rounded-xl">
-                <Image
-                  src={shop.imgSrc}
-                  alt={shop.title}
+              {shops.map((shop) => (
+                <Link
+                  key={shop.id}
+                  href={`/board/details/${shop.id}`}
+                  className="
+                    shrink-0 
+                    snap-start
+                    w-[260px]
+                    overflow-hidden
+                    rounded-xl border border-gray-200 bg-white shadow
+                    focus-within:ring-2 focus-within:ring-blue-500
+                  "
+                >
+                  <div className="w-[240px] h-[130px] mx-auto mt-3 overflow-hidden rounded-xl">
+                    <Image
+                      src={shop.imgSrc}
+                      alt={shop.title}
+                      width={240}
+                      height={130}
+                      style={{ objectFit: "cover" }}
+                      quality={30}
+                      priority
+                      className="rounded-xl"
+                      sizes="240px"
+                    />
+                  </div>
+                  <div className="p-4 w-[260px] box-border">
+                    <h3 className="mb-1 text-base font-semibold text-gray-800">
+                      {shop.title}
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      {shop.address}
+                    </p>
+                    <p className="mt-1 text-xs text-gray-500">
+                      리뷰 {shop.reviewCount}
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* (B) 데스크톱 그리드 */}
+          <div className="hidden sm:grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+            {shops.map((shop) => (
+              <Link
+                key={shop.id}
+                href={`/board/details/${shop.id}`}
+                className="
+                  block
+                  overflow-hidden
+                  rounded-xl border border-gray-200
+                  bg-white shadow
+                  focus-within:ring-2 focus-within:ring-blue-500
+                "
+              >
+                <div className="h-[153px] w-[263px] mx-auto mt-4 overflow-hidden rounded-xl">
+                  <Image
+                    src={shop.imgSrc}
+                    alt={shop.title}
                     width={263}
                     height={153}
                     style={{ objectFit: "cover" }}
                     quality={30}
                     priority
-                />
-              </div>
-              <div className="p-4">
-                <h3 className="mb-1 text-base font-semibold text-gray-800">
-                  {shop.title}
-                </h3>
-                <p className="text-sm text-gray-600">{shop.address}</p>
-                <p className="mt-1 text-xs text-gray-500">
-                  리뷰 {shop.reviewCount}
-                </p>
-              </div>
-            </div>
-          ))}
+                  />
+                </div>
+                <div className="p-4">
+                  <h3 className="mb-1 text-base font-semibold text-gray-800">
+                    {shop.title}
+                  </h3>
+                  <p className="text-sm text-gray-600">{shop.address}</p>
+                  <p className="mt-1 text-xs text-gray-500">
+                    리뷰 {shop.reviewCount}
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
     </section>
