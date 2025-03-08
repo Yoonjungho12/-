@@ -322,6 +322,7 @@ export default function PopularShops() {
                     height={300}
                     style={{ objectFit: "cover" }}
                       quality={70}
+                      sizes="(max-width: 768px) 100vw, 400px" 
                   priority
                   />
                 </div>
