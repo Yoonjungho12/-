@@ -112,31 +112,34 @@ export default function NavBar() {
   // ─────────────────────────────────────────────────────
   return (
     <header className="w-full border-b border-gray-200 bg-white">
-      {/* 
-        (A) 모바일 전용 상단바 
-        - md:hidden : md 사이즈 미만에서만 보임 
-        - 로고 + 검색바만 표시
+      {/*
+        (A) 모바일 전용 상단바
+        - md:hidden : md 사이즈 미만에서만 보임
+        - 로고 + 넓은 검색창 (space-x-3로 로고와 검색창 사이 띄움)
       */}
-      <div className="flex items-center justify-between px-4 py-3 md:hidden">
+      <div className="flex items-center px-4 py-3 md:hidden space-x-3">
         {/* 로고 */}
         <Link href="/">
-          <div className="flex items-center space-x-1 text-xl font-bold text-red-500">
+          <div className="flex items-center space-x-1 mr-10 ml-3 text-xl font-bold text-red-500">
             <span>여기닷</span>
-
           </div>
         </Link>
 
-        {/* 검색창 (모바일에선 아이콘만? 혹은 바로 인풋?) */}
-        <div className="relative w-40">
+        {/* 검색창 */}
+        <div className="relative flex-1">
           <input
             type="text"
             placeholder="검색"
-            className="w-full rounded-full border border-red-300 py-2 pl-4 pr-8
-                       text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
+            className="
+              w-full rounded-full border border-red-300
+              py-3 pl-4 pr-9
+              text-base
+              focus:outline-none focus:ring-2 focus:ring-red-400
+            "
             onKeyDown={handleSearchKeyDown}
           />
           <svg
-            className="absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-red-400"
+            className="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-red-400"
             fill="none"
             stroke="currentColor"
             strokeWidth="2"
@@ -148,9 +151,9 @@ export default function NavBar() {
         </div>
       </div>
 
-      {/* 
-        (B) PC 해상도 상단바 
-        - hidden md:flex : md 이상에서만 보임 
+      {/*
+        (B) PC 해상도 상단바
+        - hidden md:flex : md 이상에서만 보임
         - 로고 + 검색창 + 오른쪽 아이콘들
       */}
       <div className="mx-auto hidden max-w-7xl items-center justify-between px-6 py-3 md:flex">
@@ -158,7 +161,6 @@ export default function NavBar() {
         <Link href="/">
           <div className="flex items-center space-x-2 text-2xl font-bold text-red-500">
             <span>여기닷</span>
-
           </div>
         </Link>
 
@@ -208,7 +210,8 @@ export default function NavBar() {
                        2.25 0
                        003.75 5.25v13.5A2.25
                        2.25 0
-                       006 21h7.5a2.25
+                       006
+                       21h7.5a2.25
                        2.25 0
                        002.25-2.25V15"
                   />
@@ -506,16 +509,14 @@ export default function NavBar() {
 
       {/* 
         하단 바 (카테고리 메뉴) 
-        ─────────────────────────────────────────────────────
         ※ 여기서 모바일/PC 구분 없이 다 보이게 하고, 
-           "전체 카테고리" 버튼만 모바일에서 숨김
+          "전체 카테고리" 버튼만 모바일에서 숨김
       */}
       <div className="border-t border-gray-200 bg-white">
         <div className="relative mx-auto flex max-w-7xl items-center space-x-4 px-6 py-2">
           {/* 전체 카테고리 버튼 (모바일에선 숨김, md 이상에서만 표시) */}
           <button
-            className="hidden md:flex items-center space-x-1 text-gray-700 hover:text-red-500" 
-            // <-- 여기!!
+            className="hidden md:flex items-center space-x-1 text-gray-700 hover:text-red-500"
             onClick={toggleMegaMenu}
           >
             <span className="font-medium">전체 카테고리</span>
@@ -555,7 +556,7 @@ export default function NavBar() {
             커뮤니티
           </Link>
 
-          {/* 아래의 showMegaMenu는 PC에서만 의미가 있음 (모바일엔 안 보이니까) */}
+          {/* MegaMenu (PC용) */}
           {showMegaMenu && (
             <div
               className="absolute left-0 top-full z-50 mt-2 w-full border
