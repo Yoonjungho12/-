@@ -232,12 +232,18 @@ export default function PopularShops() {
                 className="block overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm
                            focus-within:ring-2 focus-within:ring-blue-500"
               >
+                {/* 
+                  여기서 loading="eager"를 명시하면
+                  이 이미지는 화면에 노출 여부와 상관없이 
+                  즉시 로드됩니다 (lazy X)
+                */}
                 <Image
                   src={imageUrl}
                   alt={`${item.company_name || item.post_title} 썸네일`}
                   width={400}
                   height={300}
                   style={{ objectFit: "cover" }}
+                  loading="eager" // ★ 지연 로딩 비활성
                 />
 
                 <div className="p-4">

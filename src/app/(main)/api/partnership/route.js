@@ -92,6 +92,11 @@ export async function POST(request) {
   }
 }
 
+
+
+
+
+
 /** PUT: 기존 파트너십 신청서 수정 */
 export async function PUT(request) {
   try {
