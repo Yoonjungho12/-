@@ -4,6 +4,20 @@ import Image from "next/image";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseF";
 
+// (1) 간단한 스켈레톤 카드 컴포넌트
+function ShopCardSkeleton() {
+  return (
+    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm animate-pulse">
+      {/* 이미지 자리 */}
+      <div className="min-h-[300px] w-full bg-gray-200" />
+      <div className="p-4">
+        <div className="mb-2 h-4 w-3/4 bg-gray-200" />
+        <div className="h-4 w-1/2 bg-gray-200" />
+      </div>
+    </div>
+  );
+}
+
 // 특정 지역명 치환 함수 (원한다면 사용, 필요 없으면 주석/삭제 가능)
 function rewriteSpecialProvince(original) {
   switch (original) {
@@ -75,6 +89,7 @@ export default function PopularShops() {
   // Supabase Fetch
   // -----------------------------
   const [shopList, setShopList] = useState([]);
+  const [isLoading, setIsLoading] = useState(false); // 스켈레톤 표시용
 
   // ★ 처음 마운트 시 자동으로 "서울" 탭 로드
   useEffect(() => {
@@ -83,6 +98,9 @@ export default function PopularShops() {
 
   async function handleClickRegion(region) {
     setSelectedRegion(region);
+
+    // 로딩 시작!
+    setIsLoading(true);
 
     // 지역명 치환
     const replaced = rewriteSpecialProvince(region);
@@ -113,6 +131,9 @@ export default function PopularShops() {
         config: "simple",
       });
 
+    // 로딩 종료 시점
+    setIsLoading(false);
+
     if (error) {
       console.error("DB fetch error:", error);
       alert("데이터 로드 오류가 발생했습니다.");
@@ -120,12 +141,69 @@ export default function PopularShops() {
     }
 
     // 최대 8개만
-    const sliced = data.slice(0, 8);
+    const sliced = (data || []).slice(0, 8);
     setShopList(sliced);
   }
 
   // -----------------------------
-  // Render
+  // 스켈레톤 표시 구간
+  // -----------------------------
+  if (isLoading) {
+    return (
+      <div className="w-full bg-white">
+        {/* 상단 타이틀 */}
+        <div className="mx-auto max-w-5xl px-4 pt-8">
+          <h2 className="text-center text-2xl font-bold">
+            건마 1인샵 스웨디시 마사지 인기 순위
+            <span className="ml-2 text-red-600" aria-hidden="true">❤️</span>
+          </h2>
+          <p className="mt-2 text-center text-gray-700">
+            실시간 많은 회원들이 보고있는 업체를 소개합니다
+          </p>
+        </div>
+
+        {/* 지역 탭 (슬라이드형) */}
+        <div className="mx-auto mt-6 max-w-5xl px-4">
+          <div className="relative overflow-hidden rounded border border-gray-300 shadow-sm">
+            {/* 탭 목록 */}
+            <ul className="flex w-full">
+              {visibleTabs.map((region, idx) => {
+                const isSelected = selectedRegion === region;
+                return (
+                  <li key={idx} className="flex-1">
+                    <button
+                      onClick={() => handleClickRegion(region)}
+                      className={
+                        isSelected
+                          ? "block w-full h-full bg-red-600 px-4 py-2 text-center text-white hover:bg-red-700"
+                          : "block w-full h-full bg-gray-100 px-4 py-2 text-center text-gray-700 hover:bg-gray-200"
+                      }
+                      aria-label={`${region} 지역 선택`}
+                    >
+                      {region}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+            {/* 왼쪽/오른쪽 화살표 버튼은 생략 가능 (loading중이라 무의미) */}
+          </div>
+        </div>
+
+        {/* 스켈레톤 카드 (8개) */}
+        <div className="mx-auto mt-6 max-w-5xl px-4 pb-8">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <ShopCardSkeleton key={i} />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // -----------------------------
+  // 실제 데이터 렌더
   // -----------------------------
   return (
     <div className="w-full bg-white">
@@ -233,18 +311,19 @@ export default function PopularShops() {
                            focus-within:ring-2 focus-within:ring-blue-500"
               >
                 {/* 
-                  여기서 loading="eager"를 명시하면
-                  이 이미지는 화면에 노출 여부와 상관없이 
-                  즉시 로드됩니다 (lazy X)
+                  (2) min-height 적용: 
+                  div 감싸서 안정된 레이아웃 높이 확보
                 */}
-                <Image
-                  src={imageUrl}
-                  alt={`${item.company_name || item.post_title} 썸네일`}
-                  width={400}
-                  height={300}
-                  style={{ objectFit: "cover" }}
-                  loading="eager" // ★ 지연 로딩 비활성
-                />
+                <div className="min-h-[300px] w-full overflow-hidden">
+                  <Image
+                    src={imageUrl}
+                    alt={`${item.company_name || item.post_title} 썸네일`}
+                    width={400}
+                    height={300}
+                    style={{ objectFit: "cover" }}
+                    // loading="eager" // 여전히 원하는 경우 지연 로딩 꺼도 됩니다.
+                  />
+                </div>
 
                 <div className="p-4">
                   <h3 className="mb-1 text-base font-semibold text-gray-900">
