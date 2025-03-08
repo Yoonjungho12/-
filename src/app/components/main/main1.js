@@ -321,7 +321,8 @@ export default function PopularShops() {
                     width={400}
                     height={300}
                     style={{ objectFit: "cover" }}
-                    // loading="eager" // 여전히 원하는 경우 지연 로딩 꺼도 됩니다.
+                      quality={70}
+                //   loading="eager" 
                   />
                 </div>
 

@@ -113,7 +113,8 @@ export default function RecommendedShops() {
                   width={400}      // 원하는 가로 사이즈
                   height={300}     // 원하는 세로 사이즈
                   style={{ objectFit: "cover" }}
-                  // Next.js 13에서 domain 허용 필요: next.config.js → images.domains
+                    quality={70}
+                    loading="eager" 
                 />
               </div>
 

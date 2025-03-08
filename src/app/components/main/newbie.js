@@ -80,7 +80,8 @@ export default function NewArrivalsSection() {
                   width={400}
                   height={300}
                   style={{ objectFit: "cover" }}
-                  // 외부 도메인(supabase.co) 사용 시, next.config.js에 domains 설정 필요
+                    quality={70}
+                    loading="eager" 
                 />
               </div>
 
