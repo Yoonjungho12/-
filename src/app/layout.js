@@ -1,7 +1,7 @@
 // src/app/layout.js (또는 /app/(main)/layout.js 등, 루트 레이아웃 위치)
 // ESM 형식
 import "./globals.css";
-
+import MobileBottomNav from "./components/MobileNavigation";
 
 // (선택) 폰트 불러오기
 import { Geist, Geist_Mono } from "next/font/google";
@@ -29,7 +29,12 @@ export default function RootLayout({ children }) {
     <html lang="ko">
       <body className={geist.className}>
         {children}
+            <div className="block md:hidden">
+        <MobileBottomNav />
+      </div>
       </body>
+
     </html>
+    
   );
 }

@@ -14,9 +14,7 @@ export default function Home({ children }) {
         - 그 미만에서는 숨기는 반대 식이므로,
         모바일에서만 보이게 하려면 "block md:hidden"
       */}
-      <div className="block md:hidden">
-        <MobileBottomNav />
-      </div>
+
     </>
   );
 }
