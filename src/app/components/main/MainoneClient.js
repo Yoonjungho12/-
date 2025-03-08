@@ -349,6 +349,7 @@ export default function MainoneClient({
                             quality={30}
                             priority
                             className="rounded-2xl"
+                            sizes="263px" 
                         />
                         </div>
 
