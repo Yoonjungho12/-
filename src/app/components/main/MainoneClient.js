@@ -8,7 +8,6 @@ import { supabase } from "@/lib/supabaseF";
 function ShopCardSkeleton() {
   return (
     <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm animate-pulse">
-      {/* 이미지 자리 */}
       <div className="min-h-[300px] w-full bg-gray-200" />
       <div className="p-4">
         <div className="mb-2 h-4 w-3/4 bg-gray-200" />
@@ -18,7 +17,7 @@ function ShopCardSkeleton() {
   );
 }
 
-// 특정 지역명 치환 함수 (원한다면 사용, 필요 없으면 주석/삭제 가능)
+// 특정 지역명 치환
 function rewriteSpecialProvince(original) {
   switch (original) {
     case "제주":
@@ -34,22 +33,14 @@ function rewriteSpecialProvince(original) {
   }
 }
 
-// ★ 클라이언트 컴포넌트
-export default function MainoneClient({
-  initialRegion,
-  initialData,
-}) {
-  // -----------------------------
-  // 지역 탭 목록
-  // -----------------------------
+export default function MainoneClient({ initialRegion, initialData }) {
+  // 지역 탭
   const regionTabs = [
     "서울", "인천", "대전", "세종", "광주", "대구", "울산", "부산",
     "경기", "강원", "충북", "충남", "전북", "전남", "경북", "경남", "제주",
   ];
 
-  // -----------------------------
-  // 탭 슬라이드 관련 로직
-  // -----------------------------
+  // 탭 슬라이드 관련
   const [showCount, setShowCount] = useState(11);
 
   useEffect(() => {
@@ -72,10 +63,8 @@ export default function MainoneClient({
 
   const [startIndex, setStartIndex] = useState(0);
 
-  // ★ 서버에서 받은 초기 지역
   const [selectedRegion, setSelectedRegion] = useState(initialRegion);
 
-  // 슬라이드용 탭 배열
   const visibleTabs = [];
   for (let i = 0; i < showCount; i++) {
     const tabIndex = (startIndex + i) % regionTabs.length;
@@ -89,22 +78,16 @@ export default function MainoneClient({
     setStartIndex((prev) => (prev + 1) % regionTabs.length);
   }
 
-  // -----------------------------
-  // Supabase Fetch (CSR)
-  // -----------------------------
-  // ★ 서버에서 받은 초깃값을 state에 넣음
+  // Supabase Fetch
   const [shopList, setShopList] = useState(initialData || []);
-  const [isLoading, setIsLoading] = useState(false); // 스켈레톤 표시용
+  const [isLoading, setIsLoading] = useState(false);
 
   async function handleClickRegion(region) {
-    // 이미 선택된 지역이면 fetch 안 함
     if (region === selectedRegion) return;
     setSelectedRegion(region);
 
-    // 로딩 시작!
     setIsLoading(true);
 
-    // 지역명 치환
     const replaced = rewriteSpecialProvince(region);
 
     const { data, error } = await supabase
@@ -133,7 +116,6 @@ export default function MainoneClient({
         config: "simple",
       });
 
-    // 로딩 종료 시점
     setIsLoading(false);
 
     if (error) {
@@ -142,18 +124,14 @@ export default function MainoneClient({
       return;
     }
 
-    // 최대 8개만
     const sliced = (data || []).slice(0, 8);
     setShopList(sliced);
   }
 
-  // -----------------------------
-  // 스켈레톤 표시 구간
-  // -----------------------------
   if (isLoading) {
     return (
       <div className="w-full bg-white">
-        {/* 상단 타이틀 */}
+        {/* 로딩 시 스켈레톤 */}
         <div className="mx-auto max-w-5xl px-4 pt-8">
           <h2 className="text-center text-2xl font-bold">
             건마 1인샵 스웨디시 마사지 인기 순위
@@ -164,34 +142,6 @@ export default function MainoneClient({
           </p>
         </div>
 
-        {/* 지역 탭 (슬라이드형) */}
-        <div className="mx-auto mt-6 max-w-5xl px-4">
-          <div className="relative overflow-hidden rounded border border-gray-300 shadow-sm">
-            {/* 탭 목록 */}
-            <ul className="flex w-full">
-              {visibleTabs.map((region, idx) => {
-                const isSelected = selectedRegion === region;
-                return (
-                  <li key={idx} className="flex-1">
-                    <button
-                      onClick={() => handleClickRegion(region)}
-                      className={
-                        isSelected
-                          ? "block w-full h-full bg-red-600 px-4 py-2 text-center text-white hover:bg-red-700"
-                          : "block w-full h-full bg-gray-100 px-4 py-2 text-center text-gray-700 hover:bg-gray-200"
-                      }
-                      aria-label={`${region} 지역 선택`}
-                    >
-                      {region}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        </div>
-
-        {/* 스켈레톤 카드 (8개) */}
         <div className="mx-auto mt-6 max-w-5xl px-4 pb-8">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
@@ -203,9 +153,7 @@ export default function MainoneClient({
     );
   }
 
-  // -----------------------------
-  // 실제 데이터 렌더
-  // -----------------------------
+  // 실제 렌더
   return (
     <div className="w-full bg-white">
       {/* 상단 타이틀 */}
@@ -219,10 +167,9 @@ export default function MainoneClient({
         </p>
       </div>
 
-      {/* 지역 탭 (슬라이드형) */}
+      {/* 지역 탭 */}
       <div className="mx-auto mt-6 max-w-7xl px-4">
         <div className="w-full relative overflow-hidden rounded border border-gray-300 shadow-sm">
-          {/* 탭 목록 */}
           <ul className="flex">
             {visibleTabs.map((region, idx) => {
               const isSelected = selectedRegion === region;
@@ -244,7 +191,7 @@ export default function MainoneClient({
             })}
           </ul>
 
-          {/* 왼쪽 화살표 버튼 */}
+          {/* 왼쪽 화살표 */}
           <button
             onClick={handlePrev}
             aria-label="이전 지역"
@@ -269,7 +216,7 @@ export default function MainoneClient({
             </svg>
           </button>
 
-          {/* 오른쪽 화살표 버튼 */}
+          {/* 오른쪽 화살표 */}
           <button
             onClick={handleNext}
             aria-label="다음 지역"
@@ -296,28 +243,20 @@ export default function MainoneClient({
         </div>
       </div>
 
-      {/* 
-        카드 목록 두 가지:
-        1) 모바일(<640px)에서 가로 슬라이드
-        2) 태블릿·데스크톱(≥640px)에서 기존 4열 그리드
-      */}
-      <div className="mx-auto mt-6 max-w-7xl px-4 pb-8">
-        {/* (A) 모바일 슬라이더 */}
-        <div className="block sm:hidden">
-          {/* 
-            - 가로 스크롤, 스크롤 스냅, 카드 하나씩 보이되 
-              다음 카드 일부가 걸쳐 보이게 예시 
-          */}
+      {/* 모바일 슬라이드 + 데스크톱 그리드 */}
+      <div className="mt-6 mx-auto max-w-7xl px-4 pb-8">
+        {/* 모바일 */}
+        <div className="block sm:hidden px-8">
           <div
             className="
-              flex 
+              flex
               overflow-x-auto
-              gap-4
+              gap-8
               snap-x snap-mandatory
             "
             style={{ scrollBehavior: "smooth" }}
           >
-            {shopList.map((item, idx) => {
+            {shopList.map((item) => {
               const imageUrl = `https://vejthvawsbsitttyiwzv.supabase.co/storage/v1/object/public/gunma/${item.thumbnail_url}`;
               const detailUrl = `/board/details/${item.id}`;
               const themeList = item.partnershipsubmit_themes || [];
@@ -328,32 +267,27 @@ export default function MainoneClient({
                   href={detailUrl}
                   className="
                     shrink-0 
-                    w-[85%]   /* 한 화면 거의 다 차지 */
+                    w-[263px]
                     snap-start
                     rounded-xl border border-gray-200 bg-white shadow-sm
                     focus-within:ring-2 focus-within:ring-blue-500
                   "
-                  /* 
-                    w-[85%]로 잡으면, 
-                    한 화면에 대략 카드 하나+옆 카드 일부가 보일 것입니다.
-                    (해상도에 따라 조정 가능) 
-                  */
                 >
-                        <div className="h-[153px] w-[263px] mx-auto overflow-hidden mt-4 rounded-xl">
-                        <Image
-                            src={imageUrl}
-                            alt={`${item.company_name || item.post_title} 썸네일`}
-                            width={263}
-                            height={153}
-                            style={{ objectFit: "cover" }}
-                            quality={30}
-                            priority
-                            className="rounded-2xl"
-                            sizes="263px" 
-                        />
-                        </div>
+                  <div className="w-[263px] h-[153px] overflow-hidden">
+                    <Image
+                      src={imageUrl}
+                      alt={`${item.company_name || item.post_title} 썸네일`}
+                      width={263}
+                      height={153}
+                      style={{ objectFit: "cover" }}
+                      quality={30}
+                      priority
+                      className="rounded-2xl"
+                      sizes="263px"
+                    />
+                  </div>
 
-                  <div className="p-4">
+                  <div className="p-4 w-[263px] box-border">
                     <h3 className="mb-1 text-base font-semibold text-gray-900">
                       {item.company_name || item.post_title}
                     </h3>
@@ -384,7 +318,7 @@ export default function MainoneClient({
           </div>
         </div>
 
-        {/* (B) 데스크톱 그리드 */}
+        {/* 데스크톱 */}
         <div className="hidden sm:grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {shopList.map((item) => {
             const imageUrl = `https://vejthvawsbsitttyiwzv.supabase.co/storage/v1/object/public/gunma/${item.thumbnail_url}`;
@@ -396,7 +330,8 @@ export default function MainoneClient({
                 key={item.id}
                 href={detailUrl}
                 className="block overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm
-                  focus-within:ring-2 focus-within:ring-blue-500"
+                  focus-within:ring-2 focus-within:ring-blue-500
+                "
               >
                 <div className="h-[153px] w-[263px] overflow-hidden mx-auto mt-4">
                   <Image
@@ -409,6 +344,7 @@ export default function MainoneClient({
                     priority
                   />
                 </div>
+
                 <div className="p-4">
                   <h3 className="mb-1 text-base font-semibold text-gray-900">
                     {item.company_name || item.post_title}
