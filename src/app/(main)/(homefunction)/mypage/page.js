@@ -3,24 +3,22 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-// Supabase 클라이언트 (예시 경로: "@/lib/supabaseClient")
-import { supabase } from "@/lib/supabaseF"; 
+import { supabase } from "@/lib/supabaseF"; // Supabase 클라이언트
 
-/**
- * 모바일 전용 마이페이지 UI 예시
- * 로그인 상태 => 닉네임, 로그아웃 버튼 노출
- * 비로그인 => "로그인을 해주세요", 로그인/회원가입 버튼 노출
- */
 export default function MyMobileUI() {
   const router = useRouter();
 
-  // (1) 로그인 세션 & 닉네임 상태
+  // 로그인 세션 & 닉네임 상태
   const [session, setSession] = useState(null);
   const [nickname, setNickname] = useState("...");
 
-  // (2) 마운트 시 세션 & 프로필(닉네임) 가져오기
+  // "가고싶다" 목록 (DB에서 가져온 데이터)
+  const [wishList, setWishList] = useState([]);
+
+  // 마운트 시 세션 & 프로필(닉네임) 가져오기
   useEffect(() => {
     async function fetchUser() {
+      // 1) 세션 확인
       const {
         data: { session },
         error: sessionError,
@@ -28,11 +26,9 @@ export default function MyMobileUI() {
       if (sessionError) {
         console.error("Session Error:", sessionError);
       }
-
-      // 세션 저장
       setSession(session);
 
-      // 로그인된 유저인 경우 → profiles 테이블에서 nickname 불러오기
+      // 2) 닉네임 불러오기
       if (session?.user) {
         try {
           const { data: profile, error: profileError } = await supabase
@@ -55,10 +51,46 @@ export default function MyMobileUI() {
     fetchUser();
   }, []);
 
-  // (3) 로그인 여부
+  // 로그인 여부
   const isLoggedIn = !!session?.user;
 
-  // (4) 로그아웃 / 로그인 / 회원가입 핸들러
+  // 세션 확인 후 "가고싶다" 목록 가져오기
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setWishList([]);
+      return;
+    }
+
+    async function fetchWishList() {
+      try {
+        // wantToGo 테이블에서 user_id가 현재 로그인한 유저인 것만 조회
+        // 그리고 partnershipsubmit 테이블의 company_name도 함께 가져오기
+        const { data, error } = await supabase
+          .from("wantToGo")
+          .select(`
+            id,
+            partnershipsubmit_id,
+            partnershipsubmit:partnershipsubmit_id (
+              company_name
+            )
+          `)
+          .eq("user_id", session.user.id);
+
+        if (error) {
+          console.error("WishList Fetch Error:", error);
+          return;
+        }
+        // 조회된 데이터를 state에 저장
+        setWishList(data || []);
+      } catch (err) {
+        console.error("Unknown Error:", err);
+      }
+    }
+
+    fetchWishList();
+  }, [isLoggedIn, session]);
+
+  // 로그아웃
   async function handleLogout() {
     const { error } = await supabase.auth.signOut();
     if (error) {
@@ -68,23 +100,30 @@ export default function MyMobileUI() {
     setSession(null); // 세션 제거
   }
 
+  // 로그인 페이지 이동
   function handleLogin() {
-    // 예: /login 페이지로 이동
     router.push("/login");
   }
 
+  // 회원가입 페이지 이동
   function handleSignup() {
-    // 예: /signup 페이지로 이동
     router.push("/signup");
   }
 
-  // (5) "가고싶다" 목록 예시
-  const [wishList, setWishList] = useState([
-    { id: 1, title: "평택 고덕 [나인스웨디시] 내상ZERO 젊은한국인..." },
-  ]);
-
-  function handleRemoveWish(id) {
-    setWishList((prev) => prev.filter((item) => item.id !== id));
+  // "가고싶다" 항목 삭제
+  async function handleRemoveWish(id) {
+    try {
+      // DB에서 해당 id 레코드 삭제
+      const { error } = await supabase.from("wantToGo").delete().eq("id", id);
+      if (error) {
+        console.error("Wish Delete Error:", error);
+        return;
+      }
+      // 로컬 state에서도 제거
+      setWishList((prev) => prev.filter((item) => item.id !== id));
+    } catch (err) {
+      console.error("Unknown Error:", err);
+    }
   }
 
   return (
@@ -218,35 +257,51 @@ export default function MyMobileUI() {
         >
           가고싶다
         </div>
-        {wishList.map((wish) => (
-          <div
-            key={wish.id}
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "0.5rem",
-            }}
-          >
-            <div style={{ fontSize: "0.9rem" }}>{wish.title}</div>
-            <button
-              onClick={() => handleRemoveWish(wish.id)}
+        {wishList.length === 0 ? (
+          <div style={{ fontSize: "0.9rem", color: "#666" }}>
+            {isLoggedIn ? "가고싶다 목록이 비어있습니다." : "로그인 후 이용해주세요."}
+          </div>
+        ) : (
+          wishList.map((wish) => (
+            <div
+              key={wish.id}
               style={{
-                background: "none",
-                border: "none",
-                color: "#f00",
-                fontSize: "1rem",
-                cursor: "pointer",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "0.5rem",
               }}
             >
-              X
-            </button>
-          </div>
-        ))}
+              {/* partnershipsubmit_id 테이블의 company_name 표시 */}
+              <div style={{ fontSize: "0.9rem" }}>
+                {wish.partnershipsubmit?.company_name || "알 수 없는 업체"}
+              </div>
+
+              <button
+                onClick={() => handleRemoveWish(wish.id)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "#f00",
+                  fontSize: "1rem",
+                  cursor: "pointer",
+                }}
+              >
+                X
+              </button>
+            </div>
+          ))
+        )}
       </div>
 
       {/* 구분선 */}
-      <hr style={{ border: "none", borderTop: "1px solid #eee", margin: "1rem 0" }} />
+      <hr
+        style={{
+          border: "none",
+          borderTop: "1px solid #eee",
+          margin: "1rem 0",
+        }}
+      />
 
       {/* 고객센터 영역 */}
       <div>

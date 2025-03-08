@@ -30,6 +30,12 @@ export default function LoginPage() {
     }
   };
 
+  // 폼 제출 시 엔터키 입력 방지하고 handleLogin 실행
+  const handleFormSubmit = (e) => {
+    e.preventDefault(); // 폼 기본동작 막기
+    handleLogin();
+  };
+
   return (
     <div className="h-screen w-full bg-gray-100 flex items-center justify-center px-4">
       {/* 흰색 박스 */}
@@ -44,8 +50,8 @@ export default function LoginPage() {
           </h1>
         </div>
 
-        {/* 입력 폼 */}
-        <div className="space-y-5">
+        {/* 입력 폼 (폼 전체를 감싸서 엔터 제출 가능하도록) */}
+        <form onSubmit={handleFormSubmit} className="space-y-5">
           {/* 아이디(이메일) 입력 */}
           <input
             type="text"
@@ -78,9 +84,9 @@ export default function LoginPage() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   d="M12 9v2m0 4h.01m-6.938 4h13.856c1.506 0 
-                       2.598-1.445 2.076-2.88l-2.928-8A2 2 0 0016.07 
-                       6H7.93a2 2 0 00-1.9 1.37l-2.928 8c-.522 
-                       1.435.57 2.88 2.076 2.88z"
+                     2.598-1.445 2.076-2.88l-2.928-8A2 2 0 0016.07 
+                     6H7.93a2 2 0 00-1.9 1.37l-2.928 8c-.522 
+                     1.435.57 2.88 2.076 2.88z"
                 />
               </svg>
               <span>{errorMessage}</span>
@@ -89,22 +95,28 @@ export default function LoginPage() {
 
           {/* 아이디/비밀번호 찾기 */}
           <div className="flex justify-end">
-            <button className="text-sm text-gray-500 hover:text-red-500">
+            <button
+              type="button"
+              className="text-sm text-gray-500 hover:text-red-500"
+            >
               아이디/비밀번호 찾기
             </button>
           </div>
 
           {/* 로그인 버튼 */}
           <button
+            type="submit"
             className="w-full rounded bg-red-500 py-3 text-base font-medium text-white hover:bg-red-600"
-            onClick={handleLogin}
           >
             로그인
           </button>
 
           {/* 소셜 로그인 (네이버 / 카카오) */}
           <div className="flex items-center justify-center space-x-3">
-            <button className="flex items-center space-x-1 rounded bg-green-600 px-4 py-3 text-base font-medium text-white hover:bg-green-700">
+            <button
+              type="button"
+              className="flex items-center space-x-1 rounded bg-green-600 px-4 py-3 text-base font-medium text-white hover:bg-green-700"
+            >
               {/* 네이버 아이콘 (예시) */}
               <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M0 0h24v24H0z" fill="none" />
@@ -112,7 +124,10 @@ export default function LoginPage() {
               </svg>
               <span>네이버 로그인</span>
             </button>
-            <button className="flex items-center space-x-1 rounded bg-yellow-300 px-4 py-3 text-base font-medium text-gray-800 hover:bg-yellow-400">
+            <button
+              type="button"
+              className="flex items-center space-x-1 rounded bg-yellow-300 px-4 py-3 text-base font-medium text-gray-800 hover:bg-yellow-400"
+            >
               {/* 카카오 아이콘 (예시) */}
               <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M0 0h24v24H0z" fill="none" />
@@ -128,7 +143,7 @@ export default function LoginPage() {
               간편 계정 가입
             </Link>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   );

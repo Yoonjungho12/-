@@ -93,6 +93,16 @@ export default function NavBar() {
     setShowMsgPopup((prev) => !prev);
   };
 
+  // “나의활동” 클릭 시
+  const handleMyActivityClick = () => {
+    if (!isLoggedIn) {
+      alert("로그인을 해주세요");
+      return;
+    }
+    // 로그인되어 있다면 /mypage 로
+    router.push("/mypage");
+  };
+
   // 메가메뉴
   const toggleMegaMenu = () => {
     setShowMegaMenu((prev) => !prev);
@@ -227,7 +237,10 @@ export default function NavBar() {
               </div>
 
               {/* 나의활동 */}
-              <div className="flex cursor-pointer flex-col items-center text-gray-600 hover:text-red-500">
+              <div
+                className="flex cursor-pointer flex-col items-center text-gray-600 hover:text-red-500"
+                onClick={handleMyActivityClick}
+              >
                 <svg
                   className="mb-1.5 h-7 w-7"
                   fill="none"
@@ -413,7 +426,10 @@ export default function NavBar() {
                 <span className="text-sm">로그인</span>
               </Link>
 
-              <div className="flex cursor-pointer flex-col items-center text-gray-600 hover:text-red-500">
+              <div
+                className="flex cursor-pointer flex-col items-center text-gray-600 hover:text-red-500"
+                onClick={handleMyActivityClick}
+              >
                 <svg
                   className="mb-1.5 h-7 w-7"
                   fill="none"
@@ -738,3 +754,5 @@ export default function NavBar() {
     </header>
   );
 }
+
+// 나머지 로직(스타일, MessagePopup 등)은 그대로 유지
