@@ -353,8 +353,9 @@ export default function NavBar() {
                          003.22
                          0L22
                          8m-9
-                         13H7a2 2
-                         0 01-2
+                         13H7a2
+                         2 0
+                         01-2
                          -2V5a2
                          2 0
                          012
@@ -363,7 +364,8 @@ export default function NavBar() {
                          012
                          2v14a2
                          2 0
-                         01-2 2h-2"
+                         01-2
+                         2h-2"
                     />
                   </svg>
                   <span className="text-sm">제휴문의</span>
@@ -506,12 +508,18 @@ export default function NavBar() {
         </div>
       </div>
 
-      {/* 하단 바 (카테고리 메뉴) */}
+      {/* 
+        하단 바 (카테고리 메뉴) 
+        ─────────────────────────────────────────────────────
+        ※ 여기서 모바일/PC 구분 없이 다 보이게 하고, 
+           "전체 카테고리" 버튼만 모바일에서 숨김
+      */}
       <div className="border-t border-gray-200 bg-white">
         <div className="relative mx-auto flex max-w-7xl items-center space-x-4 px-6 py-2">
-          {/* 전체 카테고리 버튼 */}
+          {/* 전체 카테고리 버튼 (모바일에선 숨김, md 이상에서만 표시) */}
           <button
-            className="flex items-center space-x-1 text-gray-700 hover:text-red-500"
+            className="hidden md:flex items-center space-x-1 text-gray-700 hover:text-red-500" 
+            // <-- 여기!!
             onClick={toggleMegaMenu}
           >
             <span className="font-medium">전체 카테고리</span>
@@ -528,11 +536,14 @@ export default function NavBar() {
             </svg>
           </button>
 
-          {/* 기존 단일 메뉴 링크들 */}
+          {/* 이 아래 링크들은 모바일에서도 계속 보이게 유지 */}
           <Link href="/board/전체/전체" className="text-gray-700 hover:text-red-500">
             지역별 샵
           </Link>
-          <Link href="/today/전체/전체/전체" className="text-gray-700 hover:text-red-500">
+          <Link
+            href="/today/전체/전체/전체"
+            className="text-gray-700 hover:text-red-500"
+          >
             출근부
           </Link>
           <Link href="/near-me" className="text-gray-700 hover:text-red-500">
@@ -548,6 +559,7 @@ export default function NavBar() {
             커뮤니티
           </Link>
 
+          {/* 아래의 showMegaMenu는 PC에서만 의미가 있음 (모바일엔 안 보이니까) */}
           {showMegaMenu && (
             <div
               className="absolute left-0 top-full z-50 mt-2 w-full border

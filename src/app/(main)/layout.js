@@ -3,9 +3,9 @@ export default function Home({ children }) {
   return (
     <>
 
-           <NavBar/>
-      <div className="container mx-auto">
-        {children}
+             <NavBar/>
+            <div className="container mx-auto">
+                {children}
         
       </div>
    
