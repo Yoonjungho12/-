@@ -81,7 +81,7 @@ export default function NewArrivalsSection() {
                   height={300}
                   style={{ objectFit: "cover" }}
                     quality={70}
-                    loading="eager" 
+                    // loading="eager" 
                 />
               </div>
 

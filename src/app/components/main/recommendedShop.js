@@ -114,7 +114,7 @@ export default function RecommendedShops() {
                   height={300}     // 원하는 세로 사이즈
                   style={{ objectFit: "cover" }}
                     quality={70}
-                    loading="eager" 
+                    // loading="eager" 
                 />
               </div>
 
