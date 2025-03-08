@@ -267,13 +267,13 @@ export default function MainoneClient({ initialRegion, initialData }) {
                   href={detailUrl}
                   className="
                     shrink-0 
-                    w-[300px]
+                    w-[330px]
                     snap-start
                     rounded-xl border border-gray-200 bg-white shadow-sm
                     focus-within:ring-2 focus-within:ring-blue-500
                   "
                 >
-                  <div className="w-[300px] h-[180px] overflow-hidden">
+                  <div className="w-[300px] h-[180px] mx-auto mt-3 overflow-hidden">
                     <Image
                       src={imageUrl}
                       alt={`${item.company_name || item.post_title} 썸네일`}
@@ -292,10 +292,10 @@ export default function MainoneClient({ initialRegion, initialData }) {
                       {item.company_name || item.post_title}
                     </h3>
                     <p className="text-sm text-gray-600">
-                      {item.address} {item.address_street}
+                      {item.address} 
                     </p>
                     <p className="mt-0.5 text-xs text-gray-500">
-                      {item.comment
+                      {'리뷰'+ item.comment
                         ? typeof item.comment === "string"
                           ? item.comment.slice(0, 30)
                           : JSON.stringify(item.comment).slice(0, 30)
