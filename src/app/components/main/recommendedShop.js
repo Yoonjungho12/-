@@ -1,73 +1,91 @@
 "use client";
-import React from "react";
+import React, { useState, useEffect } from "react";
+import Image from "next/image";
+import { supabase } from "@/lib/supabaseF";
 
 export default function RecommendedShops() {
-  // 예시 카드 데이터 (샘플)
-  const shops = [
-    {
-      id: 1,
-      imgSrc: "/images/spa1.jpg",
-      title: "강서-수테라피",
-      address: "서울 강서구 마곡동 757-5",
-      reviewCount: 345,
-    },
-    {
-      id: 2,
-      imgSrc: "/images/spa2.jpg",
-      title: "관악-더썸테라피",
-      address: "서울 관악구 봉천동 856-1",
-      reviewCount: 264,
-    },
-    {
-      id: 3,
-      imgSrc: "/images/spa3.jpg",
-      title: "광주-엔젤스웨디시",
-      address: "광주 서구 쌍촌동 869-9",
-      reviewCount: 43,
-    },
-    {
-      id: 4,
-      imgSrc: "/images/spa4.jpg",
-      title: "영등포-리즈테라피",
-      address: "서울 영등포구 당산동1가 284-1",
-      reviewCount: 120,
-    },
-    {
-      id: 5,
-      imgSrc: "/images/spa5.jpg",
-      title: "중랑-휴테라피",
-      address: "서울 중랑구 면목동 222-3",
-      reviewCount: 78,
-    },
-  ];
-
-  // 칩(태그) 예시
   const tags = ["스웨디시", "1인샵", "로미로미", "타이마사지", "사우나/스파", "왁싱"];
-  const selectedTag = "스웨디시"; // 예: 현재 “스웨디시”가 선택된 상태
+  const [selectedTag, setSelectedTag] = useState("스웨디시");
+  const [shops, setShops] = useState([]);
+
+  useEffect(() => {
+    handleClickTag("스웨디시");
+  }, []);
+
+  async function handleClickTag(tagName) {
+    setSelectedTag(tagName);
+
+    try {
+      // 1) themes에서 name=tagName
+      let { data: themeRows } = await supabase
+        .from("themes")
+        .select("id, name")
+        .eq("name", tagName)
+        .single();
+
+      if (!themeRows) {
+        setShops([]);
+        return;
+      }
+
+      // 2) partnershipsubmit_themes에서 theme_id
+      const themeId = themeRows.id;
+      let { data: relRows } = await supabase
+        .from("partnershipsubmit_themes")
+        .select("submit_id")
+        .eq("theme_id", themeId);
+
+      if (!relRows || relRows.length === 0) {
+        setShops([]);
+        return;
+      }
+
+      // 3) partnershipsubmit에서 id in (...)
+      const submitIds = relRows.map((r) => r.submit_id);
+      let { data: subRows } = await supabase
+        .from("partnershipsubmit")
+        .select("id, post_title, address, address_street, thumbnail_url, comment")
+        .in("id", submitIds)
+        .limit(4);
+
+      if (!subRows || subRows.length === 0) {
+        setShops([]);
+        return;
+      }
+
+      // 4) 최종 변환
+      const newShops = subRows.map((item) => ({
+        id: item.id,
+        imgSrc: `https://vejthvawsbsitttyiwzv.supabase.co/storage/v1/object/public/gunma/${item.thumbnail_url}`,
+        title: item.post_title,
+        address: item.address + " " + (item.address_street || ""),
+        reviewCount: item.comment || 0,
+      }));
+
+      setShops(newShops);
+    } catch (err) {
+      console.error("handleClickTag error:", err);
+      setShops([]);
+    }
+  }
 
   return (
     <section className="w-full bg-white py-10">
-      {/* 상단 구분선 + 타이틀/부제 */}
       <div className="mx-auto max-w-5xl px-4">
-        {/* 가로 라인 */}
         <hr className="mb-6 border-black" />
-
         <div className="text-center">
-          <h2 className="mb-2 text-2xl font-bold">
-            회원님을 위한 취향별 마사지샵 추천
-          </h2>
-          <p className="text-gray-600">
-            회원님의 취향을 고려해서 테마별로 보여드릴게요!
-          </p>
+          <h2 className="mb-2 text-2xl font-bold">회원님을 위한 취향별 마사지샵 추천</h2>
+          <p className="text-gray-600">회원님의 취향을 고려해서 테마별로 보여드릴게요!</p>
         </div>
 
-        {/* 칩(태그) 목록 */}
+        {/* 태그 버튼 */}
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           {tags.map((tag) => {
             const isSelected = tag === selectedTag;
             return (
               <button
                 key={tag}
+                onClick={() => handleClickTag(tag)}
                 className={
                   isSelected
                     ? "rounded-full bg-red-500 px-4 py-2 text-white hover:bg-red-600"
@@ -80,35 +98,34 @@ export default function RecommendedShops() {
           })}
         </div>
 
-        {/* 카드 목록 (그리드) */}
+        {/* 카드 그리드 */}
         <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
           {shops.map((shop) => (
-            <div
-              key={shop.id}
-              className="relative h-72 w-full overflow-hidden rounded-xl shadow"
-            >
-              {/* 배경 이미지 */}
-              <img
-                src={shop.imgSrc}
-                alt={shop.title}
-                className="absolute h-full w-full object-cover"
-              />
-
-              {/* 반투명 오버레이 (약간 어둡게) */}
-              <div className="absolute inset-0 bg-black bg-opacity-20"></div>
-
-              {/* 카드 텍스트: 왼쪽 위 + 왼쪽 아래 */}
-              {/* 왼쪽 위에 타이틀 */}
-              <div className="absolute top-3 left-3">
-                <h3 className="text-base font-semibold text-white">
-                  {shop.title}
-                </h3>
+            <div key={shop.id} className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow">
+              <div className="w-full">
+                {/* 
+                  1) Next.js Image 
+                  2) width & height 지정 → 고정 크기 이미지
+                */}
+                <Image
+                  src={shop.imgSrc}
+                  alt={shop.title}
+                  width={400}      // 원하는 가로 사이즈
+                  height={300}     // 원하는 세로 사이즈
+                  style={{ objectFit: "cover" }}
+                  // Next.js 13에서 domain 허용 필요: next.config.js → images.domains
+                />
               </div>
 
-              {/* 왼쪽 아래에 주소 + 리뷰 */}
-              <div className="absolute bottom-3 left-3 text-sm text-white">
-                <p>{shop.address}</p>
-                <p>리뷰 {shop.reviewCount}</p>
+              <div className="p-4">
+                <h3 className="mb-1 text-base font-semibold text-gray-800">
+                  {shop.title}
+                </h3>
+                <p className="text-sm text-gray-600">{shop.address}</p>
+
+                <p className="mt-1 text-xs text-gray-500">
+                  리뷰 {shop.reviewCount}
+                </p>
               </div>
             </div>
           ))}

@@ -2,10 +2,12 @@ import Image from "next/image";
 import Mainone from "../components/main/main1";
 import RecommendedShops from "@/components/main/recommendedShop";
 import NewArrivalsSection from "@/components/main/newbie";
+import Footer from "@/components/Footer";
 // import RecommendedShops from "../components/main/recommendedShop";
 
 export default function Home() {
   return (
+    <>
     <div className="container mx-auto">
       <div
         className="relative w-full overflow-hidden md:hidden"
@@ -31,6 +33,9 @@ export default function Home() {
       <Mainone />
       <RecommendedShops />
       <NewArrivalsSection />
+
     </div>
+          <Footer/>
+          </>
   );
 }

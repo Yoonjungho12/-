@@ -25,8 +25,8 @@ export default function PopularShops() {
   // 지역 탭 목록
   // -----------------------------
   const regionTabs = [
-    "서울","인천","대전","세종","광주","대구","울산","부산",
-    "경기","강원","충북","충남","전북","전남","경북","경남","제주",
+    "서울", "인천", "대전", "세종", "광주", "대구", "울산", "부산",
+    "경기", "강원", "충북", "충남", "전북", "전남", "경북", "경남", "제주",
   ];
 
   // -----------------------------
@@ -53,7 +53,9 @@ export default function PopularShops() {
   }, []);
 
   const [startIndex, setStartIndex] = useState(0);
-  const [selectedRegion, setSelectedRegion] = useState(null);
+
+  // ★ 기본값 "서울"으로 설정
+  const [selectedRegion, setSelectedRegion] = useState("서울");
 
   // 슬라이드용 탭 배열
   const visibleTabs = [];
@@ -73,6 +75,11 @@ export default function PopularShops() {
   // Supabase Fetch
   // -----------------------------
   const [shopList, setShopList] = useState([]);
+
+  // ★ 처음 마운트 시 자동으로 "서울" 탭 로드
+  useEffect(() => {
+    handleClickRegion("서울");
+  }, []);
 
   async function handleClickRegion(region) {
     setSelectedRegion(region);
@@ -214,11 +221,8 @@ export default function PopularShops() {
       <div className="mx-auto mt-6 max-w-5xl px-4 pb-8">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {shopList.map((item) => {
-            // 이미지 경로(Supabase 스토리지)
             const imageUrl = `https://vejthvawsbsitttyiwzv.supabase.co/storage/v1/object/public/gunma/${item.thumbnail_url}`;
-            // 상세 페이지
             const detailUrl = `/board/details/${item.id}`;
-            // 테마 목록
             const themeList = item.partnershipsubmit_themes || [];
 
             return (
@@ -228,14 +232,12 @@ export default function PopularShops() {
                 className="block overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm
                            focus-within:ring-2 focus-within:ring-blue-500"
               >
-                {/* Next.js Image → width/height 지정 */}
                 <Image
                   src={imageUrl}
                   alt={`${item.company_name || item.post_title} 썸네일`}
-                  width={400}           // 원하는 가로 사이즈
-                  height={300}          // 원하는 세로 사이즈
+                  width={400}
+                  height={300}
                   style={{ objectFit: "cover" }}
-                  // 외부 도메인(supabase.co) 사용 시, next.config.js에 domain 추가 필요
                 />
 
                 <div className="p-4">
@@ -245,22 +247,13 @@ export default function PopularShops() {
                   <p className="text-sm text-gray-600">
                     {item.address} {item.address_street}
                   </p>
-
-                  {/* comment가 문자열이 아닐 수도 있으니 typeof 체크 */}
                   <p className="mt-0.5 text-xs text-gray-500">
-                    {(() => {
-                      if (!item.comment) {
-                        return "자세한 정보 보기...";
-                      }
-                      if (typeof item.comment === "string") {
-                        return item.comment.slice(0, 30);
-                      }
-                      // 객체/숫자 등일 경우 문자열 변환
-                      return JSON.stringify(item.comment).slice(0, 30);
-                    })()}
+                    {item.comment
+                      ? typeof item.comment === "string"
+                        ? item.comment.slice(0, 30)
+                        : JSON.stringify(item.comment).slice(0, 30)
+                      : "자세한 정보 보기..."}
                   </p>
-
-                  {/* 테마 목록 */}
                   <div className="mt-2 flex flex-wrap gap-2">
                     {themeList.map((t) => (
                       <span
