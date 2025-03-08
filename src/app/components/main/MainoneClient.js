@@ -267,27 +267,27 @@ export default function MainoneClient({ initialRegion, initialData }) {
                   href={detailUrl}
                   className="
                     shrink-0 
-                    w-[263px]
+                    w-[300px]
                     snap-start
                     rounded-xl border border-gray-200 bg-white shadow-sm
                     focus-within:ring-2 focus-within:ring-blue-500
                   "
                 >
-                  <div className="w-[263px] h-[153px] overflow-hidden">
+                  <div className="w-[300px] h-[180px] overflow-hidden">
                     <Image
                       src={imageUrl}
                       alt={`${item.company_name || item.post_title} 썸네일`}
-                      width={263}
-                      height={153}
+                      width={300}
+                      height={180}
                       style={{ objectFit: "cover" }}
                       quality={30}
                       priority
                       className="rounded-2xl"
-                      sizes="263px"
+                      sizes="300px"
                     />
                   </div>
 
-                  <div className="p-4 w-[263px] box-border">
+                  <div className="p-4 w-[300px] box-border">
                     <h3 className="mb-1 text-base font-semibold text-gray-900">
                       {item.company_name || item.post_title}
                     </h3>
