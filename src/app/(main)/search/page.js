@@ -14,10 +14,12 @@ export default async function SearchPage({ searchParams }) {
     );
   }
 
+  // Supabase 쿼리
   const { data, error } = await supabase
     .from("partnershipsubmit")
     .select(`
       id,
+      final_admitted,
       company_name,
       address,
       comment,
@@ -30,6 +32,7 @@ export default async function SearchPage({ searchParams }) {
         )
       )
     `)
+    .eq("final_admitted", true) // ← ★ final_admitted=true만
     .textSearch("search_tsv", query, {
       type: "websearch",
       config: "english",
@@ -53,22 +56,19 @@ export default async function SearchPage({ searchParams }) {
       <div className="space-y-6">
         {data?.map((item) => {
           // 썸네일 이미지 경로
-          const imageUrl = `https://vejthvawsbsitttyiwzv.supabase.co/storage/v1/object/public/gunma//${item.thumbnail_url}`;
+          const imageUrl = `https://vejthvawsbsitttyiwzv.supabase.co/storage/v1/object/public/gunma/${item.thumbnail_url}`;
           // 테마(해시태그)
           const themeList = item.partnershipsubmit_themes || [];
 
           return (
             <div
               key={item.id}
-              // 카드 높이를 217px으로 고정해, 이미지와 동일한 높이를 유지
-              // items-stretch로 좌우가 같은 높이가 되게 함
               className="
                 flex flex-col md:flex-row
                 items-stretch
                 bg-gray-100
                 p-4
                 rounded-lg
-               
                 overflow-hidden
               "
             >

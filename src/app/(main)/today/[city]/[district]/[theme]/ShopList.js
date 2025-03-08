@@ -1,28 +1,85 @@
-// 서버 컴포넌트 표시 (Next.js 13+ SSR)
-export const dynamic = "force-dynamic"; 
+// app/today/[city]/[district]/[theme]/ShopList.js
+// 서버 컴포넌트(SSR)용 코드 (Next.js 13+)
 
-import { supabase } from "@/lib/supabaseE";
+export const dynamic = "force-dynamic";
 
+import { supabase } from "@/lib/supabaseE"; 
+import Image from "next/image";
+import Link from "next/link";
+
+/** (A) Slug 생성 함수 **/
+function createSlug(text) {
+  if (typeof text !== "string" || text.trim() === "") {
+    return "no-slug";
+  }
+  const slug = text
+    .trim()
+    // 공백 -> "-"
+    .replace(/\s+/g, "-")
+    // 한글, 영문, 숫자, 하이픈 제외한 문자는 제거
+    .replace(/[^ㄱ-ㅎ가-힣a-zA-Z0-9-]/g, "")
+    .toLowerCase();
+  return slug || "no-slug";
+}
+
+// 특정 지역명 치환
+function rewriteSpecialProvince(original) {
+  switch (original) {
+    case "제주":
+      return "제주특별자치도";
+    case "세종":
+      return "세종특별자치시";
+    case "강원":
+      return "강원특별자치도";
+    case "전북":
+      return "전북특별자치도";
+    default:
+      return original;
+  }
+}
 
 export default async function ShopList({ city, district, theme }) {
   // 1) 검색어 조합
   const queryParts = [];
-  if (city !== "전체") queryParts.push(city);
-  if (district !== "전체") queryParts.push(district);
-  if (theme !== "전체") queryParts.push(theme);
+  if (city !== "전체") {
+    queryParts.push(rewriteSpecialProvince(city));
+  }
+  if (district !== "전체") {
+    queryParts.push(rewriteSpecialProvince(district));
+  }
+  if (theme !== "전체") {
+    queryParts.push(rewriteSpecialProvince(theme));
+  }
 
-  // 예) ["서울", "강남구"] => "서울 강남구"
   const searchString = queryParts.join(" ");
 
   let data = [];
   let error = null;
 
+  // 2) Supabase에서 DB 조회
   if (searchString.trim()) {
-    // 2) Supabase textSearch
-    //    config: "simple" → 한글로 "서울" 등 검색 시 에러 없이 동작
+    // 검색어가 있으면 => textSearch
     const res = await supabase
       .from("partnershipsubmit")
-      .select("*")
+      .select(`
+        id,
+        final_admitted,
+        post_title,
+        company_name,
+        address,
+        address_street,
+        shop_type,
+        comment,
+        greeting,
+        thumbnail_url,
+        partnershipsubmit_themes (
+          themes (
+            id,
+            name
+          )
+        )
+      `)
+      .eq("final_admitted", true)
       .textSearch("search_tsv", searchString, {
         type: "websearch",
         config: "simple", 
@@ -31,11 +88,30 @@ export default async function ShopList({ city, district, theme }) {
     data = res.data || [];
     error = res.error;
   } else {
-    // city/district/theme가 전부 "전체"면 → 전체 목록(예: 50개)
+    // 전부 "전체" => 전체 목록 (final_admitted = true만)
     const res = await supabase
       .from("partnershipsubmit")
-      .select("*")
+      .select(`
+        id,
+        final_admitted,
+        post_title,
+        company_name,
+        address,
+        address_street,
+        shop_type,
+        comment,
+        greeting,
+        thumbnail_url,
+        partnershipsubmit_themes (
+          themes (
+            id,
+            name
+          )
+        )
+      `)
+      .eq("final_admitted", true)
       .limit(50);
+
     data = res.data || [];
     error = res.error;
   }
@@ -43,28 +119,127 @@ export default async function ShopList({ city, district, theme }) {
   if (error) {
     return (
       <div className="mx-auto max-w-5xl py-4 text-red-600">
-        DB오류: {error.message}
+        DB 오류: {error.message}
       </div>
     );
   }
 
+  // 3) 카드 형태 UI로 렌더링
   return (
-    <div className="mx-auto max-w-5xl py-4">
-      <h2 className="text-lg font-bold mb-3">ShopList 결과 (SSR)</h2>
+    <div className="mx-auto max-w-7xl px-4 py-8">
+      <h2 className="text-2xl font-bold mb-4">
+        {searchString || "전체"} 검색결과
+      </h2>
+
       {data.length === 0 ? (
         <p>검색 결과가 없습니다!</p>
       ) : (
-        <ul className="space-y-2">
-          {data.map((row) => (
-            <li key={row.id} className="border p-2 rounded">
-              <div className="font-semibold">{row.post_title}</div>
-              <div className="text-sm text-gray-600">
-                {row.address} / {row.address_street} / {row.shop_type}
-              </div>
-              {/* 필요한 정보 더 표시해도 됨 */}
-            </li>
-          ))}
-        </ul>
+        <div className="space-y-6">
+          {data.map((item) => {
+            // Supabase 스토리지 경로
+            const imageUrl = `https://vejthvawsbsitttyiwzv.supabase.co/storage/v1/object/public/gunma/${item.thumbnail_url}`;
+
+            // 상세페이지 링크
+            // 예: /board/details/123-aaa샵 → id=123, slug="aaa샵"
+            const slug = createSlug(item.company_name || item.post_title || "");
+            const detailUrl = `/board/details/${item.id}-${slug}`;
+
+            // 테마 목록
+            const themeList = item.partnershipsubmit_themes || [];
+
+            return (
+              <Link
+                key={item.id}
+                href={detailUrl}
+                className="
+                  flex flex-col md:flex-row
+                  items-stretch
+                  bg-gray-100
+                  p-4
+                  rounded-lg
+                  overflow-hidden
+                "
+              >
+                {/* 왼쪽 썸네일 */}
+                <div className="w-[373px] h-[217px] relative flex-shrink-0">
+                  <Image
+                    src={imageUrl}
+                    alt={item.company_name || "썸네일"}
+                    width={373}
+                    height={217}
+                    className="object-cover w-full h-full rounded-xl"
+                  />
+                </div>
+
+                {/* 오른쪽 텍스트 영역 */}
+                <div className="flex-1 px-4 py-2">
+                  <h3 className="text-lg font-semibold mb-1">
+                    {item.company_name || item.post_title}
+                  </h3>
+
+                  {/* 주소 + 리뷰 */}
+                  <div className="flex items-center text-sm text-gray-600 mb-1 gap-3">
+                    <div className="flex items-center gap-1">
+                      <svg
+                        className="w-4 h-4 text-gray-500"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M12 11c1.656 0
+                             3-1.344
+                             3-3s-1.344-3
+                             -3-3-3
+                             1.344-3
+                             3 3
+                             3 3
+                             3 3z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M19.5 9.5c0
+                             7.168-7.5
+                             11-7.5
+                             11s-7.5-3.832
+                             -7.5-11a7.5
+                             7.5 0
+                             1115
+                             0z"
+                        />
+                      </svg>
+                      <span>
+                        {item.address || item.address_street || "주소 없음"}
+                      </span>
+                    </div>
+                    <div className="text-gray-500">
+                      리뷰 {item.comment ?? 0}
+                    </div>
+                  </div>
+
+                  {/* 인사말(소개) */}
+                  <p className="text-sm text-gray-800">{item.greeting}</p>
+
+                  {/* 해시태그 */}
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {themeList.map((pt) => (
+                      <span
+                        key={pt.themes.id}
+                        className="rounded-full border border-gray-300 px-2 py-1 text-xs text-gray-600"
+                      >
+                        #{pt.themes.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
       )}
     </div>
   );

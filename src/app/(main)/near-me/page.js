@@ -26,7 +26,6 @@ function createSlug(text) {
  * (1) 카카오 지도 SDK 스크립트 로드 함수
  */
 function loadKakaoMapScript(callback) {
-  // SSR 환경이면 종료
   if (typeof window === "undefined") return;
 
   const KAKAO_APP_KEY = process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY;
@@ -35,13 +34,11 @@ function loadKakaoMapScript(callback) {
     return;
   }
 
-  // 이미 로드된 경우
   if (window.kakao && window.kakao.maps) {
     window.kakao.maps.load(callback);
     return;
   }
 
-  // 아직 스크립트가 없다면
   const script = document.createElement("script");
   script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_APP_KEY}&libraries=services&autoload=false`;
   script.onload = () => {
@@ -81,23 +78,23 @@ export default function NearMeListPage() {
   // 지도 객체
   const [mapObj, setMapObj] = useState(null);
 
-  // 사용자 첫 위치 (geolocation)
+  // 사용자 위치
   const [userLat, setUserLat] = useState(null);
   const [userLng, setUserLng] = useState(null);
 
-  // "현재 중심점" = 마커 위치
+  // 마커 중심점
   const [centerLat, setCenterLat] = useState(null);
   const [centerLng, setCenterLng] = useState(null);
 
-  // Supabase에서 불러온 DB 데이터
+  // DB 데이터
   const [shops, setShops] = useState([]); 
   const [filteredShops, setFilteredShops] = useState([]); // 30km 내
 
-  // 사용자 현재 주소 (reverse geocoding)
+  // 현재 주소
   const [address, setAddress] = useState("");
 
   // ─────────────────────────────────────────────────────
-  // ① 브라우저에서 geolocation으로 내 위치 가져오기 (최초)
+  // ① geolocation으로 내 위치
   // ─────────────────────────────────────────────────────
   useEffect(() => {
     if (!navigator.geolocation) {
@@ -108,7 +105,7 @@ export default function NearMeListPage() {
       (pos) => {
         setUserLat(pos.coords.latitude);
         setUserLng(pos.coords.longitude);
-        // 지도 초기 중심
+        // 지도 초기
         setCenterLat(pos.coords.latitude);
         setCenterLng(pos.coords.longitude);
       },
@@ -119,7 +116,7 @@ export default function NearMeListPage() {
   }, []);
 
   // ─────────────────────────────────────────────────────
-  // ② Supabase에서 partnershipsubmit 테이블 조회
+  // ② Supabase 조회 (final_admitted = true만)
   // ─────────────────────────────────────────────────────
   useEffect(() => {
     async function fetchShops() {
@@ -127,6 +124,7 @@ export default function NearMeListPage() {
         .from("partnershipsubmit")
         .select(`
           id,
+          final_admitted,
           company_name,
           thumbnail_url,
           address,
@@ -134,7 +132,9 @@ export default function NearMeListPage() {
           greeting,
           lat,
           lng
-        `);
+        `)
+        .eq("final_admitted", true);
+
       if (error) {
         console.error("Fetch shops err:", error);
         return;
@@ -145,7 +145,7 @@ export default function NearMeListPage() {
   }, []);
 
   // ─────────────────────────────────────────────────────
-  // ③ 지도 초기화 (userLat/userLng 확보 후)
+  // ③ 지도 초기화
   // ─────────────────────────────────────────────────────
   useEffect(() => {
     if (userLat && userLng) {
@@ -155,9 +155,7 @@ export default function NearMeListPage() {
     }
   }, [userLat, userLng]);
 
-  // ─────────────────────────────────────────────────────
-  // 지도 생성 + 이벤트 (click/dragend) + 초기 마커
-  // ─────────────────────────────────────────────────────
+  // 지도 생성 + 이벤트
   function initMap(lat, lng) {
     if (!window.kakao || !window.kakao.maps) return;
 
@@ -166,60 +164,49 @@ export default function NearMeListPage() {
       center: new window.kakao.maps.LatLng(lat, lng),
       level: 5,
     };
-
     const map = new window.kakao.maps.Map(container, options);
     setMapObj(map);
 
     // "내 위치" 마커
-    const markerPosition = new kakao.maps.LatLng(lat, lng);
-    const marker = new window.kakao.maps.Marker({ position: markerPosition });
+    const markerPos = new kakao.maps.LatLng(lat, lng);
+    const marker = new kakao.maps.Marker({ position: markerPos });
     marker.setMap(map);
     markerRef.current = marker;
 
-    // 초기 주소 변환
+    // 초기 reverse geocoding
     convertCoordToAddress(lng, lat, (addr) => {
       setAddress(addr);
     });
 
-    // (A) 지도 클릭 => 마커 이동 + 주소/필터
+    // 지도 클릭
     kakao.maps.event.addListener(map, "click", (mouseEvent) => {
       const latlng = mouseEvent.latLng;
       const clickedLat = latlng.getLat();
       const clickedLng = latlng.getLng();
 
-      // 마커 이동
       moveMarker(clickedLat, clickedLng);
-      // state 업데이트
       setCenterLat(clickedLat);
       setCenterLng(clickedLng);
 
-      // 주소 변환
       convertCoordToAddress(clickedLng, clickedLat, (addr) => {
         setAddress(addr);
       });
-
-      // 30km 필터
       filterShopsByDistance(clickedLat, clickedLng);
     });
 
-    // (B) 지도 드래그 끝 => 지도 중심 = 새 위치 => 마커 이동 + 주소/필터
+    // 지도 드래그 끝
     kakao.maps.event.addListener(map, "dragend", () => {
       const center = map.getCenter();
       const newLat = center.getLat();
       const newLng = center.getLng();
 
-      // 마커 이동
       moveMarker(newLat, newLng);
-      // state 업데이트
       setCenterLat(newLat);
       setCenterLng(newLng);
 
-      // 주소 변환
       convertCoordToAddress(newLng, newLat, (addr) => {
         setAddress(addr);
       });
-
-      // 30km 필터
       filterShopsByDistance(newLat, newLng);
     });
   }
@@ -227,11 +214,11 @@ export default function NearMeListPage() {
   // 마커 이동
   function moveMarker(lat, lng) {
     if (!markerRef.current) return;
-    const newPosition = new kakao.maps.LatLng(lat, lng);
-    markerRef.current.setPosition(newPosition);
+    const newPos = new kakao.maps.LatLng(lat, lng);
+    markerRef.current.setPosition(newPos);
   }
 
-  // (공통) 위/경도를 주소로 변환
+  // coord -> address
   function convertCoordToAddress(lng, lat, callback) {
     if (!window.kakao || !window.kakao.maps) return;
     const geocoder = new window.kakao.maps.services.Geocoder();
@@ -246,7 +233,7 @@ export default function NearMeListPage() {
   }
 
   // ─────────────────────────────────────────────────────
-  // ④ 초기에 userLat/userLng 기준 30km 필터
+  // ④ userLat/userLng => 30km 필터
   // ─────────────────────────────────────────────────────
   useEffect(() => {
     if (userLat && userLng && shops.length > 0) {
@@ -254,7 +241,7 @@ export default function NearMeListPage() {
     }
   }, [userLat, userLng, shops]);
 
-  // 필터 (30km)
+  // 30km 필터
   function filterShopsByDistance(lat, lng) {
     const MAX_DIST = 30; // km
     const results = shops.filter((shop) => {
@@ -265,7 +252,7 @@ export default function NearMeListPage() {
     setFilteredShops(results);
   }
 
-  // “이 주변 샵 찾기” → centerLat/centerLng 기준
+  // 중심점 기준 다시 검색
   function handleSearchAround() {
     if (!centerLat || !centerLng) return;
     convertCoordToAddress(centerLng, centerLat, (addr) => {
@@ -274,7 +261,7 @@ export default function NearMeListPage() {
     filterShopsByDistance(centerLat, centerLng);
   }
 
-  // (추가) 검색창: 입력한 주소 -> 지도/마커 이동
+  // 주소 검색
   function handleSearchAddress() {
     const keyword = searchInputRef.current?.value.trim();
     if (!keyword) {
@@ -293,23 +280,18 @@ export default function NearMeListPage() {
       ) {
         const newLng = result[0].x;
         const newLat = result[0].y;
-        // 지도 중심 갱신
         setCenterLat(newLat);
         setCenterLng(newLat);
 
-        // 마커 이동
         moveMarker(newLat, newLng);
 
-        // 지도 이동
-        const moveLatLng = new window.kakao.maps.LatLng(newLat, newLng);
+        const moveLatLng = new kakao.maps.LatLng(newLat, newLng);
         mapObj.setCenter(moveLatLng);
 
-        // 주소 표시
         convertCoordToAddress(newLng, newLat, (addr) => {
           setAddress(addr);
         });
 
-        // 필터
         filterShopsByDistance(newLat, newLng);
       } else {
         alert("해당 주소를 찾지 못했어요!");
@@ -317,7 +299,6 @@ export default function NearMeListPage() {
     });
   }
 
-  // 검색창에서 Enter 키 누르면 검색
   function handleKeyDown(e) {
     if (e.key === "Enter") {
       handleSearchAddress();
@@ -326,7 +307,7 @@ export default function NearMeListPage() {
 
   return (
     <div className="mt-5 max-w-4xl mx-auto p-4">
-      {/* 상단 제목/주소 */}
+      {/* 상단 */}
       <h2 className="text-2xl font-bold flex justify-center items-center gap-1 mb-2">
         <span>내 위치 :</span>
         <span className="font-medium text-gray-600">
@@ -350,7 +331,7 @@ export default function NearMeListPage() {
         <input
           type="text"
           ref={searchInputRef}
-          onKeyDown={handleKeyDown} // 엔터 입력
+          onKeyDown={handleKeyDown}
           className="flex-1 border border-gray-300 rounded px-2 py-1"
           placeholder="예) 서울 강남구 역삼동..."
         />
@@ -412,7 +393,7 @@ export default function NearMeListPage() {
           <ShopCard
             key={shop.id}
             shop={shop}
-            userLat={centerLat} // 현재 중심을 기준으로 거리 계산
+            userLat={centerLat}
             userLng={centerLng}
           />
         ))}
@@ -422,38 +403,57 @@ export default function NearMeListPage() {
 }
 
 /** 
- * (4) ShopCard: 카드 클릭 시 `/board/details/${id}-${createSlug(company_name)}` 로 이동
- * 거리 계산 시 "현재 중심점(centerLat/centerLng)"을 기준
+ * (4) ShopCard: 클릭 → 상세 
  */
 function ShopCard({ shop, userLat, userLng }) {
-  // 썸네일 경로
-  const url = `https://vejthvawsbsitttyiwzv.supabase.co/storage/v1/object/public/gunma/${shop.thumbnail_url}`;
+  // 이미지 경로
+  const url = shop.thumbnail_url
+    ? `https://vejthvawsbsitttyiwzv.supabase.co/storage/v1/object/public/gunma/${shop.thumbnail_url}`
+    : "/placeholder.png";
 
   // 거리 계산
   let dist = 99999;
   if (userLat && userLng && shop.lat && shop.lng) {
     dist = getDistanceFromLatLng(userLat, userLng, shop.lat, shop.lng);
   }
-  if (dist < 0.05) dist = 0; // 50m 이하 → 0km로 표시
+  if (dist < 0.05) dist = 0;
   const distanceStr = dist.toFixed(1) + "Km";
 
-  // 디테일 링크
+  // 상세 페이지 링크
   const detailUrl = `/board/details/${shop.id}-${createSlug(shop.company_name)}`;
 
   return (
-    <Link href={detailUrl} className="flex items-start gap-4 border-b pb-4">
-      {/* 썸네일 */}
-      <div className="w-[373px] h-[217px] bg-gray-100 rounded overflow-hidden flex-shrink-0">
+    <Link
+      href={detailUrl}
+      className="flex flex-col md:flex-row items-stretch border-b pb-4 gap-4"
+    >
+      {/* 
+        이미지 래퍼
+        - 기본(모바일): w-full, aspect-[373/217]
+          (가로폭 100% + 세로는 217/373 비율)
+        - PC(md 이상): w=373px, h=217px 고정, aspect-auto로 비율 해제
+      */}
+      <div
+        className="
+          relative
+          w-full aspect-[373/217]
+          md:w-[373px] md:h-[217px] md:aspect-auto
+          bg-gray-100
+          rounded
+          overflow-hidden
+          flex-shrink-0
+        "
+      >
+        {/* 이미지 fill + object-cover */}
         <Image
-          src={shop.thumbnail_url ? url : "/placeholder.png"}
+          src={url}
           alt={shop.company_name}
-          width={373}
-          height={217}
+          fill
           className="object-cover"
         />
       </div>
 
-      {/* 우측 텍스트 */}
+      {/* 오른쪽 텍스트 영역 */}
       <div className="flex-1">
         <h3 className="text-lg font-semibold mb-1">{shop.company_name}</h3>
         <div className="text-sm text-gray-500 mb-1 flex items-center gap-3">

@@ -131,25 +131,35 @@ const REGIONS = [
  * + 9개 칼럼씩 chunk
  */
 const THEMES = [
-  { id: 0,  name: "전체",      sort_order: 0 },
-  { id: 1,  name: "신규업체",    sort_order: 1 },
+  { id: 0,  name: "전체",       sort_order: 0 },
+  { id: 1,  name: "신규업체",   sort_order: 1 },
   { id: 2,  name: "왁싱",       sort_order: 2 },
   { id: 3,  name: "1인샵",      sort_order: 3 },
   { id: 4,  name: "24시간",     sort_order: 4 },
-  { id: 5,  name: "사우나-스파",  sort_order: 5 },
-  { id: 6,  name: "수면가능",    sort_order: 6 },
-  { id: 7,  name: "여성환영",    sort_order: 7 },
-  { id: 8,  name: "타이마사지",   sort_order: 8 },
-  { id: 9,  name: "감성마사지",   sort_order: 9 },
-  { id: 10, name: "슈얼마사지",   sort_order: 10 },
+  { id: 5,  name: "사우나-스파", sort_order: 5 },
+  { id: 6,  name: "수면가능",   sort_order: 6 },
+  { id: 7,  name: "여성환영",   sort_order: 7 },
+  { id: 8,  name: "타이마사지",  sort_order: 8 },
+  { id: 9,  name: "감성마사지",  sort_order: 9 },
+  { id: 10, name: "슈얼마사지",  sort_order: 10 },
   { id: 11, name: "로미로미",    sort_order: 11 },
   { id: 12, name: "스웨디시",    sort_order: 12 },
   { id: 13, name: "딥티슈",     sort_order: 13 },
   { id: 14, name: "스크럽",     sort_order: 14 },
   { id: 15, name: "두리코스",    sort_order: 15 },
-  { id: 16, name: "호텔식마사지",  sort_order: 16 },
-  { id: 17, name: "아로마마사지",  sort_order: 17 },
-  { id: 18, name: "림프관리",    sort_order: 18 },
+  { id: 16, name: "호텔식마사지", sort_order: 16 },
+  { id: 17, name: "아로마마사지", sort_order: 17 },
+  { id: 18, name: "림프관리",   sort_order: 18 },
+
+  // 새로 추가된 항목들
+  { id: 19, name: "눈썹문신",    sort_order: 19 },
+  { id: 20, name: "애견펜션",    sort_order: 20 },
+  { id: 21, name: "사주",       sort_order: 21 },
+  { id: 22, name: "타로",       sort_order: 22 },
+  { id: 23, name: "아이폰-스냅", sort_order: 23 },
+  { id: 24, name: "웨딩플래너",  sort_order: 24 },
+  { id: 25, name: "룸카페",     sort_order: 25 },
+  { id: 26, name: "성인용품",   sort_order: 26 },
 ].sort((a, b) => a.sort_order - b.sort_order);
 
 // ─────────────────────────────────────────────────────────

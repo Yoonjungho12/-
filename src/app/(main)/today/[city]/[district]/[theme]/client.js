@@ -99,12 +99,12 @@ export default function ClientUI({ city, district, theme }) {
       <div className="bg-gray-700 px-4 py-8 text-white">
         <div className="mx-auto max-w-5xl text-center">
           <h1 className="text-2xl font-bold">
-            /today/[city]/[district]/[theme] 예시
+            실시간 업데이트 되는 관리사님들을 확인해 보세요!
           </h1>
           <p className="mt-2 text-gray-200">
-            (기본적으로 필터 열림, 구·군이 전체가 아니면 닫힘)
+            지쳐있던 몸과 마음을 힐링시켜드릴 관리사님들이 지금 기다리고 있습니다
             <br/>
-            시·도: {city} | 구·군: {district} | 테마: {theme}
+          
           </p>
         </div>
 
@@ -122,7 +122,7 @@ export default function ClientUI({ city, district, theme }) {
             onClick={handleToggleFilter}
             className="flex items-center gap-1 rounded-md bg-gray-300 px-4 py-2 text-gray-800 hover:bg-gray-400"
           >
-            시·도: {city} (필터 {isFilterOpen ? "닫기" : "열기"})
+            {city} {district}
           </button>
 
           <button
