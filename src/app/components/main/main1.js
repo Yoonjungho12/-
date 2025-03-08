@@ -318,8 +318,8 @@ export default function PopularShops() {
                   <Image
                     src={imageUrl}
                     alt={`${item.company_name || item.post_title} 썸네일`}
-                    width={400}
-                    height={300}
+                    width={263}
+                    height={152}
                     style={{ objectFit: "cover" }}
                       quality={30}
                 //    sizes="(max-width: 768px) 360px, 400px"

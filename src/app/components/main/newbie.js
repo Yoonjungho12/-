@@ -56,7 +56,7 @@ export default async function NewArrivalsSection() {
   // 3) JSX(HTML) 반환 → 서버가 이걸 렌더링해 브라우저에게 전달
   return (
     <section className="w-full bg-white py-10">
-      <div className="mx-auto max-w-5xl px-4">
+      <div className="mx-auto max-w-7xl px-4">
         {/* 섹션 헤더 */}
         <h2 className="mb-2 text-2xl font-bold text-gray-800">
           신규 입점 했어요

@@ -96,15 +96,8 @@ export default function MainoneClient({
   const [shopList, setShopList] = useState(initialData || []);
   const [isLoading, setIsLoading] = useState(false); // 스켈레톤 표시용
 
-  // 처음 마운트 시 자동으로 "서울" 탭 로드
-  // => 이미 SSR에서 주어졌으므로 굳이 useEffect 필요 없고, 
-  //    "경기"나 "인천" 누를 때만 새로 fetch 하도록.
-  // useEffect(() => {
-  //   handleClickRegion("서울");
-  // }, []);
-
   async function handleClickRegion(region) {
-    // 선택된 지역이랑 같으면 fetch 안 함
+    // 이미 선택된 지역이면 fetch 안 함
     if (region === selectedRegion) return;
     setSelectedRegion(region);
 
@@ -195,7 +188,6 @@ export default function MainoneClient({
                 );
               })}
             </ul>
-            {/* 왼쪽/오른쪽 화살표 버튼은 스켈레톤 중엔 생략 가능 */}
           </div>
         </div>
 
@@ -228,10 +220,10 @@ export default function MainoneClient({
       </div>
 
       {/* 지역 탭 (슬라이드형) */}
-      <div className="mx-auto mt-6 max-w-5xl px-4">
-        <div className="relative overflow-hidden rounded border border-gray-300 shadow-sm">
+      <div className="mx-auto mt-6 max-w-7xl px-4">
+        <div className="w-full relative overflow-hidden rounded border border-gray-300 shadow-sm">
           {/* 탭 목록 */}
-          <ul className="flex w-full">
+          <ul className="flex">
             {visibleTabs.map((region, idx) => {
               const isSelected = selectedRegion === region;
               return (
@@ -304,9 +296,95 @@ export default function MainoneClient({
         </div>
       </div>
 
-      {/* 카드 목록 (4컬럼 × 2행 = 최대 8개) */}
-      <div className="mx-auto mt-6 max-w-5xl px-4 pb-8">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      {/* 
+        카드 목록 두 가지:
+        1) 모바일(<640px)에서 가로 슬라이드
+        2) 태블릿·데스크톱(≥640px)에서 기존 4열 그리드
+      */}
+      <div className="mx-auto mt-6 max-w-7xl px-4 pb-8">
+        {/* (A) 모바일 슬라이더 */}
+        <div className="block sm:hidden">
+          {/* 
+            - 가로 스크롤, 스크롤 스냅, 카드 하나씩 보이되 
+              다음 카드 일부가 걸쳐 보이게 예시 
+          */}
+          <div
+            className="
+              flex 
+              overflow-x-auto
+              gap-4
+              snap-x snap-mandatory
+            "
+            style={{ scrollBehavior: "smooth" }}
+          >
+            {shopList.map((item, idx) => {
+              const imageUrl = `https://vejthvawsbsitttyiwzv.supabase.co/storage/v1/object/public/gunma/${item.thumbnail_url}`;
+              const detailUrl = `/board/details/${item.id}`;
+              const themeList = item.partnershipsubmit_themes || [];
+
+              return (
+                <Link
+                  key={item.id}
+                  href={detailUrl}
+                  className="
+                    shrink-0 
+                    w-[85%]   /* 한 화면 거의 다 차지 */
+                    snap-start
+                    rounded-xl border border-gray-200 bg-white shadow-sm
+                    focus-within:ring-2 focus-within:ring-blue-500
+                  "
+                  /* 
+                    w-[85%]로 잡으면, 
+                    한 화면에 대략 카드 하나+옆 카드 일부가 보일 것입니다.
+                    (해상도에 따라 조정 가능) 
+                  */
+                >
+                        <div className="h-[153px] w-[263px] mx-auto overflow-hidden mt-4 rounded-xl">
+                        <Image
+                            src={imageUrl}
+                            alt={`${item.company_name || item.post_title} 썸네일`}
+                            width={263}
+                            height={153}
+                            style={{ objectFit: "cover" }}
+                            quality={30}
+                            priority
+                            className="rounded-2xl"
+                        />
+                        </div>
+
+                  <div className="p-4">
+                    <h3 className="mb-1 text-base font-semibold text-gray-900">
+                      {item.company_name || item.post_title}
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      {item.address} {item.address_street}
+                    </p>
+                    <p className="mt-0.5 text-xs text-gray-500">
+                      {item.comment
+                        ? typeof item.comment === "string"
+                          ? item.comment.slice(0, 30)
+                          : JSON.stringify(item.comment).slice(0, 30)
+                        : "자세한 정보 보기..."}
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {themeList.map((t) => (
+                        <span
+                          key={t.themes.id}
+                          className="rounded bg-red-100 px-2 py-1 text-xs text-red-600"
+                        >
+                          {t.themes.name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* (B) 데스크톱 그리드 */}
+        <div className="hidden sm:grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {shopList.map((item) => {
             const imageUrl = `https://vejthvawsbsitttyiwzv.supabase.co/storage/v1/object/public/gunma/${item.thumbnail_url}`;
             const detailUrl = `/board/details/${item.id}`;
@@ -317,21 +395,19 @@ export default function MainoneClient({
                 key={item.id}
                 href={detailUrl}
                 className="block overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm
-                           focus-within:ring-2 focus-within:ring-blue-500"
+                  focus-within:ring-2 focus-within:ring-blue-500"
               >
-                {/* min-height로 레이아웃 안정화 */}
-                <div className="min-h-[300px] w-full overflow-hidden">
+                <div className="h-[153px] w-[263px] overflow-hidden mx-auto mt-4">
                   <Image
                     src={imageUrl}
                     alt={`${item.company_name || item.post_title} 썸네일`}
-                    width={400}
-                    height={300}
+                    width={263}
+                    height={153}
                     style={{ objectFit: "cover" }}
                     quality={30}
                     priority
                   />
                 </div>
-
                 <div className="p-4">
                   <h3 className="mb-1 text-base font-semibold text-gray-900">
                     {item.company_name || item.post_title}

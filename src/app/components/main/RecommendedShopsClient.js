@@ -77,7 +77,7 @@ export default function RecommendedShopsClient({
 
   return (
     <section className="w-full bg-white py-10">
-      <div className="mx-auto max-w-5xl px-4">
+      <div className="mx-auto max-w-7xl px-4">
         <hr className="mb-6 border-black" />
         <div className="text-center">
           <h2 className="mb-2 text-2xl font-bold">회원님을 위한 취향별 마사지샵 추천</h2>
@@ -111,14 +111,15 @@ export default function RecommendedShopsClient({
               key={shop.id}
               className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow"
             >
-              <div className="w-full">
+              <div className="h-[153px] w-[263px] mx-auto overflow-hidden mt-4 rounded-xl">
                 <Image
                   src={shop.imgSrc}
                   alt={shop.title}
-                  width={400}
-                  height={300}
-                  style={{ objectFit: "cover" }}
-                  quality={70}
+                    width={263}
+                    height={153}
+                    style={{ objectFit: "cover" }}
+                    quality={30}
+                    priority
                 />
               </div>
               <div className="p-4">
