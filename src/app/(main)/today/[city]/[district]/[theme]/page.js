@@ -2,7 +2,7 @@
 // 서버 컴포넌트. 여기서 URL 파라미터를 디코딩하고, ClientUI로 넘겨줍니다.
 
 import ClientUI from "./client";
-
+import ShopList from "./ShopList";  
 export default async function TodayPage({ params: paramsPromise }) {
   // Next.js 15 (가정): params가 Promise 형태이므로 await 필요
   const { city: rawCity, district: rawDistrict, theme: rawTheme } = await paramsPromise;
@@ -18,7 +18,7 @@ export default async function TodayPage({ params: paramsPromise }) {
     <div className="w-full">
       {/* 클라이언트 상호작용 UI를 담당하는 컴포넌트 */}
       <ClientUI city={city} district={district} theme={theme} />
-
+      <ShopList city={city} district={district} theme={theme} />
       {/* 서버에서 렌더링하는 추가 내용 (예시) */}
       <div className="mx-auto max-w-5xl py-8 px-4">
         <h2 className="text-xl font-semibold">SSR 예시: 검색어 없음</h2>

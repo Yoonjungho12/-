@@ -1,4 +1,4 @@
-"use client"; // Next.js 13 App Router에서 클라이언트 컴포넌트
+"use client";
 import React, { useEffect, useState, useRef } from "react";
 import { supabase } from "../../lib/supabaseF"; // anonKey 기반 createClient
 
@@ -62,20 +62,16 @@ export default function NewListingPage() {
   }
 
   // ----------------------------------------------------------------
-  // 2) "수정하기" 또는 "이미지 업로드" 버튼 클릭 → handleEditClick
+  // 2) "수정하기" or "이미지 업로드" 버튼 → handleEditClick
   // ----------------------------------------------------------------
   async function handleEditClick(submitId, isAdmitted) {
     setEditId(submitId);
     setEditIsAdmitted(isAdmitted);
 
-    // 승인완료건이라면 이미지 업로드 섹션으로 스크롤 이동하도록
-    if (isAdmitted) {
-      setShouldFocusImage(true);
-    } else {
-      setShouldFocusImage(false);
-    }
+    // 승인완료건이면 이미지 업로드 섹션으로 스크롤 이동
+    setShouldFocusImage(isAdmitted);
 
-    // 승인완료든 심사중이든, 모두 기존 내용 불러오기
+    // 기존 내용 불러오기
     try {
       const { data: row, error } = await supabase
         .from("partnershipsubmit")
@@ -88,7 +84,7 @@ export default function NewListingPage() {
         return;
       }
 
-      // 폼 값들 설정
+      // 폼 값 설정
       setAdType(row.ad_type || "");
       setSelectedRegionId(row.region_id || null);
       setPendingSubRegionId(row.sub_region_id || null);
@@ -101,7 +97,9 @@ export default function NewListingPage() {
       setContactMethod(row.contact_method || "");
       setGreeting(row.greeting || "");
       setEventInfo(row.event_info || "");
-      setAddressInput(row.address || "");
+      // ★ 지번 vs 도로명 분리
+      setAddressInput(row.address || "");         
+      setAddressStreet(row.address_street || ""); 
       setNearBuilding(row.near_building || "");
       setOpenHours(row.open_hours || "");
       setProgramInfo(row.program_info || "");
@@ -117,6 +115,11 @@ export default function NewListingPage() {
       if (!themeErr && themeRows) {
         const themeIds = themeRows.map((t) => t.theme_id);
         setSelectedThemeIds(themeIds);
+      }
+
+      // 지도 좌표도 있으면
+      if (row.lat && row.lng) {
+        setMarkerPosition({ lat: row.lat, lng: row.lng });
       }
     } catch (err) {
       console.error("handleEditClick 오류:", err);
@@ -143,7 +146,11 @@ export default function NewListingPage() {
   const [contactMethod, setContactMethod] = useState("");
   const [greeting, setGreeting] = useState("");
   const [eventInfo, setEventInfo] = useState("");
-  const [addressInput, setAddressInput] = useState("");
+
+  // ★ 동시에 지번, 도로명 둘 다
+  const [addressInput, setAddressInput] = useState("");   // 지번
+  const [addressStreet, setAddressStreet] = useState(""); // 도로명
+
   const [nearBuilding, setNearBuilding] = useState("");
   const [openHours, setOpenHours] = useState("");
   const [programInfo, setProgramInfo] = useState("");
@@ -167,7 +174,7 @@ export default function NewListingPage() {
   // 4) 지역(상위/하위) 로드
   // ----------------------------------------------------------------
   useEffect(() => {
-    // 상위 지역들
+    // 상위 지역
     async function fetchRegions() {
       const { data, error } = await supabase
         .from("regions")
@@ -182,7 +189,7 @@ export default function NewListingPage() {
     }
     fetchRegions();
 
-    // 테마들
+    // 테마
     async function fetchThemes() {
       try {
         const { data, error } = await supabase
@@ -241,6 +248,7 @@ export default function NewListingPage() {
     lng: 127.027618,
   });
 
+  // 지도 초기화
   useEffect(() => {
     if (!window.kakao) {
       const script = document.createElement("script");
@@ -274,6 +282,7 @@ export default function NewListingPage() {
     marker.setMap(map);
     markerRef.current = marker;
 
+    // 지도 클릭 → coord2Address
     kakao.maps.event.addListener(map, "click", (mouseEvent) => {
       const latlng = mouseEvent.latLng;
       marker.setPosition(latlng);
@@ -285,10 +294,22 @@ export default function NewListingPage() {
         latlng.getLat(),
         (result, status) => {
           if (status === kakao.maps.services.Status.OK) {
-            if (result[0].road_address) {
-              setAddressInput(result[0].road_address.address_name);
-            } else if (result[0].address) {
-              setAddressInput(result[0].address.address_name);
+            const road = result[0].road_address;   // 도로명
+            const jibun = result[0].address;       // 지번
+            if (road) {
+              let fullRoad = road.address_name;
+              if (road.building_name && road.building_name.trim()) {
+                fullRoad += " " + road.building_name;
+              }
+              setAddressStreet(fullRoad);
+            } else {
+              setAddressStreet("");
+            }
+
+            if (jibun) {
+              setAddressInput(jibun.address_name);
+            } else {
+              setAddressInput("");
             }
           }
         }
@@ -296,15 +317,21 @@ export default function NewListingPage() {
     });
   }
 
+  // “주소 입력 후 검색” 클릭 시 → addressSearch → (좌표만 얻고) → coord2Address로 다시 변환
+  // → 지번 + 도로명 모두 저장
   function handleAddressSearch() {
     const { kakao } = window;
     if (!kakao || !kakao.maps) return;
+
     const geocoder = new kakao.maps.services.Geocoder();
     geocoder.addressSearch(addressInput, (result, status) => {
       if (status === kakao.maps.services.Status.OK) {
+        // 좌표 (위/경도) 추출
         const newLat = result[0].y;
         const newLng = result[0].x;
         setMarkerPosition({ lat: newLat, lng: newLng });
+
+        // 지도/마커 이동
         if (mapObjectRef.current && markerRef.current) {
           const moveLatLng = new kakao.maps.LatLng(newLat, newLng);
           mapObjectRef.current.setCenter(moveLatLng);
@@ -312,6 +339,30 @@ export default function NewListingPage() {
         } else {
           initMap(newLat, newLng);
         }
+
+        // 다시 coord2Address로 “지번+도로명 둘 다” 가져옴
+        geocoder.coord2Address(newLng, newLat, (res2, stat2) => {
+          if (stat2 === kakao.maps.services.Status.OK) {
+            const road = res2[0].road_address; // 도로명
+            const jibun = res2[0].address;     // 지번
+
+            if (road) {
+              let fullRoad = road.address_name;
+              if (road.building_name && road.building_name.trim()) {
+                fullRoad += " " + road.building_name;
+              }
+              setAddressStreet(fullRoad);
+            } else {
+              setAddressStreet("");
+            }
+
+            if (jibun) {
+              setAddressInput(jibun.address_name);
+            } else {
+              setAddressInput("");
+            }
+          }
+        });
       } else {
         alert("주소를 찾을 수 없어요!");
       }
@@ -326,7 +377,7 @@ export default function NewListingPage() {
   }
 
   // ----------------------------------------------------------------
-  // 6) 폼 검증 & 전송 (등록 or 수정)
+  // 6) 폼 검증 & 전송
   // ----------------------------------------------------------------
   function validateForm() {
     if (!adType) return "상품(광고위치)을 선택해주세요.";
@@ -336,7 +387,10 @@ export default function NewListingPage() {
     if (!managerContact.trim()) return "담당자 연락처 필수입니다.";
     if (!parkingType) return "주차방법을 선택해주세요.";
     if (!shopType) return "샵형태를 선택해주세요.";
-    if (!addressInput.trim()) return "주소를 입력해주세요.";
+    // "둘 다"가 항상 필요하면:
+    if (!addressInput.trim() || !addressStreet.trim()) {
+      return "지번 주소와 도로명 주소 모두 필요합니다. 지도를 클릭하거나 검색을 다시 확인해주세요.";
+    }
     if (!openHours.trim()) return "영업시간을 입력해주세요.";
     if (!programInfo.trim()) return "프로그램(코스) 정보를 입력해주세요.";
     if (!contactMethod.trim()) return "연락 방법을 입력해주세요.";
@@ -356,8 +410,6 @@ export default function NewListingPage() {
       return;
     }
 
-    // 아직 editId가 없으면 => 신규 등록
-    // 있으면 => 수정
     if (!editId) {
       doSubmitOrUpdate(false);
     } else {
@@ -379,7 +431,9 @@ export default function NewListingPage() {
       contact_method: contactMethod,
       greeting,
       event_info: eventInfo,
-      address: addressInput,
+      // 지번 vs 도로명 모두 전달
+      address: addressInput,         // 지번 주소
+      address_street: addressStreet, // 도로명 주소
       near_building: nearBuilding,
       open_hours: openHours,
       program_info: programInfo,
@@ -425,9 +479,8 @@ export default function NewListingPage() {
   }
 
   // ----------------------------------------------------------------
-  // 7) 이미지 업로드 (별도 테이블 + thumbnail_url)
+  // 7) 이미지 업로드
   // ----------------------------------------------------------------
-  // (1) 썸네일
   const [thumbnailFile, setThumbnailFile] = useState(null);
   const [thumbnailPreview, setThumbnailPreview] = useState(null);
   const thumbnailFileInputRef = useRef(null);
@@ -439,7 +492,6 @@ export default function NewListingPage() {
     setThumbnailPreview(URL.createObjectURL(file));
   }
 
-  // (2) 다중 이미지
   const [multiFiles, setMultiFiles] = useState([]);
   const [multiPreviews, setMultiPreviews] = useState([]);
   const multiFileInputRef = useRef(null);
@@ -448,14 +500,12 @@ export default function NewListingPage() {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
-    // 최대 10장까지만 허용
     const allowedCount = 10 - multiFiles.length;
     const addFiles = files.slice(0, allowedCount);
 
     const newFileList = [...multiFiles, ...addFiles];
     setMultiFiles(newFileList);
 
-    // 미리보기
     const newPreviews = newFileList.map((f) => ({
       name: f.name,
       url: URL.createObjectURL(f),
@@ -463,7 +513,6 @@ export default function NewListingPage() {
     setMultiPreviews(newPreviews);
   }
 
-  // 실제 업로드 버튼 클릭 시
   async function handleImageUploadClick() {
     if (!editId) {
       alert("어느 신청서인지 알 수 없습니다. 먼저 등록/수정 후 다시 시도해주세요!");
@@ -471,10 +520,9 @@ export default function NewListingPage() {
     }
 
     try {
-      // ==================== 썸네일 업로드 & DB에 thumbnail_url 업데이트 ====================
+      // 썸네일
       let thumbnailUrl = null;
       if (thumbnailFile) {
-        // 1) 스토리지 업로드
         const fileExt = thumbnailFile.name.split(".").pop();
         const fileName = `thumb_${editId}_${Date.now()}.${fileExt}`;
         const { data: thumbData, error: thumbErr } = await supabase.storage
@@ -485,22 +533,19 @@ export default function NewListingPage() {
           alert("썸네일 업로드 실패: " + thumbErr.message);
           return;
         }
-        thumbnailUrl = thumbData.path; // 예: "thumb_1_1690001111111.jpg"
+        thumbnailUrl = thumbData.path;
 
-        // 2) partnershipsubmit 테이블에 thumbnail_url 컬럼 업데이트
         const { error: updateErr } = await supabase
           .from("partnershipsubmit")
-          .update({ thumbnail_url: thumbnailUrl }) // ★ 여기서 thumbnail_url에 경로
+          .update({ thumbnail_url: thumbnailUrl })
           .eq("id", editId);
-
         if (updateErr) {
           alert("썸네일 DB 업데이트 실패: " + updateErr.message);
           return;
         }
       }
 
-      // ==================== 여러 이미지 업로드 & partnershipsubmit_images 테이블 저장 ====================
-      // (이미지 여러 장을 각각 업로드 후, DB에 한 행씩 insert)
+      // 추가 이미지
       for (let i = 0; i < multiFiles.length; i++) {
         const file = multiFiles[i];
         const ext = file.name.split(".").pop();
@@ -514,14 +559,10 @@ export default function NewListingPage() {
           return;
         }
 
-        const imageUrl = fileData.path; // 예: "multi_1_1690001112222_0.jpg"
-        // 이제 partnershipsubmit_images 테이블에 insert
+        const imageUrl = fileData.path;
         const { error: insertErr } = await supabase
           .from("partnershipsubmit_images")
-          .insert({
-            submit_id: editId, // FK
-            image_url: imageUrl, 
-          });
+          .insert({ submit_id: editId, image_url: imageUrl });
 
         if (insertErr) {
           alert(`DB에 이미지 경로 저장 실패: ${insertErr.message}`);
@@ -537,14 +578,12 @@ export default function NewListingPage() {
   }
 
   // ----------------------------------------------------------------
-  // 8) 승인완료건 클릭 시 → 이미지 업로드 섹션으로 스크롤
+  // 8) 승인완료건 클릭 → 이미지 업로드 섹션 스크롤
   // ----------------------------------------------------------------
   const imageUploadSectionRef = useRef(null);
 
-  // 폼 state가 업데이트된 후, shouldFocusImage=true면 스크롤 이동
   useEffect(() => {
     if (shouldFocusImage && editIsAdmitted && imageUploadSectionRef.current) {
-      // state가 확실히 세팅된 뒤 약간 지연 후 스크롤
       setTimeout(() => {
         imageUploadSectionRef.current.scrollIntoView({ behavior: "smooth" });
       }, 300);
@@ -566,10 +605,8 @@ export default function NewListingPage() {
             {mySubmits.map((submit) => {
               const isAdmitted = submit.is_admitted;
               const statusLabel = isAdmitted ? "승인완료" : "심사 중";
-              const buttonText = isAdmitted ? "이미지 업로드" : "수정하기"; // ← 여기서 버튼 텍스트 분기
-              const title = submit.post_title?.trim()
-                ? submit.post_title
-                : "무제";
+              const buttonText = isAdmitted ? "이미지 업로드" : "수정하기";
+              const title = submit.post_title?.trim() || "무제";
 
               return (
                 <li key={submit.id} className="flex items-center space-x-2">
@@ -845,10 +882,10 @@ export default function NewListingPage() {
           />
         </div>
 
-        {/* 주소 + 지도 */}
+        {/* 주소 (지번) + 지도 */}
         <div>
           <label className="block font-semibold mb-1">
-            주소 <span className="text-red-500">*</span>
+            지번 주소 <span className="text-red-500">*</span>
           </label>
           <div className="flex flex-col sm:flex-row gap-2 mb-2">
             <input
@@ -879,6 +916,20 @@ export default function NewListingPage() {
             ref={mapRef}
             style={{ width: "100%", height: "300px" }}
             className="border border-gray-300 rounded"
+          />
+        </div>
+
+        {/* 도로명 주소 */}
+        <div>
+          <label className="block font-semibold mb-1">
+            도로명 주소 (자동)
+          </label>
+          <input
+            type="text"
+            placeholder="지도 클릭 or 검색 시 자동 입력됩니다."
+            value={addressStreet}
+            onChange={(e) => setAddressStreet(e.target.value)}
+            className="w-full border border-gray-300 rounded px-2 py-1 mb-2"
           />
         </div>
 
@@ -949,7 +1000,7 @@ export default function NewListingPage() {
         </div>
       </form>
 
-      {/* ===================== 이미지 업로드 섹션 (카메라 카드) ===================== */}
+      {/* ===================== 이미지 업로드 섹션 ===================== */}
       {editId && editIsAdmitted && (
         <div
           ref={imageUploadSectionRef}
@@ -962,11 +1013,10 @@ export default function NewListingPage() {
             이미지로 더욱 매력적인 업체정보를 꾸며보세요!
           </p>
 
-          {/* ---------- 썸네일 카드 ---------- */}
+          {/* 썸네일 */}
           <div className="mb-6">
             <label className="block font-semibold mb-2">썸네일 이미지</label>
             <div className="flex gap-2 flex-wrap">
-              {/* 썸네일 카드 */}
               <div
                 className="w-24 h-28 border border-gray-300 rounded-md flex items-center justify-center text-gray-500 relative cursor-pointer"
                 onClick={() => {
@@ -982,7 +1032,6 @@ export default function NewListingPage() {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  // 썸네일이 아직 없으면 카메라 아이콘 + "Thumb" 표기
                   <>
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -1003,7 +1052,6 @@ export default function NewListingPage() {
                 )}
               </div>
 
-              {/* 실제 파일 인풋 */}
               <input
                 type="file"
                 accept="image/*"
@@ -1014,13 +1062,12 @@ export default function NewListingPage() {
             </div>
           </div>
 
-          {/* ---------- 여러 이미지 카드 ---------- */}
+          {/* 여러 이미지 */}
           <div className="mb-6">
             <label className="block font-semibold mb-2">
               추가 이미지 (여러 장)
             </label>
             <div className="flex gap-2 flex-wrap">
-              {/* 업로드용 카드 (카메라 아이콘 + 'n/10') */}
               <div
                 className="w-24 h-28 border border-gray-300 rounded-md flex flex-col items-center justify-center text-gray-500 relative cursor-pointer"
                 onClick={() => {
@@ -1029,7 +1076,6 @@ export default function NewListingPage() {
                   }
                 }}
               >
-                {/* 카메라 아이콘 */}
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="w-6 h-6 text-gray-400"
@@ -1044,13 +1090,11 @@ export default function NewListingPage() {
                     d="M3 8l3-3h12l3 3M4 8h16v11H4V8z"
                   />
                 </svg>
-                {/* 업로드한 이미지 수 / 10 */}
                 <div className="mt-1 text-sm font-semibold">
                   {multiFiles.length}/10
                 </div>
               </div>
 
-              {/* 미리보기 카드들 */}
               {multiPreviews.map((p, idx) => (
                 <div
                   key={idx}
@@ -1064,7 +1108,6 @@ export default function NewListingPage() {
                 </div>
               ))}
             </div>
-            {/* 숨겨진 파일 input */}
             <input
               type="file"
               accept="image/*"
@@ -1075,7 +1118,6 @@ export default function NewListingPage() {
             />
           </div>
 
-          {/* 업로드 버튼 */}
           <button
             type="button"
             onClick={handleImageUploadClick}

@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 // 자식 지역 카테고리(구·군) 목록
@@ -8,7 +8,7 @@ import {
   서울, 인천, 대전, 세종, 광주, 대구, 울산,
   부산, 경기, 강원, 충북, 충남, 전북, 전남,
   경북, 경남, 제주,
-} from "./region"; // 파일 경로 맞춰주세요~
+} from "./region";
 
 // 시·도 목록
 const regionTabs = [
@@ -20,25 +20,51 @@ const regionTabs = [
 // 테마 목록
 const themeList = ["전체", "스웨디시", "아로마", "타이", "커플", "건식"];
 
-// props로 서버 컴포넌트에서 디코딩된 city, district, theme를 받습니다.
+/**
+ * 요구사항:
+ * 1) 기본적으로 필터 열려있게 시작하고 싶다면, useState(true) 또는 district === "전체"일 때 true
+ * 2) 시·도 선택 => 필터 열림 유지
+ * 3) 구·군에서 "전체"가 아니면 필터 닫기
+ *    단, 라우트 변경 시 컴포넌트가 재마운트 → useEffect에서 district 확인 후 열/닫기 결정
+ * 4) 닫힌 상태라도 시·도 버튼으로 다시 열 수 있음(토글)
+ */
 export default function ClientUI({ city, district, theme }) {
   const router = useRouter();
 
-  // district가 "전체"일 때만 필터 열림
-  const isFilterOpen = district === "전체";
+  // (원하는 초기값) 예: true로 시작
+  const [isFilterOpen, setIsFilterOpen] = useState(true);
 
-  // 시·도 클릭 시
-  function handleSelectCity(cityName) {
-    // cityName이 한글이면 Next.js가 자동 인코딩
-    router.push(`/today/${cityName}/전체/전체`);
+  // [중요] 라우트가 바뀌어 컴포넌트가 재마운트될 때
+  // 구·군(district)이 "전체"면 필터 열고, 아니면 닫는다.
+  // => 이렇게 해야 "전체" 아닌 값을 선택했을 때 라우트 바뀌어도 닫힘 상태를 유지.
+  useEffect(() => {
+    if (district === "전체") {
+      setIsFilterOpen(true);
+    } else {
+      setIsFilterOpen(false);
+    }
+  }, [district]);
+
+  // 시·도 버튼 클릭 => 열고/닫기 토글
+  function handleToggleFilter() {
+    setIsFilterOpen(!isFilterOpen);
   }
 
-  // 구·군 클릭 시
+  // 시·도 선택 => 경로 이동 후, 구·군/테마 = 전체
+  // -> 구·군이 "전체"이므로 위의 useEffect가 실행되어 isFilterOpen(true)됨
+  function handleSelectCity(cityName) {
+    router.push(`/today/${cityName}/전체/전체`);
+    // 여긴 굳이 setIsFilterOpen(true) 없어도, useEffect가 district=전체 감지 후 열어줄 겁니다.
+  }
+
+  // 구·군 선택
+  // - "전체"라면 필터 열림, 아니면 닫힘 → useEffect에서 처리됨
+  //   (지금은 추가로 setIsFilterOpen(...) 안 해도 됨)
   function handleSelectDistrict(districtName) {
     router.push(`/today/${city}/${districtName}/전체`);
   }
 
-  // 테마 클릭 시
+  // 테마 선택 => 경로 이동 (필터 열림/닫힘은 유지)
   function handleSelectTheme(themeName) {
     router.push(`/today/${city}/${district}/${themeName}`);
   }
@@ -76,13 +102,13 @@ export default function ClientUI({ city, district, theme }) {
             /today/[city]/[district]/[theme] 예시
           </h1>
           <p className="mt-2 text-gray-200">
-            (URL 파라미터는 서버컴포넌트에서 디코딩 완료하여 props로 받음!)
+            (기본적으로 필터 열림, 구·군이 전체가 아니면 닫힘)
             <br/>
-            시·도: {city}, 구·군: {district}, 테마: {theme}
+            시·도: {city} | 구·군: {district} | 테마: {theme}
           </p>
         </div>
 
-        {/* 예시 버튼들 */}
+        {/* 상단 버튼들 */}
         <div className="mx-auto mt-6 flex max-w-5xl items-center justify-center gap-3">
           <button
             onClick={() => alert("지역검색 버튼 클릭!")}
@@ -90,12 +116,15 @@ export default function ClientUI({ city, district, theme }) {
           >
             지역검색
           </button>
+
+          {/* 시·도 토글 버튼 */}
           <button
-            onClick={() => alert("시·도 선택 모달 (예시)")}
+            onClick={handleToggleFilter}
             className="flex items-center gap-1 rounded-md bg-gray-300 px-4 py-2 text-gray-800 hover:bg-gray-400"
           >
-            시·도: {city}
+            시·도: {city} (필터 {isFilterOpen ? "닫기" : "열기"})
           </button>
+
           <button
             onClick={() => alert("테마 선택 모달 (예시)")}
             className="flex items-center gap-1 rounded-md bg-gray-300 px-4 py-2 text-gray-800 hover:bg-gray-400"
@@ -117,13 +146,13 @@ export default function ClientUI({ city, district, theme }) {
         </div>
       </div>
 
-      {/* 필터: district === "전체"일 때 열림 */}
+      {/* 필터 열기/닫기 */}
       {isFilterOpen && (
         <div className="w-full bg-white py-6">
           <div className="mx-auto max-w-5xl">
             {/* 테이블 헤더 */}
             <div className="mb-2 flex items-center border-b border-gray-200 px-4 pb-2">
-              <div className="mr-8 text-lg font-semibold text-gray-600">시·도</div>
+              <div className="text-lg font-semibold text-gray-600 mr-8">시·도</div>
               <div className="text-lg font-semibold text-gray-600">구·군</div>
             </div>
 

@@ -20,6 +20,7 @@ export async function POST(request) {
       greeting,
       event_info,
       address,
+      address_street,
       near_building,
       open_hours,
       program_info,
@@ -40,6 +41,7 @@ export async function POST(request) {
       !parking_type ||
       !shop_type ||
       !address ||
+       !address_street ||
       !open_hours ||
       !program_info ||
       !contact_method ||
@@ -84,6 +86,7 @@ export async function POST(request) {
       greeting,
       event_info,
       address,
+      address_street,
       near_building: near_building || null,
       open_hours,
       program_info,
