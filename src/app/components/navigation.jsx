@@ -121,10 +121,8 @@ export default function NavBar() {
         {/* 로고 */}
         <Link href="/">
           <div className="flex items-center space-x-1 text-xl font-bold text-red-500">
-            <span>VIP info</span>
-            <span className="text-base font-normal text-green-600">
-              VIP 건마
-            </span>
+            <span>여기닷</span>
+
           </div>
         </Link>
 
@@ -159,10 +157,8 @@ export default function NavBar() {
         {/* 로고 영역 */}
         <Link href="/">
           <div className="flex items-center space-x-2 text-2xl font-bold text-red-500">
-            <span>VIP info</span>
-            <span className="text-base font-normal text-green-600">
-              VIP 건마
-            </span>
+            <span>여기닷</span>
+
           </div>
         </Link>
 
