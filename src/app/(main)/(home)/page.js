@@ -5,6 +5,7 @@ import Footer from "@/components/Footer";
 import MainoneServer from "@/components/main/MainoneServer";
 // import RecommendedShops from "../components/main/recommendedShop";
 
+
 export default function Home() {
   return (
     <>
