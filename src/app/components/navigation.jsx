@@ -475,7 +475,7 @@ export default function NavBar() {
           <Link href="/board/전체/전체" className="text-gray-700 hover:text-red-500">
             지역별 샵
           </Link>
-          <Link href="/board" className="text-gray-700 hover:text-red-500">
+          <Link href="/today" className="text-gray-700 hover:text-red-500">
             출근부
           </Link>
           <Link href="/near-me" className="text-gray-700 hover:text-red-500">
@@ -605,7 +605,7 @@ export default function NavBar() {
                   <ul className="space-y-1 text-sm text-gray-700">
                     <li>
                       <Link
-                        href="/board"
+                        href="/today"
                         onClick={() => setShowMegaMenu(false)}
                       >
                         전체
