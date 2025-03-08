@@ -5,6 +5,7 @@ import MobileBottomNav from "./components/MobileNavigation";
 
 // (선택) 폰트 불러오기
 import { Geist, Geist_Mono } from "next/font/google";
+import MobileTopBar from "./components/MobileBack";
 
 // **metadata**를 export 하면 Next.js가 head를 자동 생성
 export const metadata = {
@@ -30,6 +31,7 @@ export default function RootLayout({ children }) {
       <body className={geist.className}>
         {children}
             <div className="block md:hidden">
+
         <MobileBottomNav />
       </div>
       </body>

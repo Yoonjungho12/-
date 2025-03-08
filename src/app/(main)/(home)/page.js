@@ -1,5 +1,4 @@
 import Image from "next/image";
-import Mainone from "../components/main/main1";
 import RecommendedShopsServer from "@/components/main/RecommendedShopsServer";
 import NewArrivalsSection from "@/components/main/newbie";
 import Footer from "@/components/Footer";
