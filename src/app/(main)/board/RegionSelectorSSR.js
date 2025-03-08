@@ -1,28 +1,28 @@
 // src/app/(main)/board/RegionSelectorSSR.js
+//
+// Server Component
+// 지역 목록 + PC용 테마(SSR) + 모바일에서 ThemeSelectorMobile(Client) 불러오기
 
 import Link from "next/link";
+import ThemeSelectorMobile from "./ThemeSelectorMobile"; // 클라이언트 컴포넌트
 
 /**
  * RegionSelectorSSR
  *
  * - DB 대신, 지역(REGIONS) / 테마(THEMES)를 하드코딩
  * - 상위 지역, 하위 지역, 테마 각각 "전체"를 포함
- * - "홈케어/방문관리" (id=12) 제거
- * - 상위 지역 표는 6칸씩, 하위 지역 표는 7칸씩, 테마는 9칸씩 나눔
+ * - "홈케어/방문관리"(id=12) 제거
+ * - 상위 지역 표는 6칸씩, 하위 지역 표는 7칸씩
  * - 클릭 시 /board/[regionSlug]/[themeName] 라우팅
- * - SSR 전용(서버 컴포넌트)
+ * - PC에서는 테마 전체를 SSR로 항상 표시(.pc-theme)
+ * - 모바일에서는 테마를 ThemeSelectorMobile(Client)로 열고 닫음(.mobile-theme)
+ * - SSR 전용(서버 컴포넌트)이지만, 내부에서 Client 컴포넌트를 import
  */
 
 // ─────────────────────────────────────────────────────────
-// 0) 지역/테마 하드코딩
+// 0) 지역 목록 (1~97), "홈케어/방문관리"(12) 제거, 아무것도 누락 없음
 // ─────────────────────────────────────────────────────────
 
-/**
- * REGIONS:
- *  - parent_id가 null → 상위 카테고리
- *  - region_slug → URL에서 쓰이는 슬러그 (예: "강남-서초-송파")
- *  - 아래 테이블은 id=1~100 중 "홈케어/방문관리"(id=12)와 그 하위(98, 99, 100)는 제거!
- */
 const REGIONS = [
   { id: 1,   name: "강남/서초/송파",           parent_id: null, sort_order: 1,  region_slug: "강남-서초-송파" },
   { id: 2,   name: "서울",                    parent_id: null, sort_order: 2,  region_slug: "서울" },
@@ -35,7 +35,7 @@ const REGIONS = [
   { id: 9,   name: "대전/천안/세종/충청/강원",     parent_id: null, sort_order: 9,  region_slug: "대전-천안-세종-충청-강원" },
   { id: 10,  name: "부산/대구/울산/경상도/전라도/광주", parent_id: null, sort_order: 10, region_slug: "부산-대구-울산-경상도-전라도-광주" },
   { id: 11,  name: "제주도",                  parent_id: null, sort_order: 11, region_slug: "제주도" },
-  // (id: 12, 홈케어/방문관리)는 제거
+  // (id=12, 홈케어/방문관리 제거)
 
   { id: 13,  name: "강남구",                parent_id: 1,  sort_order: 1,  region_slug: "강남구" },
   { id: 14,  name: "서초구",                parent_id: 1,  sort_order: 2,  region_slug: "서초구" },
@@ -122,14 +122,11 @@ const REGIONS = [
   { id: 95,  name: "광주",                parent_id: 10, sort_order: 8,  region_slug: "광주" },
   { id: 96,  name: "제주시",               parent_id: 11, sort_order: 1,  region_slug: "제주시" },
   { id: 97,  name: "서귀포시",              parent_id: 11, sort_order: 2,  region_slug: "서귀포시" },
-  // (id: 98~100) 홈케어 하위도 제거
 ];
 
-/**
- * THEMES 예시 (정렬은 sort_order 순)
- * + "전체"(id=0) 항목 추가
- * + 9개 칼럼씩 chunk
- */
+// ─────────────────────────────────────────────────────────
+// 1) THEMES (0~26), id=12(홈케어) 제거, 아무것도 누락 없음
+// ─────────────────────────────────────────────────────────
 const THEMES = [
   { id: 0,  name: "전체",       sort_order: 0 },
   { id: 1,  name: "신규업체",   sort_order: 1 },
@@ -150,8 +147,6 @@ const THEMES = [
   { id: 16, name: "호텔식마사지", sort_order: 16 },
   { id: 17, name: "아로마마사지", sort_order: 17 },
   { id: 18, name: "림프관리",   sort_order: 18 },
-
-  // 새로 추가된 항목들
   { id: 19, name: "눈썹문신",    sort_order: 19 },
   { id: 20, name: "애견펜션",    sort_order: 20 },
   { id: 21, name: "사주",       sort_order: 21 },
@@ -163,58 +158,51 @@ const THEMES = [
 ].sort((a, b) => a.sort_order - b.sort_order);
 
 // ─────────────────────────────────────────────────────────
-// 1) RegionSelectorSSR 컴포넌트
+// 2) chunkArray 함수
+// ─────────────────────────────────────────────────────────
+function chunkArray(array, size) {
+  const result = [];
+  for (let i = 0; i < array.length; i += size) {
+    result.push(array.slice(i, i + size));
+  }
+  return result;
+}
+
+// ─────────────────────────────────────────────────────────
+// 3) RegionSelectorSSR (Server Component)
 // ─────────────────────────────────────────────────────────
 export default function RegionSelectorSSR({ regionSlug, themeName }) {
-  /**
-   * regionSlug: 상위 or 하위 slug or "전체"
-   * themeName: 테마 이름 or "전체"
-   */
-
   // ─────────────────────────────────────────────────────
-  // (A) 상위 지역 목록 + "전체"
-  // (홈케어 id=12 제거됨)
+  // A) regionSlug 분석
   // ─────────────────────────────────────────────────────
-  const parentRegions = REGIONS.filter((r) => r.parent_id === null)
-    .sort((a, b) => a.sort_order - b.sort_order);
-
-  const topItems = [
-    { id: 0, name: "전체", parent_id: null, region_slug: "전체" },
-    ...parentRegions,
-  ];
-
-  // ─────────────────────────────────────────────────────
-  // (B) regionSlug 분석 → selectedParentId / selectedChildId
-  // ─────────────────────────────────────────────────────
-  let selectedParentId = null;
-  let selectedChildId = null;
-
+  let selectedParentId = 0;
+  let selectedChildId = 0;
   if (regionSlug === "전체") {
-    // 상위 지역이 "전체"
     selectedParentId = 0;
     selectedChildId = 0;
   } else {
-    const matchedRegion = REGIONS.find((r) => r.region_slug === regionSlug);
-
-    if (!matchedRegion) {
-      // 없는 slug → 전체로 처리
-      selectedParentId = 0;
-      selectedChildId = 0;
-    } else {
-      if (matchedRegion.parent_id === null) {
-        // 상위
-        selectedParentId = matchedRegion.id;
+    const matched = REGIONS.find((r) => r.region_slug === regionSlug);
+    if (matched) {
+      if (matched.parent_id === null) {
+        selectedParentId = matched.id;
         selectedChildId = 0;
       } else {
-        // 하위
-        selectedParentId = matchedRegion.parent_id;
-        selectedChildId = matchedRegion.id;
+        selectedParentId = matched.parent_id;
+        selectedChildId = matched.id;
       }
     }
   }
 
   // ─────────────────────────────────────────────────────
-  // (C) 하위 지역 목록 + "전체"
+  // B) 상위 지역 목록 + "전체"
+  // ─────────────────────────────────────────────────────
+  const parentItems = [
+    { id: 0, name: "전체", parent_id: null, region_slug: "전체" },
+    ...REGIONS.filter((r) => r.parent_id === null),
+  ];
+
+  // ─────────────────────────────────────────────────────
+  // C) 하위 지역 목록 + "전체"
   // ─────────────────────────────────────────────────────
   let childItems = [];
   if (selectedParentId !== 0) {
@@ -234,22 +222,22 @@ export default function RegionSelectorSSR({ regionSlug, themeName }) {
   }
 
   // ─────────────────────────────────────────────────────
-  // (D) themeName 파악 → selectedThemeIds
+  // D) themeName 분석 (SSR)
   // ─────────────────────────────────────────────────────
   let selectedThemeIds = [];
   if (themeName === "전체") {
     selectedThemeIds = [0];
   } else {
-    const matchedTheme = THEMES.find((t) => t.name === themeName);
-    if (!matchedTheme) {
-      selectedThemeIds = [0];
+    const matchedT = THEMES.find((t) => t.name === themeName);
+    if (matchedT) {
+      selectedThemeIds = [matchedT.id];
     } else {
-      selectedThemeIds = [matchedTheme.id];
+      selectedThemeIds = [0];
     }
   }
 
   // ─────────────────────────────────────────────────────
-  // (E) 테이블 스타일/함수
+  // E) 테이블 스타일
   // ─────────────────────────────────────────────────────
   const tableStyle = {
     width: "100%",
@@ -257,7 +245,6 @@ export default function RegionSelectorSSR({ regionSlug, themeName }) {
     borderCollapse: "collapse",
     marginBottom: "1rem",
   };
-
   function getTdStyle(isSelected) {
     return {
       border: "1px solid #ddd",
@@ -270,41 +257,51 @@ export default function RegionSelectorSSR({ regionSlug, themeName }) {
     };
   }
 
-  // 배열을 size개씩 잘라 이차원 배열로
-  function chunkArray(array, size) {
-    const result = [];
-    for (let i = 0; i < array.length; i += size) {
-      result.push(array.slice(i, i + size));
-    }
-    return result;
-  }
-
   // ─────────────────────────────────────────────────────
-  // (F) 실제 렌더링
+  // F) 실제 렌더링
   // ─────────────────────────────────────────────────────
   return (
-    <div style={{ maxWidth: "1000px", margin: "0 auto" }} >
-      {/* ─ 상단 안내 ─ */}
-      <h2 className="font-bold text-2xl mt-5" >지역별 샵 선택</h2>
+    <div>
+      {/* ─ 지역 상위/하위 (SSR) ─ */}
+      <h2 className="font-bold text-2xl mt-5">지역별 샵 선택 (SSR)</h2>
       <p style={{ color: "#666", marginBottom: "1rem"}} className="text-lg">
-       인기있는 지역들을 보기쉽게 모아놨어요!
+        인기있는 지역들을 보기쉽게 모아놨어요!
       </p>
 
-      {/* ─ 상위 지역 (6칸씩!) ─ */}
-      {topItems.length === 0 ? (
-     <></>
-      ) : (
-        <table style={tableStyle}>
+      {/* 상위 지역 (6칸) */}
+      <table className="region-table" style={tableStyle}>
+        <tbody>
+          {chunkArray(parentItems, 6).map((row, rowIdx) => (
+            <tr key={rowIdx}>
+              {row.map((item) => {
+                const isSelected = selectedParentId === item.id;
+                const href = `/board/${item.region_slug}/${themeName}`;
+                return (
+                  <td key={item.id} style={getTdStyle(isSelected)}>
+                    <Link href={href} style={{ display: "block" }}>
+                      {item.name}
+                    </Link>
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {/* 하위 지역 (7칸) */}
+      {selectedParentId !== 0 && childItems.length > 0 && (
+        <table className="region-table" style={tableStyle}>
           <tbody>
-            {chunkArray(topItems, 6).map((rowItems, rowIdx) => (
-              <tr key={rowIdx}>
-                {rowItems.map((item) => {
-                  const isSelected = selectedParentId === item.id;
-                  const href = `/board/${item.region_slug}/${themeName}`;
+            {chunkArray(childItems, 7).map((row, idx) => (
+              <tr key={idx}>
+                {row.map((child) => {
+                  const isSelected = selectedChildId === child.id;
+                  const href = `/board/${child.region_slug}/${themeName}`;
                   return (
-                    <td key={item.id} style={getTdStyle(isSelected)}>
+                    <td key={child.id} style={getTdStyle(isSelected)}>
                       <Link href={href} style={{ display: "block" }}>
-                        {item.name}
+                        {child.name}
                       </Link>
                     </td>
                   );
@@ -315,56 +312,17 @@ export default function RegionSelectorSSR({ regionSlug, themeName }) {
         </table>
       )}
 
-      {/* ─ 하위 지역 표 (7칸씩) ─ */}
-      <div style={{ marginBottom: "2rem" }}>
-        {selectedParentId !== null && (
-          <>
-            {selectedParentId === 0 ? (
-              // 상위 = "전체" → 하위 X
-              <></>
-            ) : childItems.length === 0 ? (
-              // 하위 목록이 전혀 없음
-            <></>
-            ) : (
-              // 하위 목록 존재
-              <table style={tableStyle}>
-                <tbody>
-                  {chunkArray(childItems, 7).map((rowItems, rowIdx) => (
-                    <tr key={rowIdx}>
-                      {rowItems.map((child) => {
-                        const isChildSelected = selectedChildId === child.id;
-                        const href = `/board/${child.region_slug}/${themeName}`;
-                        return (
-                          <td key={child.id} style={getTdStyle(isChildSelected)}>
-                            <Link href={href} style={{ display: "block" }}>
-                              {child.name}
-                            </Link>
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </>
-        )}
-      </div>
-
-      {/* ─ 테마 선택 (9칸씩) ─ */}
-      <h2 className="text-2xl font-bold">테마별 샵 선택</h2>
-      <p style={{ color: "#666", marginBottom: "1rem"}} className="text-lg">
-        원하는 테마를 골라보세요!
-      </p>
-
-      {THEMES.length === 0 ? (
-        <p style={{ textAlign: "center" }}>테마가 없습니다.</p>
-      ) : (
+      {/* PC용 테마(SSR) */}
+      <div className="pc-theme">
+        <h2 className="text-2xl font-bold">테마별 샵 선택 (PC SSR)</h2>
+        <p style={{ color: "#666", marginBottom: "1rem"}} className="text-lg">
+          원하는 테마를 골라보세요! (SSR)
+        </p>
         <table style={tableStyle}>
           <tbody>
-            {chunkArray(THEMES, 9).map((rowItems, rowIdx) => (
+            {chunkArray(THEMES, 9).map((row, rowIdx) => (
               <tr key={rowIdx}>
-                {rowItems.map((th) => {
+                {row.map((th) => {
                   const isSelected = selectedThemeIds.includes(th.id);
                   const href = `/board/${regionSlug}/${th.name}`;
                   return (
@@ -379,7 +337,61 @@ export default function RegionSelectorSSR({ regionSlug, themeName }) {
             ))}
           </tbody>
         </table>
-      )}
+      </div>
+
+      {/* 모바일용 테마 (Client Component) */}
+      <div className="mobile-theme" style={{ marginTop: "2rem" }}>
+        <ThemeSelectorMobile
+          regionSlug={regionSlug}
+          themeName={themeName}
+          selectedThemeIds={selectedThemeIds}
+          allThemes={THEMES}
+        />
+      </div>
+
+      {/* ─ 미디어쿼리로 모바일/PC 스타일 분기 ─ */}
+      <style>{`
+        /* 모바일에서 지역 테이블 2칸 */
+        @media (max-width: 768px) {
+          table.region-table {
+            border-collapse: collapse;
+            width: 100%;
+          }
+          table.region-table tbody,
+          table.region-table tr {
+            display: block;
+            width: 100%;
+          }
+          table.region-table tr {
+            margin-bottom: -1px;
+          }
+          table.region-table td {
+            display: inline-block;
+            width: 50%;
+            box-sizing: border-box;
+          }
+        }
+
+        /* PC: pc-theme 보이기, mobile-theme 숨기기 */
+        @media (min-width: 769px) {
+          .pc-theme {
+            display: block;
+          }
+          .mobile-theme {
+            display: none;
+          }
+        }
+
+        /* 모바일: pc-theme 숨기고, mobile-theme 보이기 */
+        @media (max-width: 768px) {
+          .pc-theme {
+            display: none;
+          }
+          .mobile-theme {
+            display: block;
+          }
+        }
+      `}</style>
     </div>
   );
 }

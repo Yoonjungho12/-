@@ -22,7 +22,9 @@ export default async function BoardPage(ctx) {
 
   return (
     <>
-      <div className="flex flex-col items-center w-full">
+
+
+      <div className="max-w-[1200px] mx-auto flex flex-col justify-center items-center">
         {/* ─ SSR 지역/테마 표 렌더링 (RegionSelectorSSR) ─ */}
         <RegionSelectorSSR
           regionSlug={regionDecoded}
@@ -35,6 +37,8 @@ export default async function BoardPage(ctx) {
           themeName={themeDecoded}
         />
       </div>
+
+
     </>
   );
 }

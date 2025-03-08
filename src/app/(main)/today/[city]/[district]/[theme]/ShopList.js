@@ -134,7 +134,7 @@ export default async function ShopList({ city, district, theme }) {
       {data.length === 0 ? (
         <p>검색 결과가 없습니다!</p>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-7">
           {data.map((item) => {
             // Supabase 스토리지 경로
             const imageUrl = `https://vejthvawsbsitttyiwzv.supabase.co/storage/v1/object/public/gunma/${item.thumbnail_url}`;
@@ -148,13 +148,14 @@ export default async function ShopList({ city, district, theme }) {
             const themeList = item.partnershipsubmit_themes || [];
 
             return (
+                <>
               <Link
                 key={item.id}
                 href={detailUrl}
                 className="
                   flex flex-col md:flex-row
                   items-stretch
-                  bg-gray-100
+                 
                   p-4
                   rounded-lg
                   overflow-hidden
@@ -235,10 +236,17 @@ export default async function ShopList({ city, district, theme }) {
                       </span>
                     ))}
                   </div>
+                  
                 </div>
+                    
               </Link>
+                  <hr className="text-gray-300"/>
+              </>
+
             );
           })}
+
+      
         </div>
       )}
     </div>
