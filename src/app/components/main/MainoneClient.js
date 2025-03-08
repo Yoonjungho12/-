@@ -246,7 +246,7 @@ export default function MainoneClient({ initialRegion, initialData }) {
       {/* 모바일 슬라이드 + 데스크톱 그리드 */}
       <div className="mt-6 mx-auto max-w-7xl px-4 pb-8">
         {/* 모바일 */}
-        <div className="block sm:hidden px-8">
+        <div className="block sm:hidden px-4">
           <div
             className="
               flex
@@ -267,23 +267,23 @@ export default function MainoneClient({ initialRegion, initialData }) {
                   href={detailUrl}
                   className="
                     shrink-0 
-                    w-[330px]
+                    w-[260px]
                     snap-start
                     rounded-xl border border-gray-200 bg-white shadow-sm
                     focus-within:ring-2 focus-within:ring-blue-500
                   "
                 >
-                  <div className="w-[300px] h-[180px] mx-auto mt-3 overflow-hidden">
+                  <div className="w-[240px] h-[130px] mx-auto mt-2 overflow-hidden">
                     <Image
                       src={imageUrl}
                       alt={`${item.company_name || item.post_title} 썸네일`}
-                      width={300}
-                      height={180}
+                      width={240}
+                      height={130}
                       style={{ objectFit: "cover" }}
                       quality={30}
                       priority
                       className="rounded-2xl"
-                      sizes="300px"
+                      sizes="240px"
                     />
                   </div>
 
@@ -294,13 +294,18 @@ export default function MainoneClient({ initialRegion, initialData }) {
                     <p className="text-sm text-gray-600">
                       {item.address} 
                     </p>
-                    <p className="mt-0.5 text-xs text-gray-500">
-                      {'리뷰'+ item.comment
-                        ? typeof item.comment === "string"
-                          ? item.comment.slice(0, 30)
-                          : JSON.stringify(item.comment).slice(0, 30)
-                        : "자세한 정보 보기..."}
-                    </p>
+                            <p className="mt-0.5 text-xs text-gray-500">
+                        {
+                            item.comment
+                            ? // item.comment가 존재한다면
+                                "리뷰 " +
+                                (typeof item.comment === "string"
+                                ? item.comment.slice(0, 30)
+                                : JSON.stringify(item.comment).slice(0, 30))
+                            : // item.comment가 falsy(null/undefined/빈문자열 등)라면
+                                "자세한 정보 보기..."
+                        }
+                        </p>
                     <div className="mt-2 flex flex-wrap gap-2">
                       {themeList.map((t) => (
                         <span
