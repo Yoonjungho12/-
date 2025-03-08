@@ -127,7 +127,7 @@ export default function MyMobileUI() {
 
   return (
     // 상단 네비가 60px라고 가정 → 여기서 margin-top을 주어 본문이 가려지지 않게 함
-    <div className="max-w-[600px] mx-auto p-4 text-base text-gray-700 leading-relaxed mt-[60px]">
+    <div className="max-w-[600px] mx-auto p-4 text-base text-gray-700 leading-relaxed">
       {/* 상단 프로필 영역 */}
       <div className="flex items-center justify-between mb-4">
         {isLoggedIn ? (

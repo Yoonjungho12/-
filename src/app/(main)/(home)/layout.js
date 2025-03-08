@@ -8,7 +8,7 @@ export default function Home({ children }) {
       <div className="container mx-auto">
         {children}
       </div>
-        {/* <MobileTopBar /> */}
+
 
     </>
   );
