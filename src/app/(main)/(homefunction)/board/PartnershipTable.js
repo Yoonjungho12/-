@@ -1,6 +1,6 @@
 // src/app/(main)/board/PartnershipTable.js (서버 컴포넌트)
 
-import { supabase } from "../../lib/supabaseE";
+import { supabase } from "../../../lib/supabaseE";
 import Link from "next/link";
 
 // 슬러그 변환

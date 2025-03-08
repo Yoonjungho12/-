@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState, useRef } from "react";
-import { supabase } from "../../lib/supabaseF"; // anonKey 기반 createClient
+import { supabase } from "../../../lib/supabaseF"; // anonKey 기반 createClient
 
 export default function NewListingPage() {
   // ----------------------------------------------------------------
