@@ -3,6 +3,7 @@ import Mainone from "../components/main/main1";
 import RecommendedShops from "@/components/main/recommendedShop";
 import NewArrivalsSection from "@/components/main/newbie";
 import Footer from "@/components/Footer";
+import MainoneServer from "@/components/main/MainoneServer";
 // import RecommendedShops from "../components/main/recommendedShop";
 
 export default function Home() {
@@ -30,7 +31,7 @@ export default function Home() {
         />
       </div>
 
-      <Mainone />
+     <MainoneServer />
       <RecommendedShops />
       <NewArrivalsSection />
 
