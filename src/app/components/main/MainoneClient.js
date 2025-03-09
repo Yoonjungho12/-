@@ -134,7 +134,7 @@ export default function MainoneClient({ initialRegion, initialData }) {
         {/* 로딩 시 스켈레톤 */}
         <div className="mx-auto max-w-5xl px-4 pt-8">
           <h2 className="text-center text-2xl font-bold">
-            건마 1인샵 스웨디시 마사지 인기 순위
+                여기닷 1인샵 스웨디시 마사지 인기 순위
             <span className="ml-2 text-red-600" aria-hidden="true">❤️</span>
           </h2>
           <p className="mt-2 text-center text-gray-700">
@@ -159,7 +159,8 @@ export default function MainoneClient({ initialRegion, initialData }) {
       {/* 상단 타이틀 */}
       <div className="mx-auto max-w-5xl px-4 pt-8">
         <h2 className="text-center text-2xl font-bold">
-          건마 1인샵 스웨디시 마사지 인기 순위
+            <span className="ml-2 text-red-600" aria-hidden="true">❤️</span>
+           여기닷 1인샵 스웨디시 마사지 인기 순위
           <span className="ml-2 text-red-600" aria-hidden="true">❤️</span>
         </h2>
         <p className="mt-2 text-center text-gray-700">

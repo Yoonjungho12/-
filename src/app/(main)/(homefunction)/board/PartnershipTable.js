@@ -51,7 +51,7 @@ const tdReviewStyle = {
   textAlign: "center",
 };
 
-// VIP 배지 깜빡이는 스타일 (빨간 배경)
+// VIP 배지 깜빡이는 스타일 (글씨만 깜빡)
 const vipBadgeBlinkStyle = {
   display: "inline-block",
   color: "#fff",
@@ -60,8 +60,8 @@ const vipBadgeBlinkStyle = {
   marginRight: "6px",
   borderRadius: "4px",
   fontWeight: "bold",
-  // 깜빡이 2초 주기
-  animation: "blink 2s infinite",
+  // 글씨만 깜빡이도록!
+  animation: "textBlink 2s infinite",
 };
 
 export default async function PartnershipTable({ regionSlug, themeName }) {
@@ -180,11 +180,11 @@ export default async function PartnershipTable({ regionSlug, themeName }) {
         </table>
       )}
 
-      {/* 깜빡이 keyframes 2초 간격 */}
+      {/* 글씨만 깜빡이는 keyframes 2초 간격 */}
       <style>{`
-        @keyframes blink {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0; }
+        @keyframes textBlink {
+          0%, 100% { color: #fff; }
+          50% { color: #c23e2d; }
         }
       `}</style>
     </div>
