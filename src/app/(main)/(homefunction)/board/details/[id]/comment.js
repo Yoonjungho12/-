@@ -134,11 +134,7 @@ export default function CommentsUI({ company_name, id }) {
 
     // 로그인 체크
     const { data: userData, error: userError } = await supabase.auth.getUser();
-    if (userError) {
-      console.error("유저 정보 에러:", userError);
-      alert("로그인 정보를 확인할 수 없습니다.");
-      return;
-    }
+
     if (!userData || !userData.user) {
       alert("로그인이 필요합니다!");
       return;

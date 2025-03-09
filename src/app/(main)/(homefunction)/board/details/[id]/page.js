@@ -4,17 +4,15 @@ import DetailClient from "./DetailClient";
 
 export const dynamic = "force-dynamic";
 
-// Next.js 13 이후 버전 기준
+// Next.js 15에서 params가 Promise라 가정
 export default async function DetailPage({ params: paramsPromise }) {
-  // paramsPromise 사용 시 반드시 await 처리
+  // 1) 반드시 await!
   const params = await paramsPromise;
 
-  // URL 파라미터 확인
+  // 2) 슬러그 파싱 (예: "13-강남1인샵")
   if (!params || !params.id) {
     notFound();
   }
-
-  // 예: "13-강남1인샵" 형태 → 앞의 숫자가 DB의 id
   const slug = params.id;
   const splitted = slug.split("-");
   const numericId = splitted[0];
@@ -23,7 +21,7 @@ export default async function DetailPage({ params: paramsPromise }) {
     notFound();
   }
 
-  // partnershipsubmit 테이블에서 해당 ID 레코드 조회
+  // 3) Supabase에서 데이터 가져오기
   const { data: row, error } = await supabase
     .from("partnershipsubmit")
     .select("*")
@@ -34,7 +32,7 @@ export default async function DetailPage({ params: paramsPromise }) {
     notFound();
   }
 
-  // 이미지 목록 조회
+  // 4) 이미지 목록 조회
   const { data: images, error: imgErr } = await supabase
     .from("partnershipsubmit_images")
     .select("image_url")
@@ -44,6 +42,6 @@ export default async function DetailPage({ params: paramsPromise }) {
     console.error("이미지 목록 조회 오류:", imgErr);
   }
 
-  // 클라이언트 컴포넌트로 데이터 전달
-  return <DetailClient row={row} images={images || []} numericId={numericId} />;
+  // 5) 클라이언트 컴포넌트로 데이터 전달
+return <DetailClient row={row} images={images || []} numericId={numericId} />;
 }

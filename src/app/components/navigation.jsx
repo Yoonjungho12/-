@@ -36,18 +36,22 @@ export default function NavBar() {
         fetchUnreadCount(data.session.user.id);
       }
     });
+
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (_event, newSession) => {
         setSession(newSession);
+
         if (newSession?.user?.id) {
           fetchMyProfile(newSession.user.id);
           fetchUnreadCount(newSession.user.id);
         } else {
+          // 세션이 사라졌을 때(로그아웃 등)
           setMyNickname("");
           setUnreadCount(0);
         }
       }
     );
+
     return () => {
       authListener.subscription.unsubscribe();
     };
@@ -80,11 +84,31 @@ export default function NavBar() {
     }
   }
 
+  // ─────────────────────────────────────────────────────
+  // (A) 로그아웃 시 localStorage 키 제거
+  // ─────────────────────────────────────────────────────
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push("/");
+    try {
+      // 1) supabase 로그아웃 (세션 제거)
+      await supabase.auth.signOut();
+
+      // 2) localStorage에서 특정 키(remove)  
+      //    예: "anon_user_id"나 "user_id" 등의 key가 있으면 제거
+      //    ※ 프로젝트마다 다를 수 있으니 원하는 key를 정확히 써주세요.
+      // localStorage.removeItem("anon_user_id");
+      localStorage.removeItem("user_id"); 
+      // 위처럼 필요한 키가 더 있다면 추가로 remove 해주시면 됨.
+
+      // 3) router push
+      router.push("/");
+    } catch (err) {
+      console.error("로그아웃 실패:", err);
+      // 혹시 알림 띄우고 싶으면
+      // alert("로그아웃 중 오류가 발생했습니다!");
+    }
   };
 
+  // 메시지 아이콘
   const handleMessageIconClick = () => {
     if (!session?.user?.id) {
       alert("로그인 필요");
@@ -122,11 +146,7 @@ export default function NavBar() {
   // ─────────────────────────────────────────────────────
   return (
     <header className="w-full border-b border-gray-200 bg-white">
-      {/*
-        (A) 모바일 전용 상단바
-        - md:hidden : md 사이즈 미만에서만 보임
-        - 로고 + 넓은 검색창 (space-x-3로 로고와 검색창 사이 띄움)
-      */}
+      {/* (A) 모바일 전용 상단바 */}
       <div className="flex items-center px-4 py-3 md:hidden space-x-3">
         {/* 로고 */}
         <Link href="/">
@@ -134,18 +154,13 @@ export default function NavBar() {
             <span>여기닷</span>
           </div>
         </Link>
-
         {/* 검색창 */}
         <div className="relative flex-1">
           <input
             type="text"
             placeholder="검색"
-            className="
-              w-full rounded-full border border-red-300
-              py-3 pl-4 pr-9
-              text-base
-              focus:outline-none focus:ring-2 focus:ring-red-400
-            "
+            className="w-full rounded-full border border-red-300 py-3 pl-4 pr-9 text-base
+                       focus:outline-none focus:ring-2 focus:ring-red-400"
             onKeyDown={handleSearchKeyDown}
           />
           <svg
@@ -161,11 +176,7 @@ export default function NavBar() {
         </div>
       </div>
 
-      {/*
-        (B) PC 해상도 상단바
-        - hidden md:flex : md 이상에서만 보임
-        - 로고 + 검색창 + 오른쪽 아이콘들
-      */}
+      {/* (B) PC 해상도 상단바 */}
       <div className="mx-auto hidden max-w-7xl items-center justify-between px-6 py-3 md:flex">
         {/* 로고 영역 */}
         <Link href="/">
@@ -496,8 +507,9 @@ export default function NavBar() {
                       strokeLinejoin="round"
                       d="M3
                          8l7.89
-                         5.26a3 3
-                         0 003.22
+                         5.26a3
+                         3 0
+                         003.22
                          0L22
                          8m-9
                          13H7a2
@@ -754,5 +766,3 @@ export default function NavBar() {
     </header>
   );
 }
-
-// 나머지 로직(스타일, MessagePopup 등)은 그대로 유지
