@@ -41,47 +41,7 @@ function formatPrice(num) {
   return Number(num).toLocaleString();
 }
 
-/** (E) 스크롤 스파이 훅 */
-function useScrollSpy(sectionRefs, offset = 0) {
-  const [activeId, setActiveId] = useState(null);
-
-  useEffect(() => {
-    function handleScroll() {
-      const scrollY = window.scrollY + offset;
-      let currentSectionId = null;
-
-      for (let i = sectionRefs.length - 1; i >= 0; i--) {
-        const ref = sectionRefs[i];
-        if (!ref.current) continue;
-        const sectionTop = ref.current.offsetTop;
-        if (scrollY >= sectionTop) {
-          currentSectionId = ref.current.id;
-          break;
-        }
-      }
-
-      if (currentSectionId !== activeId) {
-        setActiveId(currentSectionId);
-      }
-    }
-
-    window.addEventListener("scroll", handleScroll);
-    handleScroll(); 
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [sectionRefs, offset, activeId]);
-
-  return activeId;
-}
-
-/** (F) 섹션으로 스크롤할 때 sticky 높이만큼 빼주기 */
-function scrollIntoSection(ref, stickyOffset = 60) {
-  if (!ref.current) return;
-  const el = ref.current;
-  const top = el.offsetTop - stickyOffset; 
-  window.scrollTo({ top, behavior: "smooth" });
-}
-
-/** (G) 지도 */
+/** (E) 지도: 현재 샵 위치만 표시 (주변샵은 따로) */
 function MapKakao({ address }) {
   const mapRef = useRef(null);
 
@@ -117,10 +77,11 @@ function MapKakao({ address }) {
   return <div ref={mapRef} className="w-full h-60 bg-gray-200" />;
 }
 
-/** (H) 주변샵 */
+/** (F) 주변샵: 30km 이내, 본인 제외, 거리순 */
 function NearbyShops({ currentShopId }) {
   const [nearbyShops, setNearbyShops] = useState([]);
 
+  // 거리 계산
   function getDistance(lat1, lng1, lat2, lng2) {
     function deg2rad(deg) {
       return deg * (Math.PI / 180);
@@ -134,42 +95,43 @@ function NearbyShops({ currentShopId }) {
         Math.cos(deg2rad(lat2)) *
         Math.sin(dLng / 2) *
         Math.sin(dLng / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
+    return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
   }
 
   useEffect(() => {
     if (!currentShopId) return;
 
     (async () => {
-      // 1) 현재 샵 lat/lng
-      const { data: currShop } = await supabase
+      // 1) 현재 샵 lat,lng
+      const { data: currShop, error: csErr } = await supabase
         .from("partnershipsubmit")
         .select("lat, lng")
         .eq("id", currentShopId)
         .maybeSingle();
 
-      if (!currShop?.lat || !currShop.lng) return;
+      if (csErr || !currShop) return;
 
-      // 2) 전체 샵
+      // 2) 전체
       const { data: allShops } = await supabase
         .from("partnershipsubmit")
         .select("id, lat, lng, company_name, address, near_building, thumbnail_url");
 
       if (!allShops) return;
 
-      const lat1 = currShop.lat;
-      const lng1 = currShop.lng;
+      // 3) 거리 계산
+      const lat1 = currShop.lat || 0;
+      const lng1 = currShop.lng || 0;
 
-      const shopsWithDist = allShops.map((s) => {
+      const withDist = allShops.map((shop) => {
         let dist = Infinity;
-        if (s.lat && s.lng) {
-          dist = getDistance(lat1, lng1, s.lat, s.lng);
+        if (shop.lat && shop.lng) {
+          dist = getDistance(lat1, lng1, shop.lat, shop.lng);
         }
-        return { ...s, distance: dist };
+        return { ...shop, distance: dist };
       });
 
-      const filtered = shopsWithDist
+      // 4) 30km + 본인제외 + 거리정렬
+      const filtered = withDist
         .filter((s) => s.id !== currentShopId)
         .filter((s) => s.distance <= 30)
         .sort((a, b) => a.distance - b.distance);
@@ -178,19 +140,22 @@ function NearbyShops({ currentShopId }) {
     })();
   }, [currentShopId]);
 
-  if (nearbyShops.length === 0) {
-    return <div className="text-gray-500">주변 30km 이내 다른 샵이 없습니다.</div>;
+  if (!nearbyShops || nearbyShops.length === 0) {
+    return (
+      <div className="text-gray-500">주변 30km 이내 다른 샵이 없습니다.</div>
+    );
   }
 
   return (
     <div className="space-y-3">
       {nearbyShops.map((shop) => (
         <a
-          href={`/board/details/${shop.id}`}
           key={shop.id}
+          href={`/board/details/${shop.id}`}
           className="block p-2 border border-gray-200 rounded hover:bg-gray-50"
         >
           <div className="flex items-center gap-3">
+            {/* 썸네일 */}
             <div className="w-20 h-20 bg-gray-100 flex-shrink-0 rounded overflow-hidden">
               {shop.thumbnail_url ? (
                 <img
@@ -207,6 +172,7 @@ function NearbyShops({ currentShopId }) {
                 </div>
               )}
             </div>
+            {/* 정보 */}
             <div>
               <p className="font-bold">{shop.company_name}</p>
               <p className="text-sm text-gray-600">
@@ -218,7 +184,7 @@ function NearbyShops({ currentShopId }) {
                 </p>
               )}
               <p className="text-sm text-blue-600 mt-1">
-                거리: {shop.distance?.toFixed(2)} km
+                거리: {shop.distance.toFixed(2)} km
               </p>
             </div>
           </div>
@@ -228,11 +194,11 @@ function NearbyShops({ currentShopId }) {
   );
 }
 
-/** (I) 메인 컴포넌트 */
+/** (G) 메인 컴포넌트 */
 export default function DetailClient({ row, images, numericId }) {
-  // ─────────────────────────────
+  // ─────────────────────────────────────────────────────────
   // 1) session, 조회수, 가고싶다
-  // ─────────────────────────────
+  // ─────────────────────────────────────────────────────────
   const [session, setSession] = useState(null);
   const [isSaved, setIsSaved] = useState(false);
   const [views, setViews] = useState(row.views || 0);
@@ -241,14 +207,12 @@ export default function DetailClient({ row, images, numericId }) {
   useEffect(() => {
     supabase.auth
       .getSession()
-      .then(({ data, error }) => {
-        if (!error && data) {
-          setSession(data.session || null);
-        }
+      .then(({ data }) => {
+        setSession(data?.session || null);
       })
-      .catch(console.error);
+      .catch((e) => console.error("getSession error:", e));
 
-    const { data: authListener } = supabase.auth.onAuthStateChange(
+    const { data: listener } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
         setSession(newSession);
         if (event === "SIGNED_IN" && newSession?.user?.id) {
@@ -264,9 +228,8 @@ export default function DetailClient({ row, images, numericId }) {
         }
       }
     );
-
     return () => {
-      authListener?.subscription.unsubscribe();
+      listener?.subscription.unsubscribe();
     };
   }, []);
 
@@ -277,36 +240,32 @@ export default function DetailClient({ row, images, numericId }) {
     userId = getOrCreateAnonUuid();
   }
 
-  // 조회수 +1 (24h 중복)
+  // 조회수 +1 (24h)
   useEffect(() => {
-    if (!userId || !numericId) return;
-    if (hasCountedView) return;
-
+    if (!userId || !numericId || hasCountedView) return;
     (async () => {
       try {
         const _24hAgo = new Date(Date.now() - 86400000).toISOString();
-        const { data: recentLogs } = await supabase
+        const { data: logs } = await supabase
           .from("partnershipsubmit_views_log")
           .select("*")
           .eq("user_id", userId)
           .eq("partnershipsubmit_id", numericId)
           .gt("last_viewed_at", _24hAgo);
 
-        if (!recentLogs || recentLogs.length === 0) {
-          // +1
-          const { data: old } = await supabase
+        if (!logs || logs.length === 0) {
+          const { data: rowData } = await supabase
             .from("partnershipsubmit")
             .select("views")
             .eq("id", numericId)
             .single();
-          const newViews = (old?.views || 0) + 1;
+          const newViews = (rowData?.views || 0) + 1;
           const { data: updated } = await supabase
             .from("partnershipsubmit")
             .update({ views: newViews })
             .eq("id", numericId)
             .select("views")
             .single();
-
           if (updated) {
             setViews(updated.views);
           }
@@ -321,13 +280,13 @@ export default function DetailClient({ row, images, numericId }) {
           );
         }
       } catch (err) {
-        console.error("조회수 로직 오류:", err);
+        console.error("조회수 오류:", err);
       }
       setHasCountedView(true);
     })();
   }, [userId, numericId, hasCountedView]);
 
-  // “가고싶다”
+  // 가고싶다
   useEffect(() => {
     if (!session?.user?.id || !numericId) return;
     supabase
@@ -350,24 +309,22 @@ export default function DetailClient({ row, images, numericId }) {
       return;
     }
     if (isSaved) {
-      alert("이미 가고싶다에 등록됨!");
+      alert("이미 등록됨!");
       return;
     }
     try {
-      const realId = session.user.id;
       const { error } = await supabase.from("wantToGo").insert({
-        user_id: realId,
+        user_id: session.user.id,
         partnershipsubmit_id: numericId,
       });
       if (!error) {
         setIsSaved(true);
-        alert("가고싶다 등록 성공!");
+        alert("가고싶다 성공!");
       } else {
         alert("가고싶다 오류: " + error.message);
       }
     } catch (e) {
-      console.error("가고싶다 오류:", e);
-      alert("가고싶다 오류: " + e);
+      alert("handleSave error: " + e);
     }
   }
 
@@ -392,8 +349,10 @@ export default function DetailClient({ row, images, numericId }) {
   const [lowestPrice, setLowestPrice] = useState(0);
 
   useEffect(() => {
-    if (!numericId) return setLoadingSections(false);
-
+    if (!numericId) {
+      setLoadingSections(false);
+      return;
+    }
     (async () => {
       try {
         const { data: secRows } = await supabase
@@ -416,11 +375,11 @@ export default function DetailClient({ row, images, numericId }) {
           .order("display_order", { ascending: true });
 
         const merged = secRows.map((sec) => {
-          const relevant = (couRows || []).filter((c) => c.section_id === sec.id);
+          const related = (couRows || []).filter((c) => c.section_id === sec.id);
           return {
             ...sec,
             isOpen: true,
-            courses: relevant.map((c) => ({
+            courses: related.map((c) => ({
               id: c.id,
               course_name: c.course_name,
               duration: c.duration || "",
@@ -429,9 +388,9 @@ export default function DetailClient({ row, images, numericId }) {
             })),
           };
         });
+
         setSectionsData(merged);
 
-        // 최저가
         let minP = Infinity;
         (couRows || []).forEach((cc) => {
           if (cc.price && cc.price < minP) {
@@ -441,7 +400,7 @@ export default function DetailClient({ row, images, numericId }) {
         if (minP === Infinity) minP = 0;
         setLowestPrice(minP);
       } catch (err) {
-        console.error("코스 로드 오류:", err);
+        console.error("섹션/코스 오류:", err);
       } finally {
         setLoadingSections(false);
       }
@@ -450,9 +409,7 @@ export default function DetailClient({ row, images, numericId }) {
 
   function toggleSectionOpen(secId) {
     setSectionsData((prev) =>
-      prev.map((s) =>
-        s.id === secId ? { ...s, isOpen: !s.isOpen } : s
-      )
+      prev.map((s) => (s.id === secId ? { ...s, isOpen: !s.isOpen } : s))
     );
   }
 
@@ -475,28 +432,44 @@ export default function DetailClient({ row, images, numericId }) {
   }
 
   // ─────────────────────────────
-  // 5) 스크롤 + 탭
+  // 5) 탭 상태 (info|course|review)
   // ─────────────────────────────
+  const [activeTab, setActiveTab] = useState("info");
+
+  // 스크롤 위치로 탭을 바꾸지 않고, **클릭 시** 즉시 탭 표시
   const infoRef = useRef(null);
   const courseRef = useRef(null);
   const reviewRef = useRef(null);
 
-  const [reviewCount, setReviewCount] = useState(0);
-
-  const stickyOffset = 60; 
-  const activeId = useScrollSpy([infoRef, courseRef, reviewRef], stickyOffset);
-
-  function getTabClass(id) {
+  function getTabClass(tabId) {
     return `flex-1 py-3 text-center font-semibold ${
-      activeId === id ? "border-b-2 border-red-500 text-red-500" : ""
+      activeTab === tabId ? "border-b-2 border-red-500 text-red-500" : ""
     }`;
   }
 
-  // 탭 클릭 시, sticky만큼 빼고 스크롤하기
-  function scrollToSection(ref) {
-    scrollIntoSection(ref, stickyOffset);
+  function scrollToRef(ref) {
+    if (!ref.current) return;
+    // 스크롤(약간 상단 여백을 50px로)
+    const offset = 50;
+    const yPos = ref.current.offsetTop - offset;
+    window.scrollTo({ top: yPos, behavior: "smooth" });
   }
 
+  function handleTabClick(tabId) {
+    setActiveTab(tabId);
+    if (tabId === "info") {
+      scrollToRef(infoRef);
+    } else if (tabId === "course") {
+      scrollToRef(courseRef);
+    } else if (tabId === "review") {
+      scrollToRef(reviewRef);
+    }
+  }
+
+  // 리뷰 수
+  const [reviewCount, setReviewCount] = useState(0);
+
+  // 연락방법 최종
   const fullContact = row.contact_method
     ? row.contact_method + (row.near_building ? ` / ${row.near_building}` : "")
     : row.near_building || "";
@@ -520,7 +493,7 @@ export default function DetailClient({ row, images, numericId }) {
             이미지 없음
           </div>
         )}
-        {/* 가고싶다 버튼 */}
+        {/* (A-1) 가고싶다 버튼 */}
         {session?.user?.id && (
           <button
             onClick={handleSave}
@@ -528,7 +501,7 @@ export default function DetailClient({ row, images, numericId }) {
               flex items-center justify-center
               ${isSaved ? "text-red-400" : "text-white"}`}
           >
-            {/* ♥ 아이콘 */}
+            {/* 하트 아이콘 */}
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
@@ -541,11 +514,11 @@ export default function DetailClient({ row, images, numericId }) {
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 d="M12 21l-1.45-1.342C5.4
-                  15.36 2 12.28 2 8.5 2 5.42
-                  4.42 3 7.5 3c1.74 0
-                  3.41.81 4.5 2.09A5.987
-                  5.987 0 0 1 16.5 3c3.08 0
-                  5.5 2.42 5.5 5.5 0 3.78-3.4
+                  15.36 2 12.28 2 8.5 2 5.42 4.42 3
+                  7.5 3c1.74 0 3.41.81 4.5
+                  2.09A5.987 5.987 0 0 1
+                  16.5 3c3.08 0 5.5 2.42
+                  5.5 5.5 0 3.78-3.4
                   6.86-8.55 11.158L12 21z"
               />
             </svg>
@@ -553,74 +526,100 @@ export default function DetailClient({ row, images, numericId }) {
         )}
       </div>
 
-      {/* (B) 스티키 탭 */}
+      {/* (B) 탭 + 회사명, 조회수, 코멘트수 */}
       <div
-        className="sticky top-[60px] bg-white z-10 flex border-b border-gray-200"
+        // 바뀐 부분: top-[50px]
+        className="sticky top-[50px] bg-white z-10 flex flex-col border-b border-gray-200"
         style={{ marginTop: 0 }}
       >
-        <button
-          className={getTabClass("info")}
-          onClick={() => scrollToSection(infoRef)}
-        >
-          샵정보
-        </button>
-        <button
-          className={getTabClass("course")}
-          onClick={() => scrollToSection(courseRef)}
-        >
-          코스안내
-        </button>
-        <button
-          className={getTabClass("review")}
-          onClick={() => scrollToSection(reviewRef)}
-        >
-          리뷰 {reviewCount}
-        </button>
+       
+        {/* (B-3) 탭 */}
+        <div className="flex">
+          <button
+            className={getTabClass("info")}
+            onClick={() => handleTabClick("info")}
+          >
+            샵정보
+          </button>
+          <button
+            className={getTabClass("course")}
+            onClick={() => handleTabClick("course")}
+          >
+            코스안내
+          </button>
+          <button
+            className={getTabClass("review")}
+            onClick={() => handleTabClick("review")}
+          >
+            리뷰 {reviewCount}
+          </button>
+        </div>
       </div>
 
       {/* (C) 샵정보 섹션 */}
       <section id="info" ref={infoRef} className="px-4 pt-4 pb-6">
-        {/* 상호 + 조회수 */}
-        <div className="flex items-center justify-between mb-3">
+        {/* (C-1) */}
+
+        <div className="flex items-center justify-center gap-4 pb-2"></div>
+         {/* (B-1) 중앙정렬 company_name */}
+        <div className="p-2 text-center">
           <h2 className="text-xl font-bold">{row.company_name}</h2>
-          {/* 조회수 */}
-          <div className="flex items-center text-gray-500">
+        </div>
+
+        {/* (B-2) 조회수 & 코멘트 */}
+        <div className="flex items-center justify-center gap-4 pb-2">
+          {/* 조회수 아이콘 */}
+          <div className="flex items-center text-gray-500 gap-1">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               strokeWidth="2"
               stroke="currentColor"
               viewBox="0 0 24 24"
-              className="w-5 h-5 mr-1"
+              className="w-5 h-5"
             >
+              {/* 눈 아이콘 (사진처럼) */}
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                d="M3.98 8.223c1.7-2.877
-                  4.335-5.223 8.02-5.223s6.32
-                  2.346 8.02 5.223a13.06
-                  13.06 0 0 1 0
-                  7.554c-1.7 2.877-4.335
-                  5.223-8.02 5.223s-6.32-2.346-8.02-5.223a13.06
-                  13.06 0 0 1 0-7.554Z"
+                d="M1 12c2-4 
+                  6-7 11-7s9 3 11 7c-2 4-6 7-11 7s-9-3-11-7z"
               />
+              <circle cx="12" cy="12" r="2.5" />
+            </svg>
+            <span>{views}</span>
+          </div>
+
+          {/* 사람 아이콘 + comment */}
+          <div className="flex items-center text-gray-500 gap-1">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              strokeWidth="2"
+              stroke="currentColor"
+              className="w-5 h-5"
+              viewBox="0 0 24 24"
+            >
+              {/* 사람 아이콘 (사진처럼) */}
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                d="M15
-                  12a3 3 0 1 1-6
-                  0 3 3 0 0
-                  1 6 0Z"
+                d="M12 11.5c1.93 0 
+                  3.5-1.57 3.5-3.5S13.93 4.5 12 4.5
+                  8.5 6.07 8.5 8 10.07 11.5 
+                  12 11.5zm-5 6v-.5C7 
+                  15.57 9.57 14 12 
+                  14s5 1.57 5 3.5v.5"
               />
             </svg>
-            {views}
+            <span>{reviewCount}</span>
           </div>
         </div>
 
         {/* 지도 */}
         <MapKakao address={row.address} />
 
-        {/* 정보 목록 */}
+        {/* DetailRows */}
         <div className="mt-4">
           <DetailRow label="오시는길" value={row.address_street} />
           {lowestPrice > 0 && (
@@ -630,13 +629,13 @@ export default function DetailClient({ row, images, numericId }) {
             />
           )}
           <DetailRow label="전화번호" value={row.phone_number} />
-          <DetailRow label="연락방법" value={row.contact_method} />
+          <DetailRow label="연락방법" value={fullContact} />
           <DetailRow label="영업시간" value={row.open_hours} />
           <DetailRow label="주차안내" value={row.parking_type} />
           <DetailRow label="관리사님" value={row.manager_desc} />
         </div>
 
-        {/* 이벤트 / 업체소개 */}
+        {/* 이벤트 + 업체소개 */}
         {row.event_info?.trim() && (
           <div className="mt-4 bg-gray-50 p-3 rounded">
             <DetailRow label="이벤트" value={row.event_info} />
@@ -650,11 +649,7 @@ export default function DetailClient({ row, images, numericId }) {
       </section>
 
       {/* (D) 코스안내 섹션 */}
-      <section
-        id="course"
-        ref={courseRef}
-        className="px-4 pt-4 pb-6 border-t border-gray-100"
-      >
+      <section id="course" ref={courseRef} className="px-4 pt-4 pb-6 border-t">
         <h2 className="text-xl font-bold mb-2">코스안내</h2>
         <p className="text-sm text-gray-500 mb-2">
           ※ 휴대폰 전원이 OFF인 경우, 샵 휴무 또는 예약이 꽉 찼을 수 있습니다.
@@ -672,7 +667,13 @@ export default function DetailClient({ row, images, numericId }) {
                 className="border border-gray-200 rounded overflow-hidden"
               >
                 <button
-                  onClick={() => toggleSectionOpen(sec.id)}
+                  onClick={() => {
+                    setSectionsData((prev) =>
+                      prev.map((s) =>
+                        s.id === sec.id ? { ...s, isOpen: !s.isOpen } : s
+                      )
+                    );
+                  }}
                   className="w-full flex items-center justify-between bg-gray-100 px-4 py-2"
                 >
                   <span className="font-semibold text-gray-700">
@@ -724,11 +725,7 @@ export default function DetailClient({ row, images, numericId }) {
       </section>
 
       {/* (E) 리뷰 섹션 */}
-      <section
-        id="review"
-        ref={reviewRef}
-        className="px-4 pt-4 pb-6 border-t border-gray-100"
-      >
+      <section id="review" ref={reviewRef} className="px-4 pt-4 pb-6 border-t">
         <h2 className="text-xl font-bold mb-2">리뷰 {reviewCount}</h2>
         <p className="text-sm text-gray-500 mb-2">
           {row.company_name} 업체에 리뷰를 남겨보세요!
@@ -736,12 +733,12 @@ export default function DetailClient({ row, images, numericId }) {
         <CommentsUI
           company_name={row.company_name}
           id={row.id}
-          onNewComment={() => setReviewCount((prev) => prev + 1)}
+          onNewComment={() => setReviewCount((n) => n + 1)}
         />
       </section>
 
       {/* (F) 주변샵 */}
-      <section className="px-4 pt-4 pb-20 border-t border-gray-100">
+      <section className="px-4 pt-4 pb-20 border-t">
         <h2 className="text-xl font-bold mb-2">주변샵</h2>
         <NearbyShops currentShopId={numericId} />
       </section>
