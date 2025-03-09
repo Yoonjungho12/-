@@ -1,11 +1,13 @@
 "use client";
 import React, { useEffect, useState, useRef } from "react";
-import { supabase } from "../../../lib/supabaseF"; // anonKey 기반 createClient
+import { useRouter } from "next/navigation";
+import { supabase } from "../../../lib/supabaseF";
 
 export default function NewListingPage() {
   // ----------------------------------------------------------------
   // 1) 로그인 세션 & 내가 올린 신청서 리스트
   // ----------------------------------------------------------------
+  const router = useRouter();
   const [session, setSession] = useState(null);
   const [mySubmits, setMySubmits] = useState([]);
 
@@ -43,7 +45,6 @@ export default function NewListingPage() {
     };
   }, []);
 
-  // 내가 올린 신청서 목록 불러오기
   async function loadMySubmits(userId) {
     try {
       const { data, error } = await supabase
@@ -62,13 +63,13 @@ export default function NewListingPage() {
   }
 
   // ----------------------------------------------------------------
-  // 2) "수정하기" or "이미지 업로드" 버튼 → handleEditClick
+  // 2) "수정하기" or "내 가게 관리" 버튼 → handleEditClick
   // ----------------------------------------------------------------
   async function handleEditClick(submitId, isAdmitted) {
     setEditId(submitId);
     setEditIsAdmitted(isAdmitted);
 
-    // 승인완료건이면 이미지 업로드 섹션으로 스크롤 이동
+    // 승인완료건이면 이미지 업로드 섹션으로 스크롤
     setShouldFocusImage(isAdmitted);
 
     // 기존 내용 불러오기
@@ -84,7 +85,7 @@ export default function NewListingPage() {
         return;
       }
 
-      // 폼 값 설정
+      // 폼 값 채우기
       setAdType(row.ad_type || "");
       setSelectedRegionId(row.region_id || null);
       setPendingSubRegionId(row.sub_region_id || null);
@@ -97,27 +98,24 @@ export default function NewListingPage() {
       setContactMethod(row.contact_method || "");
       setGreeting(row.greeting || "");
       setEventInfo(row.event_info || "");
-      // ★ 지번 vs 도로명 분리
-      setAddressInput(row.address || "");         
-      setAddressStreet(row.address_street || ""); 
+      setAddressInput(row.address || "");
+      setAddressStreet(row.address_street || "");
       setNearBuilding(row.near_building || "");
       setOpenHours(row.open_hours || "");
       setProgramInfo(row.program_info || "");
       setPostTitle(row.post_title || "");
       setManagerDesc(row.manager_desc || "");
 
-      // 테마(M:N)
-      const { data: themeRows, error: themeErr } = await supabase
+      const { data: themeRows } = await supabase
         .from("partnershipsubmit_themes")
         .select("theme_id")
         .eq("submit_id", submitId);
 
-      if (!themeErr && themeRows) {
+      if (themeRows) {
         const themeIds = themeRows.map((t) => t.theme_id);
         setSelectedThemeIds(themeIds);
       }
 
-      // 지도 좌표도 있으면
       if (row.lat && row.lng) {
         setMarkerPosition({ lat: row.lat, lng: row.lng });
       }
@@ -130,7 +128,6 @@ export default function NewListingPage() {
   // 3) 일반 폼 상태
   // ----------------------------------------------------------------
   const [adType, setAdType] = useState("");
-
   const [regions, setRegions] = useState([]);
   const [selectedRegionId, setSelectedRegionId] = useState(null);
   const [childRegions, setChildRegions] = useState([]);
@@ -146,18 +143,14 @@ export default function NewListingPage() {
   const [contactMethod, setContactMethod] = useState("");
   const [greeting, setGreeting] = useState("");
   const [eventInfo, setEventInfo] = useState("");
-
-  // ★ 동시에 지번, 도로명 둘 다
-  const [addressInput, setAddressInput] = useState("");   // 지번
-  const [addressStreet, setAddressStreet] = useState(""); // 도로명
-
+  const [addressInput, setAddressInput] = useState("");
+  const [addressStreet, setAddressStreet] = useState("");
   const [nearBuilding, setNearBuilding] = useState("");
   const [openHours, setOpenHours] = useState("");
   const [programInfo, setProgramInfo] = useState("");
   const [postTitle, setPostTitle] = useState("");
   const [managerDesc, setManagerDesc] = useState("");
 
-  // 테마 (M:N)
   const [themes, setThemes] = useState([]);
   const [selectedThemeIds, setSelectedThemeIds] = useState([]);
 
@@ -207,7 +200,6 @@ export default function NewListingPage() {
   }, []);
 
   useEffect(() => {
-    // 하위 지역
     async function fetchChildRegions() {
       if (selectedRegionId) {
         const { data, error } = await supabase
@@ -248,12 +240,10 @@ export default function NewListingPage() {
     lng: 127.027618,
   });
 
-  // 지도 초기화
   useEffect(() => {
     if (!window.kakao) {
       const script = document.createElement("script");
-      script.src =
-        `//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY}&libraries=services&autoload=false`;
+      script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY}&libraries=services&autoload=false`;
       script.onload = () => {
         window.kakao.maps.load(() => {
           initMap(markerPosition.lat, markerPosition.lng);
@@ -282,43 +272,36 @@ export default function NewListingPage() {
     marker.setMap(map);
     markerRef.current = marker;
 
-    // 지도 클릭 → coord2Address
     kakao.maps.event.addListener(map, "click", (mouseEvent) => {
       const latlng = mouseEvent.latLng;
       marker.setPosition(latlng);
       setMarkerPosition({ lat: latlng.getLat(), lng: latlng.getLng() });
 
       const geocoder = new kakao.maps.services.Geocoder();
-      geocoder.coord2Address(
-        latlng.getLng(),
-        latlng.getLat(),
-        (result, status) => {
-          if (status === kakao.maps.services.Status.OK) {
-            const road = result[0].road_address;   // 도로명
-            const jibun = result[0].address;       // 지번
-            if (road) {
-              let fullRoad = road.address_name;
-              if (road.building_name && road.building_name.trim()) {
-                fullRoad += " " + road.building_name;
-              }
-              setAddressStreet(fullRoad);
-            } else {
-              setAddressStreet("");
+      geocoder.coord2Address(latlng.getLng(), latlng.getLat(), (result, status) => {
+        if (status === kakao.maps.services.Status.OK) {
+          const road = result[0].road_address;
+          const jibun = result[0].address;
+          if (road) {
+            let fullRoad = road.address_name;
+            if (road.building_name && road.building_name.trim()) {
+              fullRoad += " " + road.building_name;
             }
+            setAddressStreet(fullRoad);
+          } else {
+            setAddressStreet("");
+          }
 
-            if (jibun) {
-              setAddressInput(jibun.address_name);
-            } else {
-              setAddressInput("");
-            }
+          if (jibun) {
+            setAddressInput(jibun.address_name);
+          } else {
+            setAddressInput("");
           }
         }
-      );
+      });
     });
   }
 
-  // “주소 입력 후 검색” 클릭 시 → addressSearch → (좌표만 얻고) → coord2Address로 다시 변환
-  // → 지번 + 도로명 모두 저장
   function handleAddressSearch() {
     const { kakao } = window;
     if (!kakao || !kakao.maps) return;
@@ -326,12 +309,10 @@ export default function NewListingPage() {
     const geocoder = new kakao.maps.services.Geocoder();
     geocoder.addressSearch(addressInput, (result, status) => {
       if (status === kakao.maps.services.Status.OK) {
-        // 좌표 (위/경도) 추출
         const newLat = result[0].y;
         const newLng = result[0].x;
         setMarkerPosition({ lat: newLat, lng: newLng });
 
-        // 지도/마커 이동
         if (mapObjectRef.current && markerRef.current) {
           const moveLatLng = new kakao.maps.LatLng(newLat, newLng);
           mapObjectRef.current.setCenter(moveLatLng);
@@ -340,11 +321,10 @@ export default function NewListingPage() {
           initMap(newLat, newLng);
         }
 
-        // 다시 coord2Address로 “지번+도로명 둘 다” 가져옴
         geocoder.coord2Address(newLng, newLat, (res2, stat2) => {
           if (stat2 === kakao.maps.services.Status.OK) {
-            const road = res2[0].road_address; // 도로명
-            const jibun = res2[0].address;     // 지번
+            const road = res2[0].road_address;
+            const jibun = res2[0].address;
 
             if (road) {
               let fullRoad = road.address_name;
@@ -387,7 +367,6 @@ export default function NewListingPage() {
     if (!managerContact.trim()) return "담당자 연락처 필수입니다.";
     if (!parkingType) return "주차방법을 선택해주세요.";
     if (!shopType) return "샵형태를 선택해주세요.";
-    // "둘 다"가 항상 필요하면:
     if (!addressInput.trim() || !addressStreet.trim()) {
       return "지번 주소와 도로명 주소 모두 필요합니다. 지도를 클릭하거나 검색을 다시 확인해주세요.";
     }
@@ -431,9 +410,8 @@ export default function NewListingPage() {
       contact_method: contactMethod,
       greeting,
       event_info: eventInfo,
-      // 지번 vs 도로명 모두 전달
-      address: addressInput,         // 지번 주소
-      address_street: addressStreet, // 도로명 주소
+      address: addressInput,
+      address_street: addressStreet,
       near_building: nearBuilding,
       open_hours: openHours,
       program_info: programInfo,
@@ -520,7 +498,7 @@ export default function NewListingPage() {
     }
 
     try {
-      // 썸네일
+      // 썸네일 업로드
       let thumbnailUrl = null;
       if (thumbnailFile) {
         const fileExt = thumbnailFile.name.split(".").pop();
@@ -545,7 +523,7 @@ export default function NewListingPage() {
         }
       }
 
-      // 추가 이미지
+      // 추가 이미지 업로드
       for (let i = 0; i < multiFiles.length; i++) {
         const file = multiFiles[i];
         const ext = file.name.split(".").pop();
@@ -605,7 +583,8 @@ export default function NewListingPage() {
             {mySubmits.map((submit) => {
               const isAdmitted = submit.is_admitted;
               const statusLabel = isAdmitted ? "승인완료" : "심사 중";
-              const buttonText = isAdmitted ? "이미지 업로드" : "수정하기";
+              // 버튼 텍스트 변경
+              const buttonText = isAdmitted ? "내 가게 관리" : "수정하기";
               const title = submit.post_title?.trim() || "무제";
 
               return (
@@ -616,7 +595,15 @@ export default function NewListingPage() {
                   <span className="font-medium">[{title}]</span>
                   <button
                     type="button"
-                    onClick={() => handleEditClick(submit.id, isAdmitted)}
+                    onClick={() => {
+                      if (isAdmitted) {
+                        // 클릭하면 /myshop 으로 이동
+                        router.push(`/myshop/${submit.id}`);
+                      } else {
+                        // 기존 수정 로직
+                        handleEditClick(submit.id, isAdmitted);
+                      }
+                    }}
                     className="px-2 py-1 text-sm bg-green-200 rounded hover:bg-green-300 ml-2"
                   >
                     {buttonText}
@@ -639,7 +626,7 @@ export default function NewListingPage() {
           }
         </h1>
 
-        {/* 광고위치 */}
+   {/* 광고위치 */}
         <div className="flex flex-col sm:flex-row gap-2 items-center">
           <label className="w-32 font-semibold">상품(광고위치)</label>
           <div className="flex gap-3">
@@ -989,7 +976,6 @@ export default function NewListingPage() {
           />
         </div>
 
-        {/* 등록/수정 버튼 */}
         <div>
           <button
             type="submit"
