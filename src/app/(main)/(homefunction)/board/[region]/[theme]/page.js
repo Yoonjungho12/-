@@ -11,7 +11,7 @@ export async function generateMetadata({ params }) {
   const themeDecoded = decodeURIComponent(awaitedParams.theme);
 
   // ② 원하는 title, description 등 메타 정보 구성
-  const pageTitle = `여기닷 ${regionDecoded} - 여기닷/${themeDecoded} 정보`;
+  const pageTitle = `여기닷 ${regionDecoded} ${themeDecoded} 추천 및 ${regionDecoded}마사지 정보`;
   const pageDesc = `${regionDecoded} 지역의 ${themeDecoded} 업소 정보 및 리뷰를 확인하세요.`;
 
   return {
