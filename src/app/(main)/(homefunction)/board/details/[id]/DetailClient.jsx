@@ -23,8 +23,7 @@ function getOrCreateAnonUuid() {
 
 /** (2) 스토리지 경로 빌더 */
 function buildPublicImageUrl(path) {
-  // 주의: next.config.js → images.domains 에
-  // "vejthvawsbsitttyiwzv.supabase.co" 추가 필요!
+  // 주의: next.config.js → images.domains 에 "vejthvawsbsitttyiwzv.supabase.co" 추가 필요!
   return `https://vejthvawsbsitttyiwzv.supabase.co/storage/v1/object/public/gunma/${path}`;
 }
 
@@ -42,8 +41,6 @@ function DetailRow({ label, value }) {
 
 /**
  * (4) 메인 컴포넌트
- * - 익명 user_id + 실제 user_id 병행
- * - 로그인 시 "익명 user_id" → "session.user.id"로 DB 기록 merge
  */
 export default function DetailClient({ row, images, numericId }) {
   // ① supabase 세션
@@ -62,8 +59,9 @@ export default function DetailClient({ row, images, numericId }) {
   // (A) 컴포넌트 마운트 시: 세션 + onAuthStateChange
   // ─────────────────────────────────────────
   useEffect(() => {
-    // Supabase 현재 세션 가져오기
-    supabase.auth.getSession()
+    // (A-1) 현재 세션 가져오기
+    supabase.auth
+      .getSession()
       .then(({ data, error }) => {
         if (error) {
           console.error("[getSession error]:", error);
@@ -75,17 +73,17 @@ export default function DetailClient({ row, images, numericId }) {
         console.error("[getSession catch]:", err);
       });
 
-    // onAuthStateChange
+    // (A-2) onAuthStateChange
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
         setSession(newSession);
 
-        // “로그인 직후”라면 anon_user_id → session.user.id merge
+        // “로그인 직후” → anon_user_id를 session.user.id로 병합
         if (event === "SIGNED_IN" && newSession?.user?.id) {
           const realId = newSession.user.id;
           const anonId = localStorage.getItem("anon_user_id");
           if (anonId && anonId !== realId) {
-            console.log("MERGE from anon=", anonId, "to real=", realId);
+            console.log("MERGE from anon=", anonId, "→ real=", realId);
             try {
               // 예시: partnershipsubmit_views_log
               await supabase
@@ -93,7 +91,7 @@ export default function DetailClient({ row, images, numericId }) {
                 .update({ user_id: realId })
                 .eq("user_id", anonId);
 
-              // wantToGo 등 다른 테이블도 필요하다면 유사하게 update
+              // "wantToGo" 등 다른 테이블도 비슷하게 update 가능
 
               // localStorage 상 anon_user_id를 realId로 덮어씀
               localStorage.setItem("anon_user_id", realId);
@@ -102,8 +100,7 @@ export default function DetailClient({ row, images, numericId }) {
             }
           }
         }
-
-        // 로그아웃시 anon_user_id 새로 발급 or 그냥 유지는 취향대로
+        // 로그아웃 시 anon_user_id를 새 발급할지, 그대로 둘지는 취향
       }
     );
 
@@ -115,11 +112,11 @@ export default function DetailClient({ row, images, numericId }) {
   // ─────────────────────────────────────────
   // (B) user_id 결정 (로그인 유저 vs anon)
   // ─────────────────────────────────────────
+  // 로그인 유저면 session.user.id, 아니면 anon_user_id
   let userId = null;
   if (session?.user?.id) {
     userId = session.user.id; // 실제 유저
   } else if (typeof window !== "undefined") {
-    // 비로그인 시, 익명 아이디
     userId = getOrCreateAnonUuid(); 
   }
 
@@ -127,75 +124,80 @@ export default function DetailClient({ row, images, numericId }) {
   // (C) 24시간 중복 체크 → views +1
   // ─────────────────────────────────────────
   useEffect(() => {
-    // 만약 "로그인 안 된" 상태면, Supabase 호출을 아예 skip
-    // 즉, 콘솔 오류 없애기 위해 로그인 안된 사용자에게는 조회수 +1 미실시
-    if (!session?.user?.id) {
-      return;
-    }
-
-    if (!numericId) return;
-    if (hasCountedView) return;
+    if (!userId) return;      // userId 없으면 return (이론상 발생X)
+    if (!numericId) return;   // 파라미터 없으면 return
+    if (hasCountedView) return; // 이미 카운트 했다면 return
 
     (async () => {
-      const _24hAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      try {
+        // 24시간 전 시점
+        const _24hAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-      // 먼저 partnershipsubmit_views_log 테이블 조회
-      const { data: logRows, error: logErr } = await supabase
-        .from("partnershipsubmit_views_log")
-        .select("id, last_viewed_at")
-        .eq("user_id", session.user.id)
-        .eq("partnershipsubmit_id", numericId)
-        .gt("last_viewed_at", _24hAgo);
+        // 1) partnershipsubmit_views_log에서 최근 기록이 24h 내 있는지 확인
+        const { data: logRows, error: logErr } = await supabase
+          .from("partnershipsubmit_views_log")
+          .select("id, last_viewed_at")
+          .eq("user_id", userId)
+          .eq("partnershipsubmit_id", numericId)
+          .gt("last_viewed_at", _24hAgo);
 
-      if (logErr) {
-        console.error("logRows error:", logErr);
-        setHasCountedView(true);
-        return;
-      }
+        if (logErr) {
+          console.error("logRows error:", logErr);
+          setHasCountedView(true);
+          return;
+        }
 
-      // 24h내 기록 없으면 +1
-      if (!logRows || logRows.length === 0) {
-        const { data: oldData, error: oldErr } = await supabase
-          .from("partnershipsubmit")
-          .select("views")
-          .eq("id", numericId)
-          .single();
-
-        if (!oldErr && oldData) {
-          const currViews = oldData.views || 0;
-          const newViews = currViews + 1;
-          const { data: updated, error: updErr } = await supabase
+        // 2) 24h 내 기록이 없으면 → views +1
+        if (!logRows || logRows.length === 0) {
+          // 현재 partnershipsubmit 조회
+          const { data: oldData, error: oldErr } = await supabase
             .from("partnershipsubmit")
-            .update({ views: newViews })
-            .eq("id", numericId)
             .select("views")
+            .eq("id", numericId)
             .single();
 
-          if (!updErr && updated) {
-            setViews(updated.views);
-          }
+          if (!oldErr && oldData) {
+            const currViews = oldData.views || 0;
+            const newViews = currViews + 1;
 
-          // logs upsert
-          await supabase
-            .from("partnershipsubmit_views_log")
-            .upsert({
-              user_id: session.user.id,
-              partnershipsubmit_id: numericId,
-              last_viewed_at: new Date().toISOString(),
-            }, {
-              onConflict: "user_id, partnershipsubmit_id",
-            });
+            // views update
+            const { data: updated, error: updErr } = await supabase
+              .from("partnershipsubmit")
+              .update({ views: newViews })
+              .eq("id", numericId)
+              .select("views")
+              .single();
+
+            if (!updErr && updated) {
+              setViews(updated.views); // state 갱신
+            }
+
+            // partnershipsubmit_views_log upsert
+            await supabase
+              .from("partnershipsubmit_views_log")
+              .upsert(
+                {
+                  user_id: userId,
+                  partnershipsubmit_id: numericId,
+                  last_viewed_at: new Date().toISOString(),
+                },
+                { onConflict: "user_id, partnershipsubmit_id" }
+              );
+          }
         }
+      } catch (error) {
+        console.error("조회수 증가 로직 오류:", error);
       }
+
       setHasCountedView(true);
     })();
-  }, [session, numericId, hasCountedView]);
+  }, [userId, numericId, hasCountedView]);
 
   // ─────────────────────────────────────────
-  // (D) “가고싶다” (로그인만)
+  // (D) “가고싶다” 여부 (로그인만 체크)
   // ─────────────────────────────────────────
   useEffect(() => {
-    // 로그인 안 되어 있으면 skip
+    // 만약 로그인 안 되었으면 skip
     if (!session?.user?.id) return;
     if (!numericId) return;
 
@@ -226,31 +228,35 @@ export default function DetailClient({ row, images, numericId }) {
     });
   }
 
-  // (F) “가고싶다” 저장
+  // (F) “가고싶다” 저장 (로그인만 가능)
   async function handleSave() {
-    // 미리 로그인 체크하여, 세션 없으면 Supabase 호출 안 함
     if (!session?.user?.id) {
       alert("로그인이 필요합니다!");
       return;
     }
-
     if (isSaved) {
       alert("이미 '가고싶다' 목록에 있습니다.");
       return;
     }
 
-    const realId = session.user.id;
-    const { data, error } = await supabase
-      .from("wantToGo")
-      .insert({
-        user_id: realId,
-        partnershipsubmit_id: numericId,
-      });
-    if (!error) {
-      setIsSaved(true);
-      alert("가고싶다 목록에 저장됨!");
-    } else {
-      console.error("wantToGo insert error:", error);
+    try {
+      const realId = session.user.id;
+      const { data, error } = await supabase
+        .from("wantToGo")
+        .insert({
+          user_id: realId,
+          partnershipsubmit_id: numericId,
+        });
+
+      if (!error) {
+        setIsSaved(true);
+        alert("가고싶다 목록에 저장됨!");
+      } else {
+        console.error("wantToGo insert error:", error);
+        alert("가고싶다 저장 오류");
+      }
+    } catch (err) {
+      console.error("handleSave error:", err);
       alert("가고싶다 저장 오류");
     }
   }
@@ -283,6 +289,7 @@ export default function DetailClient({ row, images, numericId }) {
                     `}
                     style={{ transition: "color 0.3s" }}
                   >
+                    {/* 하트 아이콘 */}
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       fill="none"
