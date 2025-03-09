@@ -1,6 +1,6 @@
 // src/app/(main)/board/PartnershipTable.js (서버 컴포넌트)
 
-import { supabase } from "../../../lib/supabaseE";
+import { supabase } from "@/lib/supabaseE";
 import Link from "next/link";
 
 // 슬러그 변환
@@ -44,7 +44,7 @@ const tdTitleStyle = {
   verticalAlign: "middle",
 };
 
-const tdReviewStyle = {
+const tdCenterStyle = {
   padding: "10px",
   border: "1px solid #eee",
   verticalAlign: "middle",
@@ -60,7 +60,6 @@ const vipBadgeBlinkStyle = {
   marginRight: "6px",
   borderRadius: "4px",
   fontWeight: "bold",
-  // 글씨만 깜빡이도록!
   animation: "textBlink 2s infinite",
 };
 
@@ -91,7 +90,7 @@ export default async function PartnershipTable({ regionSlug, themeName }) {
     }
   }
 
-  // 3) M:N 쿼리
+  // 3) M:N 쿼리 (posts)
   let query = null;
   if (themeId) {
     query = supabase
@@ -103,6 +102,7 @@ export default async function PartnershipTable({ regionSlug, themeName }) {
         region_id,
         ad_type,
         comment,
+        views,
         partnershipsubmit_themes!inner ( theme_id )
       `)
       .eq("partnershipsubmit_themes.theme_id", themeId);
@@ -116,10 +116,12 @@ export default async function PartnershipTable({ regionSlug, themeName }) {
         region_id,
         ad_type,
         comment,
+        views,
         partnershipsubmit_themes!left ( theme_id )
       `);
   }
 
+  // region 필터
   if (regionId) {
     query = query.eq("region_id", regionId);
   }
@@ -142,6 +144,7 @@ export default async function PartnershipTable({ regionSlug, themeName }) {
           <thead style={theadStyle}>
             <tr>
               <th style={thStyle}>제목</th>
+              <th style={thStyle}>조회수</th>
               <th style={thStyle}>리뷰수</th>
             </tr>
           </thead>
@@ -149,28 +152,38 @@ export default async function PartnershipTable({ regionSlug, themeName }) {
             {posts.map((item) => {
               const slug = createSlug(item.company_name);
 
-              // ad_type이 VIP든 VIP+든 전부 배지 깜빡임
+              // VIP 배지
               let badge = null;
               if (item.ad_type === "VIP" || item.ad_type === "VIP+") {
                 badge = <span style={vipBadgeBlinkStyle}>VIP</span>;
               }
 
-              // 제목 기본 색: 검정
-              let linkStyle = { display: "inline-block", color: "#333" };
-              // ad_type === "VIP+" → 파란 글씨
+              // 제목 색상
+              let linkStyle = {
+                display: "inline-block",
+                color: "#333",
+              };
               if (item.ad_type === "VIP+") {
-                linkStyle.color = "#0066cc";
+                linkStyle.color = "#0066cc"; // 파란 글씨
               }
 
               return (
                 <tr key={item.id} style={trStyle}>
+                  {/* (A) 제목 */}
                   <td style={tdTitleStyle}>
                     {badge}
                     <Link href={`/board/details/${item.id}-${slug}`} style={linkStyle}>
                       {item.post_title}
                     </Link>
                   </td>
-                  <td style={tdReviewStyle}>
+
+                  {/* (B) 조회수 */}
+                  <td style={tdCenterStyle}>
+                    {item.views || 0}
+                  </td>
+
+                  {/* (C) 리뷰수 */}
+                  <td style={tdCenterStyle}>
                     {item.comment ? item.comment : 0}
                   </td>
                 </tr>
@@ -180,7 +193,7 @@ export default async function PartnershipTable({ regionSlug, themeName }) {
         </table>
       )}
 
-      {/* 글씨만 깜빡이는 keyframes 2초 간격 */}
+      {/* 글씨만 깜빡이는 keyframes */}
       <style>{`
         @keyframes textBlink {
           0%, 100% { color: #fff; }
