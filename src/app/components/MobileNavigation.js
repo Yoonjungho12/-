@@ -2,12 +2,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-/**
- * MobileBottomNav
- *  - 모바일 하단 고정
- *  - 왼쪽부터 [전체, 홈, 내주변, 마이페이지]
- *  - 마지막 스캐너 아이콘(예시)은 제거
- */
 export default function MobileBottomNav() {
   const pathname = usePathname();
 
@@ -52,6 +46,7 @@ export default function MobileBottomNav() {
     },
     {
       label: "내주변",
+      // 여기서 기존의 아이콘 대신, 위치 마커 아이콘을 사용합니다.
       icon: (
         <svg
           width="24"
@@ -63,11 +58,8 @@ export default function MobileBottomNav() {
           strokeLinecap="round"
           strokeLinejoin="round"
         >
-          <circle cx="12" cy="10" r="3"></circle>
-          <path d="M12 2v2"></path>
-          <path d="M12 20v2"></path>
-          <path d="M20 10h2"></path>
-          <path d="M2 10H4"></path>
+          <path d="M12 21s8-4.438 8-10a8 8 0 10-16 0c0 5.562 8 10 8 10z" />
+          <circle cx="12" cy="11" r="3" />
         </svg>
       ),
       href: "/near-me",
@@ -92,7 +84,6 @@ export default function MobileBottomNav() {
       ),
       href: "/mypage",
     },
-    // 스캐너 아이콘/버튼은 제거했습니다.
   ];
 
   return (
