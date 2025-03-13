@@ -38,34 +38,13 @@ export async function generateMetadata({ params }) {
   let subRegionName = "";
 
   // 1) region_id -> region.name
-  if (row.region_id) {
-    const { data: regionRow } = await supabase
-      .from("regions")
-      .select("name")
-      .eq("id", row.region_id)
-      .single();
-    if (regionRow && regionRow.name) {
-      regionName = regionRow.name;
-    }
-  }
 
-  // 2) sub_region_id -> regions.name
-  if (row.sub_region_id) {
-    const { data: subRegionRow } = await supabase
-      .from("regions")
-      .select("name")
-      .eq("id", row.sub_region_id)
-      .single();
-    if (subRegionRow && subRegionRow.name) {
-      subRegionName = subRegionRow.name;
-    }
-  }
 
   // (E) title, description 생성
   // 예) "서울 강남구 메가클럽" 이런 식
   const companyName = row.company_name || "상세 페이지";
-  const pageTitle = `${regionName} ${subRegionName} ${companyName}`.trim();
-  const description = row.greeting
+  const pageTitle = `${companyName}`.trim()+'- 여기닷';
+  const description = `${companyName}`.trim() +"가장 인기있는 웨이터를 찾고 계신가요!? 여기닷을 방문하시면~~~"
     ? row.greeting
     : "업체 상세 설명";
 
