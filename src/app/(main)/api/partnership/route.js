@@ -7,10 +7,56 @@ export async function POST(request) {
     const payload = await request.json();
     console.log("[DEBUG] Received payload (POST):", payload);
 
-    const { ad_type, region_id, sub_region_id, company_name, phone_number, manager_contact, parking_type, shop_type, sponsor, contact_method, greeting, event_info, address, address_street, near_building, open_hours, program_info, post_title, manager_desc, themes, lat, lng } = payload;
+    const {
+      ad_type,
+      region_id,
+      sub_region_id,
+      company_name,
+      phone_number,
+      manager_contact,
+      parking_type,
+      shop_type,
+      sponsor,
+      contact_method,
+      greeting,
+      event_info,
+      address,
+      address_street,
+      near_building,
+      open_hours,
+      program_info,
+      post_title,
+      manager_desc,
+      themes,
+      lat,
+      lng,
+      holiday, // NEW: holiday (원래 closed_day)
+    } = payload;
 
     // 필수 체크
-    if (!ad_type || !region_id || !company_name || !phone_number || !manager_contact || !parking_type || !shop_type || !address || !address_street || !open_hours || !program_info || !contact_method || !greeting || !event_info || !post_title || !manager_desc || !Array.isArray(themes) || themes.length === 0 || lat == null || lng == null) {
+    // holiday는 DB에서 nullable → 필수 X
+    if (
+
+      !region_id ||
+      !company_name ||
+      !phone_number ||
+      !manager_contact ||
+      !parking_type ||
+      !shop_type ||
+      !address ||
+      !address_street ||
+      !open_hours ||
+      !program_info ||
+      !contact_method ||
+      !greeting ||
+      !event_info ||
+      !post_title ||
+      !manager_desc ||
+      !Array.isArray(themes) ||
+      themes.length === 0 ||
+      lat == null ||
+      lng == null
+    ) {
       return NextResponse.json({ error: "필수 필드 누락" }, { status: 400 });
     }
 
@@ -29,6 +75,7 @@ export async function POST(request) {
     const user_id = userData.user.id;
 
     // partnershipsubmit Insert
+    // holiday는 nullable이므로 || null 처리
     const insertPayload = {
       ad_type,
       region_id: parseInt(region_id, 10),
@@ -52,9 +99,9 @@ export async function POST(request) {
       user_id,
       lat: parseFloat(lat),
       lng: parseFloat(lng),
+      holiday: holiday || null, // NEW
     };
 
-    // 1) partnershipsubmit에 insert
     const { data: submitData, error: submitErr } = await supabase
       .from("partnershipsubmit")
       .insert([insertPayload])
@@ -66,10 +113,10 @@ export async function POST(request) {
       return NextResponse.json({ error: submitErr.message }, { status: 400 });
     }
 
-    // 2) 생성된 auto-increment id
+    // 새로 생성된 ID
     const newSubmitId = submitData.id;
 
-    // 3) M:N: partnershipsubmit_themes
+    // M:N 테마
     for (const themeId of themes) {
       const tId = parseInt(themeId, 10);
       const { error: themeErr } = await supabase
@@ -78,7 +125,7 @@ export async function POST(request) {
 
       if (themeErr) {
         console.error("Theme Insert Error:", themeErr);
-        // 부분 실패 시 처리 (rollback 등은 별도 로직 필요)
+        // 부분 실패 시 별도 처리 가능
       }
     }
 
@@ -92,11 +139,6 @@ export async function POST(request) {
   }
 }
 
-
-
-
-
-
 /** PUT: 기존 파트너십 신청서 수정 */
 export async function PUT(request) {
   try {
@@ -109,10 +151,56 @@ export async function PUT(request) {
     const payload = await request.json();
     console.log("[DEBUG] Received payload (PUT):", payload);
 
-    const { ad_type, region_id, sub_region_id, company_name, phone_number, manager_contact, parking_type, shop_type, sponsor, contact_method, greeting, event_info, address, address_street, near_building, open_hours, program_info, post_title, manager_desc, themes, lat, lng } = payload;
+    const {
+      ad_type,
+      region_id,
+      sub_region_id,
+      company_name,
+      phone_number,
+      manager_contact,
+      parking_type,
+      shop_type,
+      sponsor,
+      contact_method,
+      greeting,
+      event_info,
+      address,
+      address_street,
+      near_building,
+      open_hours,
+      program_info,
+      post_title,
+      manager_desc,
+      themes,
+      lat,
+      lng,
+      holiday, // NEW
+    } = payload;
 
     // 필수 체크
-    if (!ad_type || !region_id || !company_name || !phone_number || !manager_contact || !parking_type || !shop_type || !address || !address_street || !open_hours || !program_info || !contact_method || !greeting || !event_info || !post_title || !manager_desc || !Array.isArray(themes) || themes.length === 0 || lat == null || lng == null) {
+    // holiday는 nullable
+    if (
+ 
+      !region_id ||
+      !company_name ||
+     !phone_number ||
+      !manager_contact ||
+      !parking_type ||
+      !shop_type ||
+      !address ||
+      !address_street ||
+      !open_hours ||
+      !program_info ||
+      !contact_method ||
+      !greeting ||
+      !event_info ||
+      !post_title ||
+      !manager_desc ||
+      !Array.isArray(themes) ||
+      themes.length === 0 ||
+      lat == null ||
+      lng == null
+    ) {
       return NextResponse.json({ error: "필수 필드 누락" }, { status: 400 });
     }
 
@@ -130,21 +218,23 @@ export async function PUT(request) {
     }
     const user_id = userData.user.id;
 
-    // (1) 해당 submitId의 user_id가 현재 로그인한 user_id와 같은지 확인(권한)
+    // submitId 권한 체크
     const { data: targetSubmit, error: targetErr } = await supabase
       .from("partnershipsubmit")
       .select("user_id")
       .eq("id", submitId)
       .single();
-
     if (targetErr || !targetSubmit) {
-      return NextResponse.json({ error: "수정 대상 신청서가 존재하지 않음" }, { status: 404 });
+      return NextResponse.json(
+        { error: "수정 대상 신청서가 존재하지 않음" },
+        { status: 404 }
+      );
     }
     if (targetSubmit.user_id !== user_id) {
       return NextResponse.json({ error: "본인 신청서만 수정 가능" }, { status: 403 });
     }
 
-    // (2) 수정할 payload 구성
+    // update payload
     const updatePayload = {
       ad_type,
       region_id: parseInt(region_id, 10),
@@ -167,9 +257,9 @@ export async function PUT(request) {
       manager_desc,
       lat: parseFloat(lat),
       lng: parseFloat(lng),
+      holiday: holiday || null, // NEW
     };
 
-    // (3) partnershipsubmit 수정
     const { error: updateErr } = await supabase
       .from("partnershipsubmit")
       .update(updatePayload)
@@ -180,18 +270,17 @@ export async function PUT(request) {
       return NextResponse.json({ error: updateErr.message }, { status: 400 });
     }
 
-    // (4) 테마 재설정 위해 기존 연결 삭제
+    // 테마 재설정 위해 기존 연결 삭제
     const { error: delErr } = await supabase
       .from("partnershipsubmit_themes")
       .delete()
       .eq("submit_id", submitId);
-
     if (delErr) {
       console.error("Theme Delete Error:", delErr);
-      // 부분 실패 시 처리 등 필요할 수도
+      // 부분 실패 시 처리
     }
 
-    // (5) 새 테마 관계 Insert
+    // 새 테마 연결
     for (const themeId of themes) {
       const tId = parseInt(themeId, 10);
       const { error: themeErr } = await supabase
@@ -199,13 +288,13 @@ export async function PUT(request) {
         .insert([{ submit_id: parseInt(submitId), theme_id: tId }]);
       if (themeErr) {
         console.error("Theme Insert Error:", themeErr);
-        // 부분 실패 시 처리 필요
+        // 부분 실패 처리
       }
     }
 
     return NextResponse.json({
       success: true,
-      updated_id: parseInt(submitId),
+      updated_id: parseInt(submitId, 10),
     });
   } catch (err) {
     console.error("PUT /api/partnership error:", err);

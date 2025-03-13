@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { MegaphoneIcon } from "@heroicons/react/24/outline";
+import { MegaphoneIcon, EyeIcon, UserIcon } from "@heroicons/react/24/outline";
 import { supabase } from "@/lib/supabaseF";
 import CommentsUI from "./comment";
 import MapKakao from "./MapKakao";
@@ -317,9 +317,47 @@ export default function DetailClient({ row, images, numericId }) {
   }
 
   // ─────────────────────────────────────────────────────────
+  // 6) 멤버 로드 (출근부)
+  // ─────────────────────────────────────────────────────────
+  const [members, setMembers] = useState([]);
+  const [loadingMembers, setLoadingMembers] = useState(true);
+
+  useEffect(() => {
+    if (!numericId) {
+      setLoadingMembers(false);
+      return;
+    }
+    (async () => {
+      try {
+        const { data: memRows, error } = await supabase
+          .from("register")
+          .select("member")
+          .eq("partnershipsubmit_id", numericId);
+        if (error) throw error;
+
+        setMembers(memRows || []);
+      } catch (err) {
+        console.error("멤버 로드 오류:", err);
+      } finally {
+        setLoadingMembers(false);
+      }
+    })();
+  }, [numericId]);
+
+  // 파스텔톤 색상 목록 (필요에 따라 갯수/색 수정 가능)
+  const pastelColors = [
+    "bg-blue-50 text-blue-500",
+    "bg-pink-50 text-pink-500",
+    "bg-purple-50 text-purple-500",
+    "bg-green-50 text-green-500",
+    "bg-red-50 text-red-500",
+    "bg-yellow-50 text-yellow-500",
+  ];
+
+  // ─────────────────────────────────────────────────────────
   // 렌더링
   // ─────────────────────────────────────────────────────────
-  // 연락방법, ...
+  // 연락방법
   const fullContact = row.contact_method
     ? row.contact_method + (row.near_building ? ` / ${row.near_building}` : "")
     : row.near_building || "";
@@ -339,7 +377,7 @@ export default function DetailClient({ row, images, numericId }) {
                   fill
                   className="object-cover"
                 />
-                {/* 하트 버튼 항상 노출, 클릭 시 토글 */}
+                {/* 하트 버튼 */}
                 <button
                   onClick={handleSave}
                   className={`absolute top-2 right-2 w-8 h-8 
@@ -382,13 +420,39 @@ export default function DetailClient({ row, images, numericId }) {
 
         {/* (A-2) 기본 정보 */}
         <div className="mt-6 bg-white p-4 rounded">
-          <h1 className="text-3xl font-bold mb-2">
-            {row.company_name}
-            <span className="text-base text-gray-600 ml-2">
-              (조회수: {views})
-            </span>
-          </h1>
-          <div className="flex items-center gap-1 text-gray-700 mb-3">
+          <div className="flex flex-col">
+            <h1 className="text-3xl font-bold mb-2">{row.company_name}</h1>
+
+            {/* 추가: 아이콘+숫자 표시 영역 */}
+            <div className="flex items-center gap-6 ml-1 text-gray-500">
+              {/* 눈 아이콘 + 조회수 */}
+              {/* 눈 아이콘 + 조회수 */}
+<div className="flex items-center gap-1">
+  <img
+    src="/icons/views.svg"
+    alt="조회수"
+    className="object-contain mr-1" style={{width: "18px", height: "16.18px"}}
+  />
+  <span className="">
+    {views.toLocaleString()}
+  </span>
+</div>
+
+{/* 사람 아이콘 + row.comment */}
+<div className="flex items-center gap-1">
+  <img
+    src="/icons/man.svg"
+    alt="댓글수"
+    className="object-contain mr-1" style={{width: "18px", height: "14.18px"}}
+  />
+  <span className="">
+    {row.comment || 0}
+  </span>
+</div>
+</div>
+          </div>
+
+          <div className="flex items-center gap-1 text-gray-700 mb-3 mt-4">
             <MegaphoneIcon className="w-5 h-5 text-red-500" />
             <span className="font-semibold">
               {row.shop_type || "샵형태 미입력"}
@@ -410,6 +474,33 @@ export default function DetailClient({ row, images, numericId }) {
           )}
           <DetailRow label="주차안내" value={row.parking_type} />
           <DetailRow label="관리사님" value={row.manager_desc} />
+
+          {/* 출근부 */}
+          <div className="mb-2 flex items-center">
+            {/* 출근부 라벨 */}
+            <span className="w-24 font-semibold text-gray-600">출근부</span>
+
+            {/* 로딩 상태 / 멤버 목록 */}
+            {loadingMembers ? (
+              <span className="text-gray-800">불러오는 중...</span>
+            ) : members.length === 0 ? (
+              <span className="text-gray-800">등록된 멤버가 없습니다.</span>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {members.map((m, index) => {
+                  const colorClass = pastelColors[index % pastelColors.length];
+                  return (
+                    <span
+                      key={index}
+                      className={`inline-block px-2 py-1 text-sm rounded ${colorClass}`}
+                    >
+                      {m.member}
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* (A-3) 이벤트 */}
@@ -477,7 +568,7 @@ export default function DetailClient({ row, images, numericId }) {
                                 </div>
                                 {c.price > 0 && (
                                   <div className="text-red-600 font-medium">
-                                    {formatPrice(c.price)}
+                                    {formatPrice(c.price) + " 원"}
                                   </div>
                                 )}
                               </div>

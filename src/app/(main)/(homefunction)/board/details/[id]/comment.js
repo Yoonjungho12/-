@@ -234,7 +234,7 @@ export default function CommentsUI({ company_name, id }) {
   // (10) UI
   // --------------------------------------
   return (
-    <div className="bg-white p-6 rounded mt-12">
+    <div className="bg-white rounded mt-12">
       {/* 상단: 업체명 + 댓글 개수 ( DB에서 읽어온 partnershipsubmit.comment 값 ) */}
       <div className="text-center mb-6">
         <h2 className="text-xl font-semibold mb-2">
@@ -253,7 +253,7 @@ export default function CommentsUI({ company_name, id }) {
           onChange={(e) => setCommentText(e.target.value)}
         />
         <button
-          className="w-20 bg-gray-100 hover:bg-gray-200 rounded text-gray-700"
+          className="w-20 bg-gray-200 hover:bg-gray-200 rounded text-gray-700"
           onClick={handleSubmit}
           disabled={!canSubmit()}
         >

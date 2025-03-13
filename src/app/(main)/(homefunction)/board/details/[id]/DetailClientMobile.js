@@ -59,10 +59,7 @@ function MapKakao({ address }) {
         const geocoder = new window.kakao.maps.services.Geocoder();
         geocoder.addressSearch(address, (result, status) => {
           if (status === window.kakao.maps.services.Status.OK) {
-            const coords = new window.kakao.maps.LatLng(
-              result[0].y,
-              result[0].x
-            );
+            const coords = new window.kakao.maps.LatLng(result[0].y, result[0].x);
             map.setCenter(coords);
             new window.kakao.maps.Marker({ map, position: coords });
           } else {
@@ -114,9 +111,7 @@ function NearbyShops({ currentShopId }) {
       // 2) 모든 샵(최종 승인) 불러오기
       const { data: allShops } = await supabase
         .from("partnershipsubmit")
-        .select(
-          "id, lat, lng, company_name, address, near_building, thumbnail_url"
-        )
+        .select("id, lat, lng, company_name, address, near_building, thumbnail_url")
         .eq("final_admitted", true);
 
       if (!allShops) return;
@@ -144,9 +139,7 @@ function NearbyShops({ currentShopId }) {
   }, [currentShopId]);
 
   if (!nearbyShops || nearbyShops.length === 0) {
-    return (
-      <div className="text-gray-500">주변 30km 이내 다른 샵이 없습니다.</div>
-    );
+    return <div className="text-gray-500">주변 30km 이내 다른 샵이 없습니다.</div>;
   }
 
   return (
@@ -178,9 +171,7 @@ function NearbyShops({ currentShopId }) {
             {/* 정보 */}
             <div>
               <p className="font-bold">{shop.company_name}</p>
-              <p className="text-sm text-gray-600">
-                {shop.address || "주소 미입력"}
-              </p>
+              <p className="text-sm text-gray-600">{shop.address || "주소 미입력"}</p>
               {shop.near_building && (
                 <p className="text-sm text-gray-600 mt-0.5">
                   {shop.near_building}
@@ -200,14 +191,13 @@ function NearbyShops({ currentShopId }) {
 /** (G) 메인 컴포넌트 */
 export default function DetailClient({ row, images, numericId }) {
   // ─────────────────────────────────────────────────────────
-  // 1) session, 조회수, 가고싶다
+  // 그대로 있던 state/logic
   // ─────────────────────────────────────────────────────────
   const [session, setSession] = useState(null);
   const [isSaved, setIsSaved] = useState(false);
   const [views, setViews] = useState(row.views || 0);
   const [hasCountedView, setHasCountedView] = useState(false);
 
-  // 세션 가져오기
   useEffect(() => {
     supabase.auth
       .getSession()
@@ -216,7 +206,6 @@ export default function DetailClient({ row, images, numericId }) {
       })
       .catch((e) => console.error("getSession error:", e));
 
-    // 세션 상태 감지
     const { data: listener } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
         setSession(newSession);
@@ -238,12 +227,10 @@ export default function DetailClient({ row, images, numericId }) {
     };
   }, []);
 
-  // userId 설정
   let userId = null;
   if (session?.user?.id) {
     userId = session.user.id;
   } else if (typeof window !== "undefined") {
-    // 비로그인 시 localStorage로 익명 ID 사용
     const key = "anon_user_id";
     let stored = localStorage.getItem(key);
     if (!stored) {
@@ -253,7 +240,6 @@ export default function DetailClient({ row, images, numericId }) {
     userId = stored;
   }
 
-  // 조회수 (24시간 중복방지)
   useEffect(() => {
     if (!userId || !numericId || hasCountedView) return;
     (async () => {
@@ -267,7 +253,6 @@ export default function DetailClient({ row, images, numericId }) {
           .gt("last_viewed_at", _24hAgo);
 
         if (!logs || logs.length === 0) {
-          // 기존 views 가져오기
           const { data: rowData } = await supabase
             .from("partnershipsubmit")
             .select("views")
@@ -275,7 +260,6 @@ export default function DetailClient({ row, images, numericId }) {
             .single();
           const newViews = (rowData?.views || 0) + 1;
 
-          // views 업데이트
           const { data: updated } = await supabase
             .from("partnershipsubmit")
             .update({ views: newViews })
@@ -287,7 +271,6 @@ export default function DetailClient({ row, images, numericId }) {
             setViews(updated.views);
           }
 
-          // 로그 upsert
           await supabase.from("partnershipsubmit_views_log").upsert(
             {
               user_id: userId,
@@ -304,9 +287,8 @@ export default function DetailClient({ row, images, numericId }) {
     })();
   }, [userId, numericId, hasCountedView]);
 
-  // 이미 저장 여부 확인
   useEffect(() => {
-    if (!session?.user?.id || !numericId) return; // 로그인 상태일 때만 체크
+    if (!session?.user?.id || !numericId) return;
     supabase
       .from("wantToGo")
       .select("id")
@@ -321,15 +303,11 @@ export default function DetailClient({ row, images, numericId }) {
       .catch(console.error);
   }, [session, numericId]);
 
-  // “가고싶다” 토글
   async function handleSave() {
-    // 로그인 안 된 상태라면
     if (!session?.user?.id) {
       alert("로그인 먼저 해주세요!");
       return;
     }
-
-    // 이미 저장된 상태 → 해제(삭제)
     if (isSaved) {
       try {
         const { error } = await supabase
@@ -350,8 +328,6 @@ export default function DetailClient({ row, images, numericId }) {
       }
       return;
     }
-
-    // 저장되지 않았다면 추가
     try {
       const { error } = await supabase.from("wantToGo").insert({
         user_id: session.user.id,
@@ -370,7 +346,6 @@ export default function DetailClient({ row, images, numericId }) {
     }
   }
 
-  // 이미지 배열
   const allImages = [];
   if (row.thumbnail_url) {
     allImages.push(buildPublicImageUrl(row.thumbnail_url));
@@ -381,7 +356,6 @@ export default function DetailClient({ row, images, numericId }) {
     });
   }
 
-  // 섹션/코스
   const [sectionsData, setSectionsData] = useState([]);
   const [loadingSections, setLoadingSections] = useState(true);
   const [lowestPrice, setLowestPrice] = useState(0);
@@ -413,9 +387,7 @@ export default function DetailClient({ row, images, numericId }) {
           .order("display_order", { ascending: true });
 
         const merged = secRows.map((sec) => {
-          const related = (couRows || []).filter(
-            (c) => c.section_id === sec.id
-          );
+          const related = (couRows || []).filter((c) => c.section_id === sec.id);
           return {
             ...sec,
             isOpen: true,
@@ -453,7 +425,6 @@ export default function DetailClient({ row, images, numericId }) {
     );
   }
 
-  // 문자/전화하기
   function handleSms() {
     if (!row.phone_number) {
       alert("전화번호 없음");
@@ -469,7 +440,6 @@ export default function DetailClient({ row, images, numericId }) {
     window.location.href = `tel:${row.phone_number}`;
   }
 
-  // 탭 상태
   const [activeTab, setActiveTab] = useState("info");
   const infoRef = useRef(null);
   const courseRef = useRef(null);
@@ -499,15 +469,54 @@ export default function DetailClient({ row, images, numericId }) {
     }
   }
 
-  // 리뷰 수
   const [reviewCount, setReviewCount] = useState(0);
 
-  // 연락방법 최종
   const fullContact = row.contact_method
     ? row.contact_method + (row.near_building ? ` / ${row.near_building}` : "")
     : row.near_building || "";
 
+  // ─────────────────────────────────────────────────────────
+  // (출근부) 멤버 관련 state/useEffect
+  // ─────────────────────────────────────────────────────────
+  const [members, setMembers] = useState([]);
+  const [loadingMembers, setLoadingMembers] = useState(true);
+
+  // ※ 여기는 기존 코드 + "출근부"용 로딩 로직
+  useEffect(() => {
+    if (!numericId) {
+      setLoadingMembers(false);
+      return;
+    }
+    (async () => {
+      try {
+        const { data: memRows, error } = await supabase
+          .from("register")
+          .select("member")
+          .eq("partnershipsubmit_id", numericId);
+        if (error) throw error;
+
+        setMembers(memRows || []);
+      } catch (err) {
+        console.error("멤버 로드 오류:", err);
+      } finally {
+        setLoadingMembers(false);
+      }
+    })();
+  }, [numericId]);
+
+  // 여기서 파스텔톤 색상 목록 정의 (랜덤 적용 가능)
+  const pastelArr = [
+    "bg-blue-50 text-blue-500",
+    "bg-pink-50 text-pink-500",
+    "bg-purple-50 text-purple-500",
+    "bg-green-50 text-green-500",
+    "bg-red-50 text-red-500",
+    "bg-yellow-50 text-yellow-500",
+  ];
+
+  // ─────────────────────────────────────────────────────────
   // 렌더링
+  // ─────────────────────────────────────────────────────────
   return (
     <div className="relative max-w-md mx-auto bg-white">
       {/* (A) 상단 이미지 */}
@@ -555,7 +564,7 @@ export default function DetailClient({ row, images, numericId }) {
         </button>
       </div>
 
-      {/* (B) 탭 + ... */}
+      {/* (B) 탭 */}
       <div
         className="sticky top-[50px] bg-white z-10 flex flex-col border-b border-gray-200"
         style={{ marginTop: 0 }}
@@ -584,56 +593,40 @@ export default function DetailClient({ row, images, numericId }) {
 
       {/* (C) 샵정보 섹션 */}
       <section id="info" ref={infoRef} className="px-4 pt-4 pb-6">
-        {/* 중앙정렬 company_name */}
         <div className="p-2 text-center">
           <h2 className="text-xl font-bold">{row.company_name}</h2>
         </div>
 
-        {/* 조회수 & 리뷰수 */}
         <div className="flex items-center justify-center gap-4 pb-2">
           {/* 조회수 */}
-          <div className="flex items-center text-gray-500 gap-1">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              strokeWidth="2"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              className="w-5 h-5"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M1 12c2-4 
-                  6-7 11-7s9 3 11 7c-2 4-6 7-11 7s-9-3-11-7z"
-              />
-              <circle cx="12" cy="12" r="2.5" />
-            </svg>
-            <span>{views}</span>
-          </div>
-          {/* 리뷰수 */}
-          <div className="flex items-center text-gray-500 gap-1">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              strokeWidth="2"
-              stroke="currentColor"
-              className="w-5 h-5"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 11.5c1.93 0 
-                  3.5-1.57 3.5-3.5S13.93 4.5 12 4.5
-                  8.5 6.07 8.5 8 10.07 11.5 
-                  12 11.5zm-5 6v-.5C7 
-                  15.57 9.57 14 12 
-                  14s5 1.57 5 3.5v.5"
-              />
-            </svg>
-            <span>{reviewCount}</span>
-          </div>
+   {/* 아이콘 + 조회수 + 리뷰수 (views, reviewCount) */}
+<div className="flex justify-center items-center gap-6 ml-1 text-gray-500">
+  {/* 눈 아이콘 + views */}
+  <div className="flex justify-center items-center gap-1">
+    <img
+      src="/icons/views.svg"
+      alt="조회수"
+      className="object-contain"
+      style={{ width: "18px", height: "16.18px" }}
+    />
+    <span>
+      {views.toLocaleString()}
+    </span>
+  </div>
+
+  {/* 사람 아이콘 + reviewCount */}
+  <div className="flex items-center gap-1">
+    <img
+      src="/icons/man.svg"
+      alt="리뷰수"
+      className="object-contain"
+      style={{ width: "18px", height: "14.18px" }}
+    />
+    <span>
+      {reviewCount}
+    </span>
+  </div>
+</div>
         </div>
 
         {/* 지도 */}
@@ -643,29 +636,48 @@ export default function DetailClient({ row, images, numericId }) {
         <div className="mt-4">
           <DetailRow label="오시는길" value={row.address_street} />
           {lowestPrice > 0 && (
-            <DetailRow
-              label="최저가"
-              value={`${formatPrice(lowestPrice)}원 ~`}
-            />
+            <DetailRow label="최저가" value={`${formatPrice(lowestPrice)}원 ~`} />
           )}
           <DetailRow label="전화번호" value={row.phone_number} />
           <DetailRow label="연락방법" value={fullContact} />
           <DetailRow label="영업시간" value={row.open_hours} />
           <DetailRow label="주차안내" value={row.parking_type} />
           <DetailRow label="관리사님" value={row.manager_desc} />
-        </div>
 
-        {/* 이벤트 + 업체소개 */}
-        {row.event_info?.trim() && (
-          <div className="mt-4 bg-gray-50 p-3 rounded">
-            <DetailRow label="이벤트" value={row.event_info} />
-          </div>
-        )}
-        {row.greeting && (
-          <div className="mt-4 bg-gray-50 p-3 rounded">
-            <DetailRow label="업체소개" value={row.greeting} />
-          </div>
-        )}
+          {/* =========================================
+              출근부 (오직 여기만 수정)
+          ========================================= */}
+          {loadingMembers ? (
+            <DetailRow label="출근부" value="불러오는 중..." />
+          ) : members.length === 0 ? (
+            <DetailRow label="출근부" value=" " />
+          ) : (
+            <div className="mb-2">
+              <span className="inline-block w-24 font-semibold text-gray-700 shrink-0">
+                출근부
+              </span>
+              {/* 한 줄에 나란히, 컬러 랜덤 적용 */}
+              <div className="flex flex-wrap gap-2 mt-1">
+                {members.map((m, idx) => {
+                  // 파스텔 색상 랜덤 선택
+                  const colorClass =
+                    pastelArr[Math.floor(Math.random() * pastelArr.length)];
+                  return (
+                    <span
+                      key={idx}
+                      className={`inline-block px-2 py-1 text-sm rounded ${colorClass}`}
+                    >
+                      {m.member}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          {/* =========================================
+              출근부 끝
+          ========================================= */}
+        </div>
       </section>
 
       {/* (D) 코스안내 섹션 */}
@@ -720,7 +732,7 @@ export default function DetailClient({ row, images, numericId }) {
                               </div>
                               {c.price > 0 && (
                                 <div className="text-gray-800 font-semibold">
-                                  {formatPrice(c.price)}
+                                  {formatPrice(c.price) + " 원"}
                                 </div>
                               )}
                             </div>
