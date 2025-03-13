@@ -102,7 +102,8 @@ export default function MapKakao({ address, id }) {
     async function fetchShops() {
       const { data, error } = await supabase
         .from("partnershipsubmit")
-        .select("id, lat, lng, company_name, address, near_building, thumbnail_url");
+        .select("id, lat, lng, company_name, address, near_building, thumbnail_url")
+         .eq("final_admitted", true);;
 
       if (error) {
         console.error("주변 샵 불러오기 오류:", error);

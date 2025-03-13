@@ -111,10 +111,10 @@ function NearbyShops({ currentShopId }) {
 
       if (csErr || !currShop) return;
 
-      // 2) 전체
+      // 모바일 주변샵 조회
       const { data: allShops } = await supabase
         .from("partnershipsubmit")
-        .select("id, lat, lng, company_name, address, near_building, thumbnail_url");
+        .select("id, lat, lng, company_name, address, near_building, thumbnail_url").eq('final_admitted', true);
 
       if (!allShops) return;
 

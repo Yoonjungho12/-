@@ -155,6 +155,16 @@ const THEMES = [
   { id: 24, name: "웨딩플래너",  sort_order: 24 },
   { id: 25, name: "룸카페",     sort_order: 25 },
   { id: 26, name: "성인용품",   sort_order: 26 },
+  { id: 27, name: "클럽",     sort_order: 27 },
+  { id: 28, name: "나이트클럽", sort_order: 28 },
+  { id: 29, name: "네일샵",   sort_order: 29 },
+  { id: 30, name: "애견미용", sort_order: 30 },
+  { id: 31, name: "태닝샵",   sort_order: 31 },
+  { id: 32, name: "왁싱샵",   sort_order: 32 },
+  { id: 33, name: "라운지바", sort_order: 33 },
+  { id: 34, name: "헌팅포차", sort_order: 34 },
+  { id: 35, name: "바",      sort_order: 35 },
+  { id: 36, name: "감성주점", sort_order: 36 }
 ].sort((a, b) => a.sort_order - b.sort_order);
 
 // ─────────────────────────────────────────────────────────
