@@ -134,7 +134,7 @@ export default function MapKakao({ address, id }) {
 
         // 5) 30km 이내, 현재 샵 제외
         const filtered = shopsWithDistance
-          .filter((s) => s.distance <= 30)
+          .filter((s) => s.distance <= 400)
           .filter((s) => s.id !== id)
           .sort((a, b) => a.distance - b.distance);
 
