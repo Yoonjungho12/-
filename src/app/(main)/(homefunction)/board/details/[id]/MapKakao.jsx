@@ -100,17 +100,22 @@ export default function MapKakao({ address, id }) {
     if (!mapCenter) return;
 
     async function fetchShops() {
+      // 1) DB에서 final_admitted=true인 레코드 불러오기
       const { data, error } = await supabase
         .from("partnershipsubmit")
         .select("id, lat, lng, company_name, address, near_building, thumbnail_url")
-         
+        .eq("final_admitted", true);
 
       if (error) {
         console.error("주변 샵 불러오기 오류:", error);
         return;
       }
 
+      // 2) 불러온 데이터 콘솔 출력
+      console.log("[fetchShops] final_admitted=true 레코드:", data);
+
       if (data && data.length > 0) {
+        // 3) 각 레코드에 거리 계산
         const shopsWithDistance = data.map((shop) => {
           let distance = Infinity;
           if (shop.lat && shop.lng) {
@@ -124,13 +129,23 @@ export default function MapKakao({ address, id }) {
           return { ...shop, distance };
         });
 
-        // 30km 이내 + 현재 샵(id) 제외 + 거리 오름차순
+        // 4) 계산된 거리 로그
+        console.log("[fetchShops] shopsWithDistance:", shopsWithDistance);
+
+        // 5) 30km 이내, 현재 샵 제외
         const filtered = shopsWithDistance
           .filter((s) => s.distance <= 30)
           .filter((s) => s.id !== id)
           .sort((a, b) => a.distance - b.distance);
 
+        // 6) 필터링 결과 로그
+        console.log("[fetchShops] 최종 필터링된 주변 샵:", filtered);
+
+        // 7) 상태 업데이트
         setNearbyShops(filtered);
+      } else {
+        // 데이터가 하나도 없을 때
+        console.log("[fetchShops] final_admitted=true 인 레코드가 없습니다.");
       }
     }
 
