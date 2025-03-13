@@ -1,8 +1,9 @@
-// /app/search/page.js
+"use server";
+
 import { supabase } from "@/lib/supabaseE";
 import Image from "next/image";
 
-// 가격 포맷 (3자리 콤마 + “원”)
+// 가격 포맷
 function formatPrice(num) {
   if (!num || isNaN(num)) return "가격없음";
   return Number(num).toLocaleString() + "원";
@@ -10,8 +11,7 @@ function formatPrice(num) {
 
 export default async function SearchPage({ searchParams : params}) {
   const searchParams = await params;
-  const query = searchParams.q || "";
-
+  const query = searchParams?.q || "";
   if (!query) {
     return (
       <div className="mx-auto max-w-7xl px-4 py-8">
@@ -21,33 +21,35 @@ export default async function SearchPage({ searchParams : params}) {
     );
   }
 
-  // Supabase 쿼리
-  // 최저가를 구하려면 sections -> courses -> price를 가져와야 하므로 select 구조를 변경
-  const { data, error } = await supabase
-    .from("partnershipsubmit")
-    .select(`
-      id,
-      final_admitted,
-      company_name,
-      address,
-      comment,
-      greeting,
-      thumbnail_url,
-      partnershipsubmit_themes (
-        themes (
-          id,
-          name
-        )
-      ),
-      sections (
-        courses (price)
-      )
-    `)
-    .eq("final_admitted", true) // ← ★ final_admitted=true만
-    .textSearch("search_tsv", query, {
-      type: "websearch",
-      config: "english",
-    });
+  /**
+   * 1) 한글, 영문 상관없이, 작은따옴표 ' 가 들어가면 PostgreSQL에서는 ''(두 개)로 치환해야 함
+   * 2) "서울" 같은 한글은 문제가 안 되지만, 만약 query="I'm" 같은 경우를 대비해 전부 이스케이프
+   */
+  const safeQuery = query.replace(/'/g, "''");
+
+  /**
+   * 2) websearch_to_tsquery('english', '...') 내부에
+   *    '...${safeQuery}...' 대신 문자열 합치기로 처리
+   *
+   *    최종적으로:
+   *      websearch_to_tsquery('english', '''서울''')  <-- Postgres 식
+   *    가 되어야 "서울"이 한글이든 뭐든 파싱됨
+   */
+const { data, error } = await supabase
+  .from("partnershipsubmit")
+  .select(`
+    id, final_admitted, company_name, address, comment, greeting, thumbnail_url,
+    partnershipsubmit_themes ( themes ( id, name ) ),
+    sections ( courses (price) )
+  `)
+  .eq("final_admitted", true)
+  .textSearch('search_tsv', query, { 
+    type: 'websearch', 
+    config: 'english' 
+  })
+  .order('search_tsv', { ascending: false })
+  .limit(50);
+
 
   if (error) {
     console.error("검색 에러:", error);
@@ -59,22 +61,21 @@ export default async function SearchPage({ searchParams : params}) {
     );
   }
 
+  // 렌더링
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
       <h1 className="text-2xl font-bold mb-4">{query} 검색결과</h1>
 
       <div className="space-y-6">
         {data?.map((item) => {
-          // (1) 썸네일 이미지 경로
           const imageUrl = `https://vejthvawsbsitttyiwzv.supabase.co/storage/v1/object/public/gunma/${item.thumbnail_url}`;
-          // (2) 해시태그
           const themeList = item.partnershipsubmit_themes || [];
 
-          // (3) 최저가 계산
+          // 최저가 계산
           let lowestPrice = null;
-          if (item.sections && item.sections.length > 0) {
+          if (item.sections?.length) {
             item.sections.forEach((sec) => {
-              if (sec.courses && sec.courses.length > 0) {
+              if (sec.courses?.length) {
                 sec.courses.forEach((c) => {
                   if (lowestPrice === null || (c.price && c.price < lowestPrice)) {
                     lowestPrice = c.price;
@@ -86,11 +87,8 @@ export default async function SearchPage({ searchParams : params}) {
 
           return (
             <a
-              // 클릭 시 /board/details/:id 형태로 이동
-              // 예) /board/details/13
-              // 만약 슬러그 형태가 필요하면 "13-슬러그" 식으로 바꾸면 됨
-              href={`/board/details/${item.id}`}
               key={item.id}
+              href={`/board/details/${item.id}`}
               className="
                 block
                 flex flex-col md:flex-row
@@ -103,7 +101,6 @@ export default async function SearchPage({ searchParams : params}) {
                 transition-colors
               "
             >
-              {/* 왼쪽 썸네일 영역 */}
               <div className="w-[373px] h-[217px] relative flex-shrink-0">
                 <Image
                   src={imageUrl}
@@ -113,16 +110,12 @@ export default async function SearchPage({ searchParams : params}) {
                   className="object-cover w-full h-full rounded-xl"
                 />
               </div>
-
-              {/* 오른쪽 텍스트 영역 */}
               <div className="flex-1 px-4 py-2">
                 <h2 className="text-lg font-semibold mb-1">
                   {item.company_name}
                 </h2>
 
-                {/* 주소 + 리뷰 (나란히) */}
                 <div className="flex items-center text-sm text-gray-600 mb-1 gap-3">
-                  {/* 주소 아이콘 + 텍스트 */}
                   <div className="flex items-center gap-1">
                     <svg
                       className="w-4 h-4 text-gray-500"
@@ -158,25 +151,17 @@ export default async function SearchPage({ searchParams : params}) {
                     </svg>
                     <span>{item.address || "주소 정보 없음"}</span>
                   </div>
-
-                  {/* 리뷰 */}
                   <div className="text-gray-500">
                     리뷰 {item.comment ?? 0}
                   </div>
                 </div>
 
-                {/* 최저가 */}
                 <div className="text-sm text-red-600 font-semibold mb-1">
-                  최저가:{" "}
-                  {lowestPrice ? formatPrice(lowestPrice) : "가격없음"}
+                  최저가: {lowestPrice ? formatPrice(lowestPrice) : "가격없음"}
                 </div>
 
-                {/* 인사말(소개) */}
-                <p className="text-sm text-gray-800">
-                  {item.greeting}
-                </p>
+                <p className="text-sm text-gray-800">{item.greeting}</p>
 
-                {/* 해시태그 목록 */}
                 <div className="mt-2 flex flex-wrap gap-2">
                   {themeList.map((pt) => (
                     <span
