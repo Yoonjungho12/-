@@ -31,22 +31,12 @@ export async function generateMetadata({ params }) {
     return {};
   }
 
-  // ─────────────────────────────────────────────────
-  // (D) region, sub_region 정보 조회
-  // ─────────────────────────────────────────────────
-  let regionName = "";
-  let subRegionName = "";
-
-  // 1) region_id -> region.name
-
-
   // (E) title, description 생성
-  // 예) "서울 강남구 메가클럽" 이런 식
   const companyName = row.company_name || "상세 페이지";
-  const pageTitle = `${companyName}`.trim()+'- 여기닷';
-  const description = `${companyName}`.trim() +"가장 인기있는 웨이터를 찾고 계신가요!? 여기닷을 방문하시면~~~"
-    ? row.greeting
-    : "업체 상세 설명";
+  // 공백과 하이픈 사이 간격을 좀 더 자연스럽게
+  const pageTitle = companyName.trim() + " - 여기닷";
+  // 회사명 + 추가 문구 사이에 공백 추가
+  const description = `${companyName.trim()} 가장 인기있는 웨이터를 찾고 계신가요!? 여기닷을 방문하시면~~~`;
 
   return {
     title: pageTitle,
@@ -120,4 +110,3 @@ export default async function DetailPage({ params: paramsPromise }) {
     );
   }
 }
-

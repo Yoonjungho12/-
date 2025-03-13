@@ -45,22 +45,22 @@ function formatPrice(num) {
 }
 
 /**
- * 메인 컴포넌트
+ * 메인 컴포넌트 (PC 전용)
  * row: partnershipsubmit 단일 레코드
  * images: partnershipsubmit_images[]
  * numericId: partnershipsubmit.id
  */
 export default function DetailClient({ row, images, numericId }) {
   // ─────────────────────────────────────────────────────────
-  // 1) session 관련
+  // 1) session, 조회수, 가고싶다
   // ─────────────────────────────────────────────────────────
   const [session, setSession] = useState(null);
-  const [isSaved, setIsSaved] = useState(false); // “가고싶다”
-  const [views, setViews] = useState(row.views || 0); // 조회수
-  const [hasCountedView, setHasCountedView] = useState(false); // 중복방지
+  const [isSaved, setIsSaved] = useState(false); // 이미 가고싶다
+  const [views, setViews] = useState(row.views || 0);
+  const [hasCountedView, setHasCountedView] = useState(false);
 
   useEffect(() => {
-    // (1) 현재 세션
+    // (1) 현재 세션 가져오기
     supabase.auth
       .getSession()
       .then(({ data, error }) => {
@@ -74,11 +74,11 @@ export default function DetailClient({ row, images, numericId }) {
         console.error("[getSession catch]:", err);
       });
 
-    // (2) onAuthStateChange
+    // (2) 세션 상태 감지
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
         setSession(newSession);
-        // 로그인 직후 anon→real merge
+        // anon → real merge
         if (event === "SIGNED_IN" && newSession?.user?.id) {
           const realId = newSession.user.id;
           const anonId = localStorage.getItem("anon_user_id");
@@ -92,7 +92,6 @@ export default function DetailClient({ row, images, numericId }) {
         }
       }
     );
-
     return () => {
       authListener?.subscription.unsubscribe();
     };
@@ -107,26 +106,22 @@ export default function DetailClient({ row, images, numericId }) {
   }
 
   // ─────────────────────────────────────────────────────────
-  // 2) 24h 중복체크 → views +1
+  // 2) 조회수 (24h 중복 방지)
   // ─────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!userId || !numericId) return;
-    if (hasCountedView) return;
-
+    if (!userId || !numericId || hasCountedView) return;
     (async () => {
       try {
-        const _24hAgo = new Date(
-          Date.now() - 24 * 60 * 60 * 1000
-        ).toISOString();
-        const { data: logRows } = await supabase
+        const _24hAgo = new Date(Date.now() - 86400000).toISOString();
+        const { data: logs } = await supabase
           .from("partnershipsubmit_views_log")
-          .select("id, last_viewed_at")
+          .select("*")
           .eq("user_id", userId)
           .eq("partnershipsubmit_id", numericId)
           .gt("last_viewed_at", _24hAgo);
 
-        if (!logRows || logRows.length === 0) {
-          // +1
+        if (!logs || logs.length === 0) {
+          // 기존 views
           const { data: oldData } = await supabase
             .from("partnershipsubmit")
             .select("views")
@@ -136,28 +131,23 @@ export default function DetailClient({ row, images, numericId }) {
           const currViews = oldData?.views || 0;
           const newViews = currViews + 1;
 
+          // views 업데이트
           const { data: updated } = await supabase
             .from("partnershipsubmit")
             .update({ views: newViews })
             .eq("id", numericId)
             .select("views")
             .single();
-
           if (updated) {
             setViews(updated.views);
           }
 
-          // log upsert
-          await supabase.from("partnershipsubmit_views_log").upsert(
-            {
-              user_id: userId,
-              partnershipsubmit_id: numericId,
-              last_viewed_at: new Date().toISOString(),
-            },
-            {
-              onConflict: "user_id, partnershipsubmit_id",
-            }
-          );
+          // 로그 upsert
+          await supabase.from("partnershipsubmit_views_log").upsert({
+            user_id: userId,
+            partnershipsubmit_id: numericId,
+            last_viewed_at: new Date().toISOString(),
+          });
         }
       } catch (err) {
         console.error("조회수 증가 로직 오류:", err);
@@ -167,11 +157,10 @@ export default function DetailClient({ row, images, numericId }) {
   }, [userId, numericId, hasCountedView]);
 
   // ─────────────────────────────────────────────────────────
-  // 3) “가고싶다” 여부 (로그인 시)
+  // 3) “가고싶다” 초기 여부 체크
   // ─────────────────────────────────────────────────────────
   useEffect(() => {
     if (!session?.user?.id || !numericId) return;
-
     supabase
       .from("wantToGo")
       .select("id")
@@ -179,34 +168,54 @@ export default function DetailClient({ row, images, numericId }) {
       .eq("partnershipsubmit_id", numericId)
       .single()
       .then(({ data, error }) => {
-        if (data && !error) {
+        if (!error && data) {
           setIsSaved(true);
         }
       })
       .catch((err) => console.error("wantToGo check error:", err));
   }, [session, numericId]);
 
-  // “가고싶다” 저장
+  // “가고싶다” 토글 로직
   async function handleSave() {
+    // 로그인 안 된 경우
     if (!session?.user?.id) {
-      alert("로그인이 필요합니다!");
+      alert("로그인 먼저 해주세요!");
       return;
     }
+
+    // 이미 저장된 상태 → 해제(삭제)
     if (isSaved) {
-      alert("이미 '가고싶다' 목록에 있습니다.");
+      try {
+        const { error } = await supabase
+          .from("wantToGo")
+          .delete()
+          .eq("user_id", session.user.id)
+          .eq("partnershipsubmit_id", numericId);
+        if (!error) {
+          setIsSaved(false);
+          alert("가고싶다 해제되었습니다!");
+        } else {
+          console.error("가고싶다 해제 오류:", error);
+          alert("가고싶다 해제 오류!");
+        }
+      } catch (err) {
+        console.error("handleSave delete error:", err);
+        alert("가고싶다 해제 오류!");
+      }
       return;
     }
+
+    // 저장되지 않았다면 추가
     try {
-      const realId = session.user.id;
       const { error } = await supabase.from("wantToGo").insert({
-        user_id: realId,
+        user_id: session.user.id,
         partnershipsubmit_id: numericId,
       });
       if (!error) {
         setIsSaved(true);
         alert("가고싶다 목록에 저장됨!");
       } else {
-        console.error("wantToGo insert error:", error);
+        console.error("가고싶다 저장 오류:", error);
         alert("가고싶다 저장 오류");
       }
     } catch (err) {
@@ -229,7 +238,7 @@ export default function DetailClient({ row, images, numericId }) {
   }
 
   // ─────────────────────────────────────────────────────────
-  // 5) 섹션/코스 로드 + 최저가 구하기
+  // 5) 섹션/코스 로드 + 최저가
   // ─────────────────────────────────────────────────────────
   const [sectionsData, setSectionsData] = useState([]);
   const [loadingSections, setLoadingSections] = useState(true);
@@ -243,42 +252,37 @@ export default function DetailClient({ row, images, numericId }) {
 
     (async () => {
       try {
-        // 1) 섹션 로드
-        const { data: secRows, error: secErr } = await supabase
+        // 섹션 로드
+        const { data: secRows } = await supabase
           .from("sections")
           .select("*")
           .eq("post_id", numericId)
           .order("display_order", { ascending: true });
 
-        if (secErr) throw new Error("섹션 조회 오류: " + secErr.message);
-
-        // 섹션이 없다면
         if (!secRows || secRows.length === 0) {
           setSectionsData([]);
           setLoadingSections(false);
           return;
         }
 
-        // 2) 코스 로드
+        // 코스 로드
         const secIds = secRows.map((s) => s.id);
-        const { data: couRows, error: couErr } = await supabase
+        const { data: couRows } = await supabase
           .from("courses")
           .select("*")
           .in("section_id", secIds)
           .order("display_order", { ascending: true });
 
-        if (couErr) throw new Error("코스 조회 오류: " + couErr.message);
-
-        // 3) 섹션-코스 merge
-        const newSecs = secRows.map((sec) => {
-          const relatedCourses = (couRows || []).filter(
+        // 섹션-코스 merge
+        const merged = secRows.map((sec) => {
+          const related = (couRows || []).filter(
             (c) => c.section_id === sec.id
           );
           return {
             id: sec.id,
             title: sec.section_title,
-            isOpen: true, // 기본 펼침
-            courses: relatedCourses.map((c) => ({
+            isOpen: true,
+            courses: related.map((c) => ({
               id: c.id,
               course_name: c.course_name,
               duration: c.duration || "",
@@ -287,17 +291,16 @@ export default function DetailClient({ row, images, numericId }) {
             })),
           };
         });
+        setSectionsData(merged);
 
-        setSectionsData(newSecs);
-
-        // 4) 최저가 계산
+        // 최저가 계산
         let minP = Infinity;
         (couRows || []).forEach((co) => {
           if (co.price && co.price < minP) {
             minP = co.price;
           }
         });
-        if (minP === Infinity) minP = 0; 
+        if (minP === Infinity) minP = 0;
         setLowestPrice(minP);
       } catch (err) {
         console.error("sections/courses load error:", err);
@@ -307,22 +310,19 @@ export default function DetailClient({ row, images, numericId }) {
     })();
   }, [numericId]);
 
-  // 섹션 열기/닫기
   function toggleSectionOpen(secId) {
     setSectionsData((prev) =>
-      prev.map((s) =>
-        s.id === secId ? { ...s, isOpen: !s.isOpen } : s
-      )
+      prev.map((s) => (s.id === secId ? { ...s, isOpen: !s.isOpen } : s))
     );
   }
 
   // ─────────────────────────────────────────────────────────
-  // 6) 렌더링
+  // 렌더링
   // ─────────────────────────────────────────────────────────
-  // 전화번호, 연락방법(contact_method + near_building), 영업시간, 주차안내, 관리사님, 최저가
+  // 연락방법, ...
   const fullContact = row.contact_method
     ? row.contact_method + (row.near_building ? ` / ${row.near_building}` : "")
-    : row.near_building || ""; // 둘 중 하나만 있으면 이어붙이거나 etc.
+    : row.near_building || "";
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6 flex gap-6">
@@ -339,39 +339,38 @@ export default function DetailClient({ row, images, numericId }) {
                   fill
                   className="object-cover"
                 />
-                {session?.user?.id && (
-                  <button
-                    onClick={handleSave}
-                    className={`absolute top-2 right-2 w-8 h-8 
-                      rounded-full flex items-center justify-center 
-                      bg-black/60
-                      ${isSaved ? "text-red-500" : "text-white"}
-                    `}
-                    style={{ transition: "color 0.3s" }}
+                {/* 하트 버튼 항상 노출, 클릭 시 토글 */}
+                <button
+                  onClick={handleSave}
+                  className={`absolute top-2 right-2 w-8 h-8 
+                    rounded-full flex items-center justify-center 
+                    bg-black/60
+                    ${isSaved ? "text-red-500" : "text-white"}
+                  `}
+                  style={{ transition: "color 0.3s" }}
+                >
+                  {/* 하트 아이콘 */}
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    strokeWidth="2"
+                    stroke="currentColor"
+                    className="w-4 h-4"
+                    viewBox="0 0 24 24"
                   >
-                    {/* 하트 아이콘 */}
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      strokeWidth="2"
-                      stroke="currentColor"
-                      className="w-4 h-4"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M12 21l-1.45-1.342C5.4 15.36 2
-                           12.28 2 8.5 2 5.42 4.42 3 7.5
-                           3c1.74 0 3.41.81 4.5
-                           2.09A5.987 5.987 0 0 1
-                           16.5 3C19.58 3 22 5.42
-                           22 8.5c0 3.78-3.4
-                           6.86-8.55 11.158L12 21z"
-                      />
-                    </svg>
-                  </button>
-                )}
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 21l-1.45-1.342C5.4
+                         15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5
+                         3c1.74 0 3.41.81 4.5
+                         2.09A5.987 5.987 0 0 1
+                         16.5 3C19.58 3 22 5.42
+                         22 8.5c0 3.78-3.4
+                         6.86-8.55 11.158L12 21z"
+                    />
+                  </svg>
+                </button>
               </>
             ) : (
               <div className="w-full h-full flex items-center justify-center text-gray-500">
@@ -396,7 +395,7 @@ export default function DetailClient({ row, images, numericId }) {
             </span>
           </div>
 
-          {/* ★ 요청한 필드들: greeting / address_street / phone_number / contact_method + near_building / open_hours / 최저가 / parking_type / manager_desc */}
+          {/* 필드들 */}
           <DetailRow label="업체소개" value={row.greeting} />
           <DetailRow label="오시는 길" value={row.address_street} />
           <DetailRow label="전화번호" value={row.phone_number} />
@@ -420,11 +419,11 @@ export default function DetailClient({ row, images, numericId }) {
           </div>
         )}
 
-        {/* (A-4) 코스 안내 (sections/courses) */}
+        {/* (A-4) 코스 안내 */}
         <div className="mt-6">
           <h2 className="text-xl font-bold mb-4">코스안내</h2>
           <p className="text-sm text-gray-500 mb-2">
-            ※ 휴대폰 전원이 OFF인 경우, 샵 휴무 또는 예약이 꽉찼을 수 있으니 참고 바랍니다.
+            ※ 휴대폰 전원이 OFF인 경우, 샵 휴무 또는 예약이 꽉 찼을 수 있으니 참고 바랍니다.
           </p>
           {loadingSections ? (
             <div className="py-4">로딩중...</div>
@@ -437,7 +436,6 @@ export default function DetailClient({ row, images, numericId }) {
                   key={sec.id}
                   className="border border-gray-200 rounded overflow-hidden"
                 >
-                  {/* 섹션 헤더 (열기/닫기 버튼) */}
                   <button
                     onClick={() =>
                       setSectionsData((prev) =>
@@ -456,7 +454,6 @@ export default function DetailClient({ row, images, numericId }) {
                     </span>
                   </button>
 
-                  {/* 코스 목록 */}
                   {sec.isOpen && (
                     <div className="px-4 py-3">
                       {sec.courses.length === 0 ? (
@@ -468,7 +465,6 @@ export default function DetailClient({ row, images, numericId }) {
                           {sec.courses.map((c) => (
                             <li key={c.id}>
                               <div className="flex items-center justify-between">
-                                {/* 코스명 + 소요시간 */}
                                 <div>
                                   <span className="font-semibold text-gray-800">
                                     {c.course_name}
@@ -479,14 +475,12 @@ export default function DetailClient({ row, images, numericId }) {
                                     </span>
                                   )}
                                 </div>
-                                {/* 가격 */}
                                 {c.price > 0 && (
                                   <div className="text-red-600 font-medium">
                                     {formatPrice(c.price)}
                                   </div>
                                 )}
                               </div>
-                              {/* 기타설명 */}
                               {c.etc_info?.trim() && (
                                 <div className="mt-1 text-sm text-gray-500">
                                   {c.etc_info}
@@ -512,7 +506,7 @@ export default function DetailClient({ row, images, numericId }) {
 
       {/* (B) 오른쪽 지도 */}
       <div className="flex-[3] rounded overflow-hidden">
-        <MapKakao address={row.address} id={row.id}/>
+        <MapKakao address={row.address} id={row.id} />
       </div>
     </div>
   );
