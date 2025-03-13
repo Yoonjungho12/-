@@ -2,7 +2,14 @@
 import { supabase } from "@/lib/supabaseE";
 import Image from "next/image";
 
-export default async function SearchPage({ searchParams }) {
+// 가격 포맷 (3자리 콤마 + “원”)
+function formatPrice(num) {
+  if (!num || isNaN(num)) return "가격없음";
+  return Number(num).toLocaleString() + "원";
+}
+
+export default async function SearchPage({ searchParams : params}) {
+  const searchParams = await params;
   const query = searchParams.q || "";
 
   if (!query) {
@@ -15,6 +22,7 @@ export default async function SearchPage({ searchParams }) {
   }
 
   // Supabase 쿼리
+  // 최저가를 구하려면 sections -> courses -> price를 가져와야 하므로 select 구조를 변경
   const { data, error } = await supabase
     .from("partnershipsubmit")
     .select(`
@@ -30,6 +38,9 @@ export default async function SearchPage({ searchParams }) {
           id,
           name
         )
+      ),
+      sections (
+        courses (price)
       )
     `)
     .eq("final_admitted", true) // ← ★ final_admitted=true만
@@ -48,28 +59,48 @@ export default async function SearchPage({ searchParams }) {
     );
   }
 
-  // 결과 UI
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
       <h1 className="text-2xl font-bold mb-4">{query} 검색결과</h1>
 
       <div className="space-y-6">
         {data?.map((item) => {
-          // 썸네일 이미지 경로
+          // (1) 썸네일 이미지 경로
           const imageUrl = `https://vejthvawsbsitttyiwzv.supabase.co/storage/v1/object/public/gunma/${item.thumbnail_url}`;
-          // 테마(해시태그)
+          // (2) 해시태그
           const themeList = item.partnershipsubmit_themes || [];
 
+          // (3) 최저가 계산
+          let lowestPrice = null;
+          if (item.sections && item.sections.length > 0) {
+            item.sections.forEach((sec) => {
+              if (sec.courses && sec.courses.length > 0) {
+                sec.courses.forEach((c) => {
+                  if (lowestPrice === null || (c.price && c.price < lowestPrice)) {
+                    lowestPrice = c.price;
+                  }
+                });
+              }
+            });
+          }
+
           return (
-            <div
+            <a
+              // 클릭 시 /board/details/:id 형태로 이동
+              // 예) /board/details/13
+              // 만약 슬러그 형태가 필요하면 "13-슬러그" 식으로 바꾸면 됨
+              href={`/board/details/${item.id}`}
               key={item.id}
               className="
+                block
                 flex flex-col md:flex-row
                 items-stretch
                 bg-gray-100
                 p-4
                 rounded-lg
                 overflow-hidden
+                hover:bg-gray-200
+                transition-colors
               "
             >
               {/* 왼쪽 썸네일 영역 */}
@@ -134,6 +165,12 @@ export default async function SearchPage({ searchParams }) {
                   </div>
                 </div>
 
+                {/* 최저가 */}
+                <div className="text-sm text-red-600 font-semibold mb-1">
+                  최저가:{" "}
+                  {lowestPrice ? formatPrice(lowestPrice) : "가격없음"}
+                </div>
+
                 {/* 인사말(소개) */}
                 <p className="text-sm text-gray-800">
                   {item.greeting}
@@ -151,7 +188,7 @@ export default async function SearchPage({ searchParams }) {
                   ))}
                 </div>
               </div>
-            </div>
+            </a>
           );
         })}
       </div>
