@@ -2,6 +2,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseF";
 import Link from "next/link";
+import Image from "next/image";
 
 /**
  * MapKakao Component:
@@ -31,14 +32,13 @@ export default function MapKakao({ address, id }) {
     const dLat = deg2rad(lat2 - lat1);
     const dLng = deg2rad(lng2 - lng1);
     const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.sin(dLat / 2) ** 2 +
       Math.cos(deg2rad(lat1)) *
         Math.cos(deg2rad(lat2)) *
         Math.sin(dLng / 2) *
         Math.sin(dLng / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const d = R * c;
-    return d; // km 리턴
+    return R * c; // km 리턴
   }
 
   // (B) 현재 샵 정보 가져오기 (company_name)
@@ -111,7 +111,7 @@ export default function MapKakao({ address, id }) {
         return;
       }
 
-      // 2) 불러온 데이터 콘솔 출력
+      // 2) 콘솔 출력
       console.log("[fetchShops] final_admitted=true 레코드:", data);
 
       if (data && data.length > 0) {
@@ -129,22 +129,17 @@ export default function MapKakao({ address, id }) {
           return { ...shop, distance };
         });
 
-        // 4) 계산된 거리 로그
         console.log("[fetchShops] shopsWithDistance:", shopsWithDistance);
 
-        // 5) 30km 이내, 현재 샵 제외
+        // 4) 30km 이내 + 현재 샵 제외 + 거리순
         const filtered = shopsWithDistance
           .filter((s) => s.distance <= 30)
           .filter((s) => s.id !== id)
           .sort((a, b) => a.distance - b.distance);
 
-        // 6) 필터링 결과 로그
         console.log("[fetchShops] 최종 필터링된 주변 샵:", filtered);
-
-        // 7) 상태 업데이트
         setNearbyShops(filtered);
       } else {
-        // 데이터가 하나도 없을 때
         console.log("[fetchShops] final_admitted=true 인 레코드가 없습니다.");
       }
     }
@@ -155,7 +150,7 @@ export default function MapKakao({ address, id }) {
   return (
     <div className="flex flex-col">
       {/* 지도 영역 */}
-      <div ref={mapRef} className="relative w-full h-80 bg-gray-200" />
+      <div ref={mapRef} className="relative w-full h-[390px] bg-gray-200" />
 
       {/* 주변 샵 목록 */}
       <div className="mt-6">
@@ -172,16 +167,17 @@ export default function MapKakao({ address, id }) {
                 className="block"
               >
                 <div className="flex items-center gap-4 py-4 border-t border-gray-200 hover:bg-gray-50">
-                  {/* 썸네일 */}
-                  <div className="w-24 h-24 flex-shrink-0 bg-gray-100 relative overflow-hidden rounded">
+                  {/* 썸네일을 Next.js Image로 변경 */}
+                  <div className="w-40 h-24 flex-shrink-0 bg-gray-100 relative overflow-hidden rounded">
                     {shop.thumbnail_url ? (
-                      <img
+                      <Image
                         src={
                           "https://vejthvawsbsitttyiwzv.supabase.co/storage/v1/object/public/gunma/" +
                           shop.thumbnail_url
                         }
                         alt={shop.company_name}
-                        className="w-full h-full object-cover"
+                        fill
+                        className="object-cover"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">

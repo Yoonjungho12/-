@@ -23,7 +23,7 @@ function buildPublicImageUrl(path) {
   return `https://vejthvawsbsitttyiwzv.supabase.co/storage/v1/object/public/gunma/${path}`;
 }
 
-/** (C) 라벨-값 표시 */
+/** (C) 라벨-값 표시용 */
 function DetailRow({ label, value }) {
   return (
     <div className="flex items-start mb-2">
@@ -78,12 +78,12 @@ function MapKakao({ address }) {
 function NearbyShops({ currentShopId }) {
   const [nearbyShops, setNearbyShops] = useState([]);
 
-  // 거리 계산
+  // 거리 계산용
   function getDistance(lat1, lng1, lat2, lng2) {
     function deg2rad(deg) {
       return deg * (Math.PI / 180);
     }
-    const R = 6371;
+    const R = 6371; // 지구 반지름(km)
     const dLat = deg2rad(lat2 - lat1);
     const dLng = deg2rad(lng2 - lng1);
     const a =
@@ -99,42 +99,46 @@ function NearbyShops({ currentShopId }) {
     if (!currentShopId) return;
 
     (async () => {
-      // 1) 현재 샵 lat,lng
-      const { data: currShop, error: csErr } = await supabase
-        .from("partnershipsubmit")
-        .select("lat, lng")
-        .eq("id", currentShopId)
-        .maybeSingle();
+      try {
+        // 1) 현재 샵 lat,lng
+        const { data: currShop, error: csErr } = await supabase
+          .from("partnershipsubmit")
+          .select("lat, lng")
+          .eq("id", currentShopId)
+          .maybeSingle();
 
-      if (csErr || !currShop) return;
+        if (csErr || !currShop) return;
 
-      // 2) 모든 샵(최종 승인) 불러오기
-      const { data: allShops } = await supabase
-        .from("partnershipsubmit")
-        .select("id, lat, lng, company_name, address, near_building, thumbnail_url")
-        .eq("final_admitted", true);
+        // 2) 모든 최종 승인 샵 불러오기
+        const { data: allShops } = await supabase
+          .from("partnershipsubmit")
+          .select("id, lat, lng, company_name, address, near_building, thumbnail_url")
+          .eq("final_admitted", true);
 
-      if (!allShops) return;
+        if (!allShops) return;
 
-      // 3) 거리 계산
-      const lat1 = currShop.lat || 0;
-      const lng1 = currShop.lng || 0;
+        // 3) 거리 계산
+        const lat1 = currShop.lat || 0;
+        const lng1 = currShop.lng || 0;
 
-      const withDist = allShops.map((shop) => {
-        let dist = Infinity;
-        if (shop.lat && shop.lng) {
-          dist = getDistance(lat1, lng1, shop.lat, shop.lng);
-        }
-        return { ...shop, distance: dist };
-      });
+        const withDist = allShops.map((shop) => {
+          let dist = Infinity;
+          if (shop.lat && shop.lng) {
+            dist = getDistance(lat1, lng1, shop.lat, shop.lng);
+          }
+          return { ...shop, distance: dist };
+        });
 
-      // 4) 30km + 본인제외 + 거리정렬
-      const filtered = withDist
-        .filter((s) => s.id !== currentShopId)
-        .filter((s) => s.distance <= 30)
-        .sort((a, b) => a.distance - b.distance);
+        // 4) 30km + 본인 제외 + 거리 정렬
+        const filtered = withDist
+          .filter((s) => s.id !== currentShopId)
+          .filter((s) => s.distance <= 30)
+          .sort((a, b) => a.distance - b.distance);
 
-      setNearbyShops(filtered);
+        setNearbyShops(filtered);
+      } catch (err) {
+        console.error("주변샵 불러오기 오류:", err);
+      }
     })();
   }, [currentShopId]);
 
@@ -143,24 +147,25 @@ function NearbyShops({ currentShopId }) {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-5">
       {nearbyShops.map((shop) => (
         <a
           key={shop.id}
           href={`/board/details/${shop.id}`}
-          className="block p-2 border border-gray-200 rounded hover:bg-gray-50"
+          className="block rounded hover:bg-gray-50"
         >
           <div className="flex items-center gap-3">
-            {/* 썸네일 */}
-            <div className="w-20 h-20 bg-gray-100 flex-shrink-0 rounded overflow-hidden">
+            {/* 썸네일: parent relative + fill */}
+            <div className="relative w-40 h-25 flex-shrink-0 rounded overflow-hidden">
               {shop.thumbnail_url ? (
-                <img
+                <Image
                   src={
                     "https://vejthvawsbsitttyiwzv.supabase.co/storage/v1/object/public/gunma/" +
                     shop.thumbnail_url
                   }
                   alt={shop.company_name}
-                  className="w-full h-full object-cover"
+                  fill
+                  className="object-cover"
                 />
               ) : (
                 <div className="flex items-center justify-center text-sm text-gray-500 h-full">
@@ -188,16 +193,19 @@ function NearbyShops({ currentShopId }) {
   );
 }
 
-/** (G) 메인 컴포넌트 */
-export default function DetailClient({ row, images, numericId }) {
-  // ─────────────────────────────────────────────────────────
-  // 그대로 있던 state/logic
-  // ─────────────────────────────────────────────────────────
+/** (G) 메인 모바일 상세페이지 컴포넌트 */
+export default function DetailClientMobile({ row, images, numericId }) {
+  // 세션 관련
   const [session, setSession] = useState(null);
+  // "가고싶다" 여부
   const [isSaved, setIsSaved] = useState(false);
+  // 조회수
   const [views, setViews] = useState(row.views || 0);
   const [hasCountedView, setHasCountedView] = useState(false);
 
+  // ─────────────────────────────────────────────────────────
+  // 1) 세션 불러오기 및 상태 감지
+  // ─────────────────────────────────────────────────────────
   useEffect(() => {
     supabase.auth
       .getSession()
@@ -209,6 +217,7 @@ export default function DetailClient({ row, images, numericId }) {
     const { data: listener } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
         setSession(newSession);
+        // anon -> real merge
         if (event === "SIGNED_IN" && newSession?.user?.id) {
           const realId = newSession.user.id;
           const anonId = localStorage.getItem("anon_user_id");
@@ -227,17 +236,14 @@ export default function DetailClient({ row, images, numericId }) {
     };
   }, []);
 
+  // ─────────────────────────────────────────────────────────
+  // 2) userId 결정 + 조회수 카운트(24시간 중복 방지)
+  // ─────────────────────────────────────────────────────────
   let userId = null;
   if (session?.user?.id) {
     userId = session.user.id;
   } else if (typeof window !== "undefined") {
-    const key = "anon_user_id";
-    let stored = localStorage.getItem(key);
-    if (!stored) {
-      stored = crypto.randomUUID();
-      localStorage.setItem(key, stored);
-    }
-    userId = stored;
+    userId = getOrCreateAnonUuid();
   }
 
   useEffect(() => {
@@ -258,6 +264,7 @@ export default function DetailClient({ row, images, numericId }) {
             .select("views")
             .eq("id", numericId)
             .single();
+
           const newViews = (rowData?.views || 0) + 1;
 
           const { data: updated } = await supabase
@@ -287,6 +294,9 @@ export default function DetailClient({ row, images, numericId }) {
     })();
   }, [userId, numericId, hasCountedView]);
 
+  // ─────────────────────────────────────────────────────────
+  // 3) “가고싶다” 여부 체크
+  // ─────────────────────────────────────────────────────────
   useEffect(() => {
     if (!session?.user?.id || !numericId) return;
     supabase
@@ -303,12 +313,14 @@ export default function DetailClient({ row, images, numericId }) {
       .catch(console.error);
   }, [session, numericId]);
 
+  // “가고싶다” 토글
   async function handleSave() {
     if (!session?.user?.id) {
       alert("로그인 먼저 해주세요!");
       return;
     }
     if (isSaved) {
+      // 해제
       try {
         const { error } = await supabase
           .from("wantToGo")
@@ -328,6 +340,7 @@ export default function DetailClient({ row, images, numericId }) {
       }
       return;
     }
+    // 등록
     try {
       const { error } = await supabase.from("wantToGo").insert({
         user_id: session.user.id,
@@ -346,6 +359,9 @@ export default function DetailClient({ row, images, numericId }) {
     }
   }
 
+  // ─────────────────────────────────────────────────────────
+  // 4) 이미지들 처리 (썸네일 + 상세)
+  // ─────────────────────────────────────────────────────────
   const allImages = [];
   if (row.thumbnail_url) {
     allImages.push(buildPublicImageUrl(row.thumbnail_url));
@@ -356,6 +372,20 @@ export default function DetailClient({ row, images, numericId }) {
     });
   }
 
+  // 가로 슬라이드
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    if (allImages.length <= 1) return;
+    const timer = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % allImages.length);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [allImages]);
+
+  // ─────────────────────────────────────────────────────────
+  // 5) 코스 데이터 + 최저가
+  // ─────────────────────────────────────────────────────────
   const [sectionsData, setSectionsData] = useState([]);
   const [loadingSections, setLoadingSections] = useState(true);
   const [lowestPrice, setLowestPrice] = useState(0);
@@ -378,7 +408,6 @@ export default function DetailClient({ row, images, numericId }) {
           setLoadingSections(false);
           return;
         }
-
         const secIds = secRows.map((s) => s.id);
         const { data: couRows } = await supabase
           .from("courses")
@@ -425,63 +454,17 @@ export default function DetailClient({ row, images, numericId }) {
     );
   }
 
-  function handleSms() {
-    if (!row.phone_number) {
-      alert("전화번호 없음");
-      return;
-    }
-    window.location.href = `sms:${row.phone_number}`;
-  }
-  function handleCall() {
-    if (!row.phone_number) {
-      alert("전화번호 없음");
-      return;
-    }
-    window.location.href = `tel:${row.phone_number}`;
-  }
-
-  const [activeTab, setActiveTab] = useState("info");
-  const infoRef = useRef(null);
-  const courseRef = useRef(null);
-  const reviewRef = useRef(null);
-
-  function getTabClass(tabId) {
-    return `flex-1 py-3 text-center font-semibold ${
-      activeTab === tabId ? "border-b-2 border-red-500 text-red-500" : ""
-    }`;
-  }
-
-  function scrollToRef(ref) {
-    if (!ref.current) return;
-    const offset = 50;
-    const yPos = ref.current.offsetTop - offset;
-    window.scrollTo({ top: yPos, behavior: "smooth" });
-  }
-
-  function handleTabClick(tabId) {
-    setActiveTab(tabId);
-    if (tabId === "info") {
-      scrollToRef(infoRef);
-    } else if (tabId === "course") {
-      scrollToRef(courseRef);
-    } else if (tabId === "review") {
-      scrollToRef(reviewRef);
-    }
-  }
-
+  // ─────────────────────────────────────────────────────────
+  // 6) 리뷰 (댓글) 개수 관리
+  // ─────────────────────────────────────────────────────────
   const [reviewCount, setReviewCount] = useState(0);
 
-  const fullContact = row.contact_method
-    ? row.contact_method + (row.near_building ? ` / ${row.near_building}` : "")
-    : row.near_building || "";
-
   // ─────────────────────────────────────────────────────────
-  // (출근부) 멤버 관련 state/useEffect
+  // 7) 출근부 (멤버)
   // ─────────────────────────────────────────────────────────
   const [members, setMembers] = useState([]);
   const [loadingMembers, setLoadingMembers] = useState(true);
 
-  // ※ 여기는 기존 코드 + "출근부"용 로딩 로직
   useEffect(() => {
     if (!numericId) {
       setLoadingMembers(false);
@@ -504,7 +487,7 @@ export default function DetailClient({ row, images, numericId }) {
     })();
   }, [numericId]);
 
-  // 여기서 파스텔톤 색상 목록 정의 (랜덤 적용 가능)
+  // 파스텔 색상 목록
   const pastelArr = [
     "bg-blue-50 text-blue-500",
     "bg-pink-50 text-pink-500",
@@ -515,25 +498,87 @@ export default function DetailClient({ row, images, numericId }) {
   ];
 
   // ─────────────────────────────────────────────────────────
-  // 렌더링
+  // 8) 연락방법
+  // ─────────────────────────────────────────────────────────
+  const fullContact = row.contact_method
+    ? row.contact_method + (row.near_building ? ` / ${row.near_building}` : "")
+    : row.near_building || "";
+
+  // ─────────────────────────────────────────────────────────
+  // 9) 탭(샵정보 / 코스안내 / 리뷰) + 스크롤 이동
+  // ─────────────────────────────────────────────────────────
+  const [activeTab, setActiveTab] = useState("info");
+  const infoRef = useRef(null);
+  const courseRef = useRef(null);
+  const reviewRef = useRef(null);
+
+  function getTabClass(tabId) {
+    return `flex-1 py-3 text-center font-semibold ${
+      activeTab === tabId ? "border-b-2 border-red-500 text-red-500" : ""
+    }`;
+  }
+  function scrollToRef(ref) {
+    if (!ref.current) return;
+    const offset = 50; // 헤더 높이나 약간의 여백
+    const yPos = ref.current.offsetTop - offset;
+    window.scrollTo({ top: yPos, behavior: "smooth" });
+  }
+  function handleTabClick(tabId) {
+    setActiveTab(tabId);
+    if (tabId === "info") {
+      scrollToRef(infoRef);
+    } else if (tabId === "course") {
+      scrollToRef(courseRef);
+    } else if (tabId === "review") {
+      scrollToRef(reviewRef);
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────
+  // 최종 렌더링
   // ─────────────────────────────────────────────────────────
   return (
     <div className="relative max-w-md mx-auto bg-white">
-      {/* (A) 상단 이미지 */}
-      <div className="relative w-full h-60 bg-gray-200">
+      {/* (A) 이미지 슬라이드 영역 */}
+      <div className="relative w-full overflow-hidden" style={{ height: "250px" }}>
         {allImages.length > 0 ? (
-          <Image
-            src={allImages[0]}
-            alt="메인이미지"
-            fill
-            className="object-cover"
-          />
+          <div
+            className="flex h-full transition-transform duration-500 ease-in-out"
+            style={{
+              width: `${allImages.length * 100}%`,
+              transform: `translateX(-${currentIndex * 100}%)`,
+            }}
+          >
+            {allImages.map((imgUrl, idx) => (
+              <div
+                key={idx}
+                className="flex-shrink-0 w-full h-full relative"
+                style={{ flexBasis: "100%" }}
+              >
+                {/* fill 모드로 Image */}
+                <Image
+                  src={imgUrl}
+                  alt={`슬라이드 이미지 ${idx + 1}`}
+                  fill
+                  className="object-cover"
+                />
+              </div>
+            ))}
+          </div>
         ) : (
           <div className="flex items-center justify-center h-full text-gray-500">
             이미지 없음
           </div>
         )}
-        {/* (A-1) 가고싶다 버튼 (항상 표시) */}
+
+        {/* (A-1) 이미지 인덱스 표시 */}
+        {allImages.length > 0 && (
+          <div className="absolute bottom-2 right-2 px-2 py-1 text-sm bg-black/60 text-white rounded">
+            {currentIndex + 1} / {allImages.length}
+          </div>
+        )}
+
+        {/* (A-2) “가고싶다” 버튼 */}
         <button
           onClick={handleSave}
           className={`absolute top-2 right-2 w-8 h-8 bg-black/60 rounded-full 
@@ -564,7 +609,7 @@ export default function DetailClient({ row, images, numericId }) {
         </button>
       </div>
 
-      {/* (B) 탭 */}
+      {/* (B) 탭 영역 */}
       <div
         className="sticky top-[50px] bg-white z-10 flex flex-col border-b border-gray-200"
         style={{ marginTop: 0 }}
@@ -593,40 +638,33 @@ export default function DetailClient({ row, images, numericId }) {
 
       {/* (C) 샵정보 섹션 */}
       <section id="info" ref={infoRef} className="px-4 pt-4 pb-6">
+        {/* 샵 이름 */}
         <div className="p-2 text-center">
           <h2 className="text-xl font-bold">{row.company_name}</h2>
         </div>
 
-        <div className="flex items-center justify-center gap-4 pb-2">
+        {/* 조회수, 리뷰수 표시 */}
+        <div className="flex items-center justify-center gap-6 pb-2 text-gray-500">
           {/* 조회수 */}
-   {/* 아이콘 + 조회수 + 리뷰수 (views, reviewCount) */}
-<div className="flex justify-center items-center gap-6 ml-1 text-gray-500">
-  {/* 눈 아이콘 + views */}
-  <div className="flex justify-center items-center gap-1">
-    <img
-      src="/icons/views.svg"
-      alt="조회수"
-      className="object-contain"
-      style={{ width: "18px", height: "16.18px" }}
-    />
-    <span>
-      {views.toLocaleString()}
-    </span>
-  </div>
-
-  {/* 사람 아이콘 + reviewCount */}
-  <div className="flex items-center gap-1">
-    <img
-      src="/icons/man.svg"
-      alt="리뷰수"
-      className="object-contain"
-      style={{ width: "18px", height: "14.18px" }}
-    />
-    <span>
-      {reviewCount}
-    </span>
-  </div>
-</div>
+          <div className="flex justify-center items-center gap-1">
+            <img
+              src="/icons/views.svg"
+              alt="조회수"
+              className="object-contain"
+              style={{ width: "18px", height: "16px" }}
+            />
+            <span>{views.toLocaleString()}</span>
+          </div>
+          {/* 리뷰수 */}
+          <div className="flex items-center gap-1">
+            <img
+              src="/icons/man.svg"
+              alt="리뷰수"
+              className="object-contain"
+              style={{ width: "18px", height: "14px" }}
+            />
+            <span>{reviewCount}</span>
+          </div>
         </div>
 
         {/* 지도 */}
@@ -644,9 +682,7 @@ export default function DetailClient({ row, images, numericId }) {
           <DetailRow label="주차안내" value={row.parking_type} />
           <DetailRow label="관리사님" value={row.manager_desc} />
 
-          {/* =========================================
-              출근부 (오직 여기만 수정)
-          ========================================= */}
+          {/* (C-1) 출근부 */}
           {loadingMembers ? (
             <DetailRow label="출근부" value="불러오는 중..." />
           ) : members.length === 0 ? (
@@ -656,10 +692,8 @@ export default function DetailClient({ row, images, numericId }) {
               <span className="inline-block w-24 font-semibold text-gray-700 shrink-0">
                 출근부
               </span>
-              {/* 한 줄에 나란히, 컬러 랜덤 적용 */}
               <div className="flex flex-wrap gap-2 mt-1">
                 {members.map((m, idx) => {
-                  // 파스텔 색상 랜덤 선택
                   const colorClass =
                     pastelArr[Math.floor(Math.random() * pastelArr.length)];
                   return (
@@ -674,9 +708,6 @@ export default function DetailClient({ row, images, numericId }) {
               </div>
             </div>
           )}
-          {/* =========================================
-              출근부 끝
-          ========================================= */}
         </div>
       </section>
 
@@ -699,13 +730,7 @@ export default function DetailClient({ row, images, numericId }) {
                 className="border border-gray-200 rounded overflow-hidden"
               >
                 <button
-                  onClick={() => {
-                    setSectionsData((prev) =>
-                      prev.map((s) =>
-                        s.id === sec.id ? { ...s, isOpen: !s.isOpen } : s
-                      )
-                    );
-                  }}
+                  onClick={() => toggleSectionOpen(sec.id)}
                   className="w-full flex items-center justify-between bg-gray-100 px-4 py-2"
                 >
                   <span className="font-semibold text-gray-700">
@@ -762,6 +787,8 @@ export default function DetailClient({ row, images, numericId }) {
         <p className="text-sm text-gray-500 mb-2">
           {row.company_name} 업체에 리뷰를 남겨보세요!
         </p>
+
+        {/* 댓글 컴포넌트 */}
         <CommentsUI
           company_name={row.company_name}
           id={row.id}
@@ -775,7 +802,7 @@ export default function DetailClient({ row, images, numericId }) {
         <NearbyShops currentShopId={numericId} />
       </section>
 
-      {/* (G) 하단 fixed 바 */}
+      {/* (G) 하단 fixed 바 (문자하기 / 전화하기) */}
       <div className="fixed bottom-0 left-0 w-full flex bg-white border-t border-gray-200">
         <button
           onClick={() => {

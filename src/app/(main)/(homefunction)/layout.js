@@ -14,20 +14,27 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-<>
-        <div className="hidden md:block">
-          <NavBar />
-        </div>
+<>  
 
-        {/* 
-          (B) 모바일 TopBar (fixed)
-          - block md:hidden => 모바일 전용
-          - fixed top-0 => 화면 상단 고정
-          - z-50 => 최상위 레벨
+      <header>
+        <div className="hidden md:block">
+                <NavBar />
+              </div>
+
+              {/* 
+                (B) 모바일 TopBar (fixed)
+                - block md:hidden => 모바일 전용
+                - fixed top-0 => 화면 상단 고정
+                - z-50 => 최상위 레벨
         */}
         <div className="block md:hidden fixed top-0 left-0 right-0 z-50">
           <MobileTopBar />
         </div>
+            <div className="block md:hidden fixed bottom-0 left-0 right-0 z-50">
+          <MobileBottomNav />
+        </div>
+      </header>
+      
 
         {/* 
           (C) 본문
@@ -44,9 +51,7 @@ export default function RootLayout({ children }) {
           - block md:hidden => 모바일 전용
           - bottom-0 => 화면 하단 고정
         */}
-        <div className="block md:hidden fixed bottom-0 left-0 right-0 z-50">
-          <MobileBottomNav />
-        </div>
+    
     </>
   );
 }

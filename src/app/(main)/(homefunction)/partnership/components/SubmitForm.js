@@ -543,7 +543,9 @@ export default function SubmitForm({
           프로그램(코스) <span className="text-red-500">*</span>
         </label>
         <textarea
-          placeholder="예) A코스 60분 11만→9만 등"
+          placeholder={`프로그램(코스)는 관리자 승인 후에 추가 하실 수 있습니다 
+이 곳에는 간단한 소개글을 적어주세요.
+              `}
           value={programInfo}
           onChange={(e) => setProgramInfo(e.target.value)}
           className="w-full border border-gray-300 rounded px-2 py-1"
@@ -558,7 +560,7 @@ export default function SubmitForm({
         </label>
         <input
           type="text"
-          placeholder="예) [지역/업소명] 프리미엄 스웨디시"
+          placeholder="예) [지역/업체명] 여기닷 애견펜션"
           value={postTitle}
           onChange={(e) => setPostTitle(e.target.value)}
           className="w-full border border-gray-300 rounded px-2 py-1"

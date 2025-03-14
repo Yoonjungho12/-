@@ -36,7 +36,7 @@ export default function Home() {
       <NewArrivalsSection />
 
     </div>
-          <Footer/>
+     
           </>
   );
 }

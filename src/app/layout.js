@@ -1,8 +1,7 @@
 // src/app/layout.js
 import "./globals.css";
 import MobileBottomNav from "./components/MobileNavigation";
-import MobileTopBar from "./components/MobileBack";
-// (선택) 폰트
+import Footer from "@/components/Footer";
 import { Geist } from "next/font/google";
 
 export const metadata = {
@@ -12,27 +11,22 @@ export const metadata = {
 
 const geist = Geist({ subsets: ["latin"] });
 
-// Server Component (기본)
+// Server Component
 export default function RootLayout({ children }) {
   return (
     <html lang="ko">
-      <body className={`${geist.className} min-h-screen`}>
-        {/* (1) 모바일 상단 바 (fixed) */}
-        {/* <div className="block md:hidden fixed top-0 left-0 right-0 z-50">
-          <MobileTopBar />
-        </div> */}
-
-        {/* 
-          (2) 본문: 모바일에서 상단바+하단바 공간을 확보
-          - pb-[60px]: 하단 Nav 높이만큼 패딩
-          - pt-[56px]: 상단바 높이만큼 패딩 (예: 56px)
-          - md:pt-0, md:pb-0 → 데스크톱에서는 패딩 없앰
-        */}
-        <main>
+      {/* 1) html, body 높이 채우고, flex 컨테이너로 만듦 */}
+      <body className={`${geist.className} min-h-screen flex flex-col`}>
+        
+        {/* 2) 콘텐츠 영역: flex-1 */}
+        <div className="flex-1">
           {children}
-        </main>
+        </div>
 
-        {/* (3) 모바일 하단 바 (fixed) */}
+        {/* 3) 푸터: children 아래에 고정적으로 위치 */}
+        <Footer />
+
+        {/* 4) 모바일 하단 바 (fixed) */}
         <div className="block md:hidden fixed bottom-0 left-0 right-0 z-50">
           <MobileBottomNav />
         </div>

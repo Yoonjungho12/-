@@ -6,7 +6,8 @@
  * 
  * 모바일 전용 테마 선택 컴포넌트 (CSR)
  * - "테마선택" 버튼 → 열고 닫기
- * - PC에서는 안 보임
+ * - 4칸(열)씩 표시해 모바일에서 보기 좋게
+ * - 폰트도 조금 작게
  */
 
 import { useState } from "react";
@@ -20,26 +21,29 @@ export default function ThemeSelectorMobile({
 }) {
   const [isOpen, setIsOpen] = useState(false);
 
-  // 테이블/칸 스타일
+  // 테이블 스타일
   const tableStyle = {
     width: "100%",
     tableLayout: "fixed",
     borderCollapse: "collapse",
     marginBottom: "1rem",
   };
+
+  // 각 칸(TD) 스타일
   function getTdStyle(isSelected) {
     return {
       border: "1px solid #ddd",
-      padding: "8px",
+      padding: "6px",          // 폰트 작게, 패딩도 축소
       cursor: "pointer",
       backgroundColor: isSelected ? "#f9665e" : "#fff",
       color: isSelected ? "#fff" : "#333",
       textAlign: "center",
       verticalAlign: "middle",
+      fontSize: "14px",        // 폰트 작게 조정
     };
   }
 
-  // 9칸씩 나누는 함수
+  // (1) 4칸씩 나누는 함수
   function chunkArray(array, size) {
     const result = [];
     for (let i = 0; i < array.length; i += size) {
@@ -49,7 +53,7 @@ export default function ThemeSelectorMobile({
   }
 
   return (
-    <div>
+    <div style={{ marginBottom: "1.5rem" }}>
       {/* 버튼 */}
       <button
         style={{
@@ -59,7 +63,9 @@ export default function ThemeSelectorMobile({
           backgroundColor: "#f9665e",
           color: "#fff",
           border: "none",
-          cursor: "pointer"
+          cursor: "pointer",
+          fontSize: "14px",
+          borderRadius: "4px",
         }}
         onClick={() => setIsOpen(!isOpen)}
       >
@@ -69,14 +75,16 @@ export default function ThemeSelectorMobile({
       {/* 열렸을 때 테마표 */}
       {isOpen && (
         <>
-          <h2 className="text-2xl font-bold">테마별 샵 선택 (모바일 CSR)</h2>
-          <p style={{ color: "#666", marginBottom: "1rem"}} className="text-lg">
+          <h2 style={{ fontSize: "16px", marginBottom: "0.5rem", fontWeight: "bold" }}>
+            테마별 샵 선택 
+          </h2>
+          <p style={{ color: "#666", marginBottom: "1rem", fontSize: "14px" }}>
             원하는 테마를 골라보세요!
           </p>
 
           <table style={tableStyle}>
             <tbody>
-              {chunkArray(allThemes, 9).map((row, rowIdx) => (
+              {chunkArray(allThemes, 4).map((row, rowIdx) => (
                 <tr key={rowIdx}>
                   {row.map((th) => {
                     const isSelected = selectedThemeIds.includes(th.id);
@@ -89,6 +97,20 @@ export default function ThemeSelectorMobile({
                       </td>
                     );
                   })}
+
+                  {/* 남은 칸이 4개 미만이면 빈 칸을 채워서 맞춰주기 */}
+                  {row.length < 4 && 
+                    Array.from({ length: 4 - row.length }).map((_, extraIdx) => (
+                      <td
+                        key={`extra_${extraIdx}`}
+                        style={{
+                          border: "1px solid #ddd",
+                          padding: "6px",
+                          backgroundColor: "#f9f9f9",
+                        }}
+                      />
+                    ))
+                  }
                 </tr>
               ))}
             </tbody>

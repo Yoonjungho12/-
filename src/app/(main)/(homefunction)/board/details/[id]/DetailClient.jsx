@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { MegaphoneIcon, EyeIcon, UserIcon } from "@heroicons/react/24/outline";
 import { supabase } from "@/lib/supabaseF";
 import CommentsUI from "./comment";
 import MapKakao from "./MapKakao";
+import { MegaphoneIcon } from "@heroicons/react/24/outline";
 
 /** (A) 비로그인 시 localStorage 익명 UUID */
 function generateAnonUuid() {
@@ -26,10 +26,10 @@ function buildPublicImageUrl(path) {
   return `https://vejthvawsbsitttyiwzv.supabase.co/storage/v1/object/public/gunma/${path}`;
 }
 
-/** (C) 라벨-값 표시 */
+/** (C) 라벨-값 표시용 작은 컴포넌트 */
 function DetailRow({ label, value }) {
   return (
-    <div className="mb-2">
+    <div className="mb-4">
       <span className="inline-block w-24 font-semibold text-gray-600">
         {label}
       </span>
@@ -46,21 +46,20 @@ function formatPrice(num) {
 
 /**
  * 메인 컴포넌트 (PC 전용)
- * row: partnershipsubmit 단일 레코드
- * images: partnershipsubmit_images[]
- * numericId: partnershipsubmit.id
+ *  row: partnershipsubmit 단일 레코드
+ *  images: partnershipsubmit_images[]
+ *  numericId: partnershipsubmit.id
  */
 export default function DetailClient({ row, images, numericId }) {
   // ─────────────────────────────────────────────────────────
   // 1) session, 조회수, 가고싶다
   // ─────────────────────────────────────────────────────────
   const [session, setSession] = useState(null);
-  const [isSaved, setIsSaved] = useState(false); // 이미 가고싶다
+  const [isSaved, setIsSaved] = useState(false);
   const [views, setViews] = useState(row.views || 0);
   const [hasCountedView, setHasCountedView] = useState(false);
 
   useEffect(() => {
-    // (1) 현재 세션 가져오기
     supabase.auth
       .getSession()
       .then(({ data, error }) => {
@@ -74,15 +73,14 @@ export default function DetailClient({ row, images, numericId }) {
         console.error("[getSession catch]:", err);
       });
 
-    // (2) 세션 상태 감지
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
         setSession(newSession);
-        // anon → real merge
         if (event === "SIGNED_IN" && newSession?.user?.id) {
           const realId = newSession.user.id;
           const anonId = localStorage.getItem("anon_user_id");
           if (anonId && anonId !== realId) {
+            // merge anon -> real
             await supabase
               .from("partnershipsubmit_views_log")
               .update({ user_id: realId })
@@ -92,6 +90,7 @@ export default function DetailClient({ row, images, numericId }) {
         }
       }
     );
+
     return () => {
       authListener?.subscription.unsubscribe();
     };
@@ -106,7 +105,7 @@ export default function DetailClient({ row, images, numericId }) {
   }
 
   // ─────────────────────────────────────────────────────────
-  // 2) 조회수 (24h 중복 방지)
+  // 2) 조회수 (24시간 중복 방지)
   // ─────────────────────────────────────────────────────────
   useEffect(() => {
     if (!userId || !numericId || hasCountedView) return;
@@ -121,14 +120,14 @@ export default function DetailClient({ row, images, numericId }) {
           .gt("last_viewed_at", _24hAgo);
 
         if (!logs || logs.length === 0) {
-          // 기존 views
-          const { data: oldData } = await supabase
+          // 기존 views 가져오기
+          const { data: oldRow } = await supabase
             .from("partnershipsubmit")
             .select("views")
             .eq("id", numericId)
             .single();
 
-          const currViews = oldData?.views || 0;
+          const currViews = oldRow?.views || 0;
           const newViews = currViews + 1;
 
           // views 업데이트
@@ -138,6 +137,7 @@ export default function DetailClient({ row, images, numericId }) {
             .eq("id", numericId)
             .select("views")
             .single();
+
           if (updated) {
             setViews(updated.views);
           }
@@ -157,7 +157,7 @@ export default function DetailClient({ row, images, numericId }) {
   }, [userId, numericId, hasCountedView]);
 
   // ─────────────────────────────────────────────────────────
-  // 3) “가고싶다” 초기 여부 체크
+  // 3) “가고싶다” 여부 체크
   // ─────────────────────────────────────────────────────────
   useEffect(() => {
     if (!session?.user?.id || !numericId) return;
@@ -177,13 +177,11 @@ export default function DetailClient({ row, images, numericId }) {
 
   // “가고싶다” 토글 로직
   async function handleSave() {
-    // 로그인 안 된 경우
     if (!session?.user?.id) {
       alert("로그인 먼저 해주세요!");
       return;
     }
 
-    // 이미 저장된 상태 → 해제(삭제)
     if (isSaved) {
       try {
         const { error } = await supabase
@@ -205,7 +203,6 @@ export default function DetailClient({ row, images, numericId }) {
       return;
     }
 
-    // 저장되지 않았다면 추가
     try {
       const { error } = await supabase.from("wantToGo").insert({
         user_id: session.user.id,
@@ -219,13 +216,13 @@ export default function DetailClient({ row, images, numericId }) {
         alert("가고싶다 저장 오류");
       }
     } catch (err) {
-      console.error("handleSave error:", err);
+      console.error("handleSave insert error:", err);
       alert("가고싶다 저장 오류");
     }
   }
 
   // ─────────────────────────────────────────────────────────
-  // 4) 이미지 배열
+  // 4) 이미지 배열 (썸네일 + 상세 이미지)
   // ─────────────────────────────────────────────────────────
   const allImages = [];
   if (row.thumbnail_url) {
@@ -237,8 +234,25 @@ export default function DetailClient({ row, images, numericId }) {
     });
   }
 
+  // 세부 이미지 존재 여부
+  const hasDetailImages = images && images.length > 0;
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  // 3초 자동전환
+  useEffect(() => {
+    if (allImages.length <= 1) return;
+    const timer = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % allImages.length);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [allImages]);
+
+  function handleThumbnailClick(idx) {
+    setCurrentIndex(idx);
+  }
+
   // ─────────────────────────────────────────────────────────
-  // 5) 섹션/코스 로드 + 최저가
+  // 5) 섹션/코스 + 최저가
   // ─────────────────────────────────────────────────────────
   const [sectionsData, setSectionsData] = useState([]);
   const [loadingSections, setLoadingSections] = useState(true);
@@ -249,10 +263,8 @@ export default function DetailClient({ row, images, numericId }) {
       setLoadingSections(false);
       return;
     }
-
     (async () => {
       try {
-        // 섹션 로드
         const { data: secRows } = await supabase
           .from("sections")
           .select("*")
@@ -265,7 +277,6 @@ export default function DetailClient({ row, images, numericId }) {
           return;
         }
 
-        // 코스 로드
         const secIds = secRows.map((s) => s.id);
         const { data: couRows } = await supabase
           .from("courses")
@@ -273,16 +284,15 @@ export default function DetailClient({ row, images, numericId }) {
           .in("section_id", secIds)
           .order("display_order", { ascending: true });
 
-        // 섹션-코스 merge
         const merged = secRows.map((sec) => {
-          const related = (couRows || []).filter(
+          const relatedCourses = (couRows || []).filter(
             (c) => c.section_id === sec.id
           );
           return {
             id: sec.id,
             title: sec.section_title,
             isOpen: true,
-            courses: related.map((c) => ({
+            courses: relatedCourses.map((c) => ({
               id: c.id,
               course_name: c.course_name,
               duration: c.duration || "",
@@ -293,7 +303,6 @@ export default function DetailClient({ row, images, numericId }) {
         });
         setSectionsData(merged);
 
-        // 최저가 계산
         let minP = Infinity;
         (couRows || []).forEach((co) => {
           if (co.price && co.price < minP) {
@@ -317,7 +326,7 @@ export default function DetailClient({ row, images, numericId }) {
   }
 
   // ─────────────────────────────────────────────────────────
-  // 6) 멤버 로드 (출근부)
+  // 6) 출근부(멤버) 로드
   // ─────────────────────────────────────────────────────────
   const [members, setMembers] = useState([]);
   const [loadingMembers, setLoadingMembers] = useState(true);
@@ -329,13 +338,13 @@ export default function DetailClient({ row, images, numericId }) {
     }
     (async () => {
       try {
-        const { data: memRows, error } = await supabase
+        const { data: regRows, error } = await supabase
           .from("register")
           .select("member")
           .eq("partnershipsubmit_id", numericId);
         if (error) throw error;
 
-        setMembers(memRows || []);
+        setMembers(regRows || []);
       } catch (err) {
         console.error("멤버 로드 오류:", err);
       } finally {
@@ -344,7 +353,6 @@ export default function DetailClient({ row, images, numericId }) {
     })();
   }, [numericId]);
 
-  // 파스텔톤 색상 목록 (필요에 따라 갯수/색 수정 가능)
   const pastelColors = [
     "bg-blue-50 text-blue-500",
     "bg-pink-50 text-pink-500",
@@ -355,39 +363,41 @@ export default function DetailClient({ row, images, numericId }) {
   ];
 
   // ─────────────────────────────────────────────────────────
-  // 렌더링
+  // 최종 렌더링
   // ─────────────────────────────────────────────────────────
-  // 연락방법
-  const fullContact = row.contact_method
-    ? row.contact_method + (row.near_building ? ` / ${row.near_building}` : "")
-    : row.near_building || "";
-
   return (
     <div className="max-w-7xl mx-auto px-4 py-6 flex gap-6">
       {/* (A) 왼쪽 영역 */}
       <div className="flex-[7]">
-        {/* (A-1) 이미지 */}
+        {/* (A-1) 사진 영역 */}
         <div className="flex gap-4">
-          <div className="relative flex-1 h-80 bg-gray-100 rounded overflow-hidden">
+          {/* 메인 이미지 */}
+          <div
+            className="relative flex-1 bg-gray-100 rounded overflow-hidden"
+            style={{ minHeight: 390 }}
+          >
             {allImages.length > 0 ? (
               <>
                 <Image
-                  src={allImages[0]}
-                  alt="메인 이미지"
+                  key={currentIndex}
+                  src={allImages[currentIndex]}
+                  alt={`메인 이미지 ${currentIndex + 1}`}
                   fill
                   className="object-cover"
                 />
-                {/* 하트 버튼 */}
+                <div className="absolute bottom-2 right-2 px-2 py-1 text-sm bg-black/60 text-white rounded">
+                  {currentIndex + 1} / {allImages.length}
+                </div>
+
+                {/* 가고싶다 */}
                 <button
                   onClick={handleSave}
-                  className={`absolute top-2 right-2 w-8 h-8 
-                    rounded-full flex items-center justify-center 
+                  className={`absolute top-2 right-2 w-8 h-8
+                    rounded-full flex items-center justify-center
                     bg-black/60
                     ${isSaved ? "text-red-500" : "text-white"}
                   `}
-                  style={{ transition: "color 0.3s" }}
                 >
-                  {/* 하트 아이콘 */}
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
@@ -416,6 +426,40 @@ export default function DetailClient({ row, images, numericId }) {
               </div>
             )}
           </div>
+
+          {/* 오른쪽 썸네일 (190x113) */}
+          <div
+            className="flex flex-col gap-2 overflow-y-auto"
+            style={{ maxHeight: 450, width: "190px" }}
+          >
+            {hasDetailImages
+              ? allImages.map((imgUrl, idx) => (
+                  <div
+                    key={idx}
+                    className={`relative cursor-pointer border ${
+                      idx === currentIndex ? "border-red-500" : "border-transparent"
+                    }`}
+                    style={{ width: "190px", height: "113px" }}
+                    onClick={() => handleThumbnailClick(idx)}
+                  >
+                    <Image src={imgUrl} alt={`썸네일 ${idx}`} fill className="object-cover" />
+                  </div>
+                ))
+              : // 세부 이미지가 없고 썸네일만 있을 경우
+                row.thumbnail_url && (
+                  <div
+                    className="relative cursor-pointer border border-red-500"
+                    style={{ width: "190px", height: "113px" }}
+                  >
+                    <Image
+                      src={buildPublicImageUrl(row.thumbnail_url)}
+                      alt="썸네일 이미지"
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                )}
+          </div>
         </div>
 
         {/* (A-2) 기본 정보 */}
@@ -423,69 +467,79 @@ export default function DetailClient({ row, images, numericId }) {
           <div className="flex flex-col">
             <h1 className="text-3xl font-bold mb-2">{row.company_name}</h1>
 
-            {/* 추가: 아이콘+숫자 표시 영역 */}
+            {/* 조회수, 댓글 */}
             <div className="flex items-center gap-6 ml-1 text-gray-500">
-              {/* 눈 아이콘 + 조회수 */}
-              {/* 눈 아이콘 + 조회수 */}
-<div className="flex items-center gap-1">
-  <img
-    src="/icons/views.svg"
-    alt="조회수"
-    className="object-contain mr-1" style={{width: "18px", height: "16.18px"}}
-  />
-  <span className="">
-    {views.toLocaleString()}
-  </span>
-</div>
-
-{/* 사람 아이콘 + row.comment */}
-<div className="flex items-center gap-1">
-  <img
-    src="/icons/man.svg"
-    alt="댓글수"
-    className="object-contain mr-1" style={{width: "18px", height: "14.18px"}}
-  />
-  <span className="">
-    {row.comment || 0}
-  </span>
-</div>
-</div>
+              <div className="flex items-center gap-1">
+                <img
+                  src="/icons/views.svg"
+                  alt="조회수"
+                  style={{ width: "18px", height: "16px" }}
+                />
+                <span>{views.toLocaleString()}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <img
+                  src="/icons/man.svg"
+                  alt="댓글수"
+                  style={{ width: "18px", height: "14px" }}
+                />
+                <span>{row.comment || 0}</span>
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center gap-1 text-gray-700 mb-3 mt-4">
-            <MegaphoneIcon className="w-5 h-5 text-red-500" />
-            <span className="font-semibold">
-              {row.shop_type || "샵형태 미입력"}
-            </span>
+          <div
+            className="
+              inline-flex
+              items-center
+              gap-1
+              text-gray-700
+              mb-[3rem]
+              mt-4
+              border-[0.5px]
+              border-gray-400
+              p-3
+              rounded
+              
+              bg-gray-50
+            "
+          >
+            <MegaphoneIcon className="w-5 h-5 text-red-500 mr-2" />
+            <span>{row.shop_type || "샵형태 미입력"}</span>
           </div>
 
-          {/* 필드들 */}
+          {/* 필드 */}
           <DetailRow label="업체소개" value={row.greeting} />
           <DetailRow label="오시는 길" value={row.address_street} />
           <DetailRow label="전화번호" value={row.phone_number} />
-          <DetailRow label="연락방법" value={fullContact} />
+          <DetailRow
+            label="연락방법"
+            value={
+              row.contact_method
+                ? `${row.contact_method}${
+                    row.near_building ? ` / ${row.near_building}` : ""
+                  }`
+                : row.near_building || ""
+            }
+          />
           <DetailRow label="영업시간" value={row.open_hours} />
-          {/* 최저가 (if lowestPrice>0, 표시) */}
+          {/* 최저가 */}
           {lowestPrice > 0 && (
-            <DetailRow
-              label="최저가"
-              value={`${formatPrice(lowestPrice)}원 ~`}
-            />
+            <DetailRow label="최저가" value={`${formatPrice(lowestPrice)}원 ~`} />
           )}
+          <DetailRow label="휴무일" value={row.holiday} />
           <DetailRow label="주차안내" value={row.parking_type} />
           <DetailRow label="관리사님" value={row.manager_desc} />
 
           {/* 출근부 */}
-          <div className="mb-2 flex items-center">
-            {/* 출근부 라벨 */}
-            <span className="w-24 font-semibold text-gray-600">출근부</span>
-
-            {/* 로딩 상태 / 멤버 목록 */}
-            {loadingMembers ? (
+          {loadingMembers ? (
+            <div className="mb-2 flex items-center">
+              <span className="w-24 font-semibold text-gray-600">출근부</span>
               <span className="text-gray-800">불러오는 중...</span>
-            ) : members.length === 0 ? (
-              <span className="text-gray-800">등록된 멤버가 없습니다.</span>
-            ) : (
+            </div>
+          ) : members.length > 0 ? (
+            <div className="mb-2 flex items-center">
+              <span className="w-24 font-semibold text-gray-600">출근부</span>
               <div className="flex flex-wrap gap-2">
                 {members.map((m, index) => {
                   const colorClass = pastelColors[index % pastelColors.length];
@@ -499,28 +553,36 @@ export default function DetailClient({ row, images, numericId }) {
                   );
                 })}
               </div>
-            )}
-          </div>
+            </div>
+          ) : null}
         </div>
+
+        <div className="border-[0.5px] border-gray-300"></div>
 
         {/* (A-3) 이벤트 */}
         {row.event_info?.trim() && (
-          <div className="mt-6 bg-white p-4 rounded">
-            <DetailRow label="이벤트" value={row.event_info} />
+          <div className="flex flex-col mt-5 mb-5 bg-white p-4 rounded">
+            <span className="font-semibold text-xl mb-2">이벤트</span>
+            <span>{"■ " + row.event_info}</span>
           </div>
         )}
 
+        <div className="border-[0.5px] border-gray-300"></div>
+
         {/* (A-4) 코스 안내 */}
-        <div className="mt-6">
-          <h2 className="text-xl font-bold mb-4">코스안내</h2>
-          <p className="text-sm text-gray-500 mb-2">
-            ※ 휴대폰 전원이 OFF인 경우, 샵 휴무 또는 예약이 꽉 찼을 수 있으니 참고 바랍니다.
-          </p>
-          {loadingSections ? (
-            <div className="py-4">로딩중...</div>
-          ) : sectionsData.length === 0 ? (
-            <div className="py-4 text-gray-500">등록된 코스가 없습니다.</div>
-          ) : (
+        {/* 
+          여기서 변경! 
+          로딩 중이면 "로딩중...", 
+          로딩 끝났는데 sectionsData.length===0면 전체 안보이게 
+        */}
+        {loadingSections ? (
+          <div className="py-4">로딩중...</div>
+        ) : sectionsData.length > 0 && (
+          <div className="mt-6">
+            <h2 className="text-xl font-bold mb-4">코스안내</h2>
+            <p className="text-sm text-gray-500 mb-2">
+              {row.program_info || "코스 정보 없음"}
+            </p>
             <div className="space-y-4">
               {sectionsData.map((sec) => (
                 <div
@@ -528,13 +590,7 @@ export default function DetailClient({ row, images, numericId }) {
                   className="border border-gray-200 rounded overflow-hidden"
                 >
                   <button
-                    onClick={() =>
-                      setSectionsData((prev) =>
-                        prev.map((s) =>
-                          s.id === sec.id ? { ...s, isOpen: !s.isOpen } : s
-                        )
-                      )
-                    }
+                    onClick={() => toggleSectionOpen(sec.id)}
                     className="w-full flex items-center justify-between bg-gray-100 px-4 py-3 focus:outline-none text-left"
                   >
                     <span className="font-semibold text-gray-700">
@@ -544,7 +600,6 @@ export default function DetailClient({ row, images, numericId }) {
                       {sec.isOpen ? "▲" : "▼"}
                     </span>
                   </button>
-
                   {sec.isOpen && (
                     <div className="px-4 py-3">
                       {sec.courses.length === 0 ? (
@@ -586,8 +641,8 @@ export default function DetailClient({ row, images, numericId }) {
                 </div>
               ))}
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* (A-5) 댓글 */}
         <div className="mt-6 bg-white rounded">

@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseF";
 
-// (1) 간단한 스켈레톤 카드 컴포넌트
+/* (A) 스켈레톤 카드 */
 function ShopCardSkeleton() {
   return (
     <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm animate-pulse">
@@ -17,7 +17,15 @@ function ShopCardSkeleton() {
   );
 }
 
-// 특정 지역명 치환
+// (B) 가격 포맷 함수
+function formatPrice(num) {
+  if (!num || isNaN(num)) {
+    return "가격 정보 없음";
+  }
+  return Number(num).toLocaleString() + "원";
+}
+
+// (C) 특정 지역명 치환 함수
 function rewriteSpecialProvince(original) {
   switch (original) {
     case "제주":
@@ -34,13 +42,13 @@ function rewriteSpecialProvince(original) {
 }
 
 export default function MainoneClient({ initialRegion, initialData }) {
-  // 지역 탭
+  // 지역 탭 목록
   const regionTabs = [
     "서울", "인천", "대전", "세종", "광주", "대구", "울산", "부산",
     "경기", "강원", "충북", "충남", "전북", "전남", "경북", "경남", "제주",
   ];
 
-  // 탭 슬라이드 관련
+  // (D) 화면 크기에 따라 보여줄 탭 개수
   const [showCount, setShowCount] = useState(11);
 
   useEffect(() => {
@@ -61,10 +69,11 @@ export default function MainoneClient({ initialRegion, initialData }) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // (E) 탭 슬라이드 (prev/next)
   const [startIndex, setStartIndex] = useState(0);
-
   const [selectedRegion, setSelectedRegion] = useState(initialRegion);
 
+  // 보여줄 탭 계산
   const visibleTabs = [];
   for (let i = 0; i < showCount; i++) {
     const tabIndex = (startIndex + i) % regionTabs.length;
@@ -78,18 +87,18 @@ export default function MainoneClient({ initialRegion, initialData }) {
     setStartIndex((prev) => (prev + 1) % regionTabs.length);
   }
 
-  // Supabase Fetch
+  // (F) Supabase로부터 shopList 가져오기
   const [shopList, setShopList] = useState(initialData || []);
   const [isLoading, setIsLoading] = useState(false);
 
   async function handleClickRegion(region) {
     if (region === selectedRegion) return;
     setSelectedRegion(region);
-
     setIsLoading(true);
 
     const replaced = rewriteSpecialProvince(region);
 
+    // *** sections(courses(price)) 부분을 가져옴 (테마 제거)
     const { data, error } = await supabase
       .from("partnershipsubmit")
       .select(`
@@ -103,11 +112,8 @@ export default function MainoneClient({ initialRegion, initialData }) {
         comment,
         greeting,
         thumbnail_url,
-        partnershipsubmit_themes (
-          themes (
-            id,
-            name
-          )
+        sections (
+          courses ( price )
         )
       `)
       .eq("final_admitted", true)
@@ -117,25 +123,27 @@ export default function MainoneClient({ initialRegion, initialData }) {
       });
 
     setIsLoading(false);
-
     if (error) {
       console.error("DB fetch error:", error);
       alert("데이터 로드 오류가 발생했습니다.");
       return;
     }
 
+    // 예: 최대 8개만 보여주기
     const sliced = (data || []).slice(0, 8);
     setShopList(sliced);
   }
 
+  // 로딩 시 -> 스켈레톤
   if (isLoading) {
     return (
       <div className="w-full bg-white">
-        {/* 로딩 시 스켈레톤 */}
         <div className="mx-auto max-w-5xl px-4 pt-8">
           <h2 className="text-center text-2xl font-bold">
-                여기닷 1인샵 스웨디시 마사지 인기 순위
-            <span className="ml-2 text-red-600" aria-hidden="true">❤️</span>
+            여기닷 1인샵 스웨디시 마사지 인기 순위
+            <span className="ml-2 text-red-600" aria-hidden="true">
+              ❤️
+            </span>
           </h2>
           <p className="mt-2 text-center text-gray-700">
             실시간 많은 회원들이 보고있는 업체를 소개합니다
@@ -153,15 +161,19 @@ export default function MainoneClient({ initialRegion, initialData }) {
     );
   }
 
-  // 실제 렌더
+  // (G) 실제 렌더
   return (
     <div className="w-full bg-white">
       {/* 상단 타이틀 */}
       <div className="mx-auto max-w-5xl px-4 pt-8">
         <h2 className="text-center text-2xl font-bold">
-            <span className="ml-2 text-red-600" aria-hidden="true">❤️</span>
-           여기닷 인기 순위
-          <span className="ml-2 text-red-600" aria-hidden="true">❤️</span>
+          <span className="ml-2 text-red-600" aria-hidden="true">
+            ❤️
+          </span>
+          여기닷 인기 순위
+          <span className="ml-2 text-red-600" aria-hidden="true">
+            ❤️
+          </span>
         </h2>
         <p className="mt-2 text-center text-gray-700">
           실시간 많은 회원들이 보고있는 업체를 소개합니다
@@ -244,9 +256,9 @@ export default function MainoneClient({ initialRegion, initialData }) {
         </div>
       </div>
 
-      {/* 모바일 슬라이드 + 데스크톱 그리드 */}
+      {/* 모바일/데스크톱 카드 */}
       <div className="mt-6 mx-auto max-w-7xl px-4 pb-8">
-        {/* 모바일 */}
+        {/* (1) 모바일 슬라이드 */}
         <div className="block sm:hidden px-4">
           <div
             className="
@@ -258,9 +270,28 @@ export default function MainoneClient({ initialRegion, initialData }) {
             style={{ scrollBehavior: "smooth" }}
           >
             {shopList.map((item) => {
-              const imageUrl = `https://vejthvawsbsitttyiwzv.supabase.co/storage/v1/object/public/gunma/${item.thumbnail_url}`;
+              // (a) 썸네일 URL
+              const imageUrl =
+                "https://vejthvawsbsitttyiwzv.supabase.co/storage/v1/object/public/gunma/" +
+                item.thumbnail_url;
               const detailUrl = `/board/details/${item.id}`;
-              const themeList = item.partnershipsubmit_themes || [];
+
+              // (b) 최저가 계산
+              let lowestPrice = null;
+              if (item.sections?.length) {
+                item.sections.forEach((sec) => {
+                  if (sec.courses?.length) {
+                    sec.courses.forEach((c) => {
+                      if (
+                        lowestPrice === null ||
+                        (c.price && c.price < lowestPrice)
+                      ) {
+                        lowestPrice = c.price;
+                      }
+                    });
+                  }
+                });
+              }
 
               return (
                 <Link
@@ -293,29 +324,21 @@ export default function MainoneClient({ initialRegion, initialData }) {
                       {item.company_name || item.post_title}
                     </h3>
                     <p className="text-sm text-gray-600">
-                      {item.address} 
+                      {item.address}
                     </p>
-                            <p className="mt-0.5 text-xs text-gray-500">
-                        {
-                            item.comment
-                            ? // item.comment가 존재한다면
-                                "리뷰 " +
-                                (typeof item.comment === "string"
-                                ? item.comment.slice(0, 30)
-                                : JSON.stringify(item.comment).slice(0, 30))
-                            : // item.comment가 falsy(null/undefined/빈문자열 등)라면
-                                "자세한 정보 보기..."
-                        }
-                        </p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {themeList.map((t) => (
-                        <span
-                          key={t.themes.id}
-                          className="rounded bg-red-100 px-2 py-1 text-xs text-red-600"
-                        >
-                          {t.themes.name}
-                        </span>
-                      ))}
+                    <p className="mt-0.5 text-xs text-gray-500">
+                      {item.comment
+                        ? "리뷰 " +
+                          (typeof item.comment === "string"
+                            ? item.comment.slice(0, 30)
+                            : JSON.stringify(item.comment).slice(0, 30))
+                        : "자세한 정보 보기..."}
+                    </p>
+                    {/* 최저가 영역 */}
+                    <div className="mt-2 text-red-600 text-sm font-semibold">
+                      {lowestPrice !== null
+                        ? formatPrice(lowestPrice)
+                        : "가격 정보 없음"}
                     </div>
                   </div>
                 </Link>
@@ -324,18 +347,43 @@ export default function MainoneClient({ initialRegion, initialData }) {
           </div>
         </div>
 
-        {/* 데스크톱 */}
+        {/* (2) 데스크톱 그리드 */}
         <div className="hidden sm:grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {shopList.map((item) => {
-            const imageUrl = `https://vejthvawsbsitttyiwzv.supabase.co/storage/v1/object/public/gunma/${item.thumbnail_url}`;
+            // (a) 썸네일 URL
+            const imageUrl =
+              "https://vejthvawsbsitttyiwzv.supabase.co/storage/v1/object/public/gunma/" +
+              item.thumbnail_url;
             const detailUrl = `/board/details/${item.id}`;
-            const themeList = item.partnershipsubmit_themes || [];
+
+            // (b) 최저가 계산
+            let lowestPrice = null;
+            if (item.sections?.length) {
+              item.sections.forEach((sec) => {
+                if (sec.courses?.length) {
+                  sec.courses.forEach((c) => {
+                    if (
+                      lowestPrice === null ||
+                      (c.price && c.price < lowestPrice)
+                    ) {
+                      lowestPrice = c.price;
+                    }
+                  });
+                }
+              });
+            }
 
             return (
               <Link
                 key={item.id}
                 href={detailUrl}
-                className="block overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm
+                className="
+                  block
+                  overflow-hidden
+                  rounded-xl
+                  border border-gray-200
+                  bg-white
+                  shadow-sm
                   focus-within:ring-2 focus-within:ring-blue-500
                 "
               >
@@ -365,15 +413,11 @@ export default function MainoneClient({ initialRegion, initialData }) {
                         : JSON.stringify(item.comment).slice(0, 30)
                       : "자세한 정보 보기..."}
                   </p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {themeList.map((t) => (
-                      <span
-                        key={t.themes.id}
-                        className="rounded bg-red-100 px-2 py-1 text-xs text-red-600"
-                      >
-                        {t.themes.name}
-                      </span>
-                    ))}
+                  {/* 최저가 영역 */}
+                  <div className="mt-2 text-red-600 text-sm font-semibold">
+                    {lowestPrice !== null
+                      ? formatPrice(lowestPrice)
+                      : "가격 정보 없음"}
                   </div>
                 </div>
               </Link>

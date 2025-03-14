@@ -18,7 +18,7 @@ function createSlug(text) {
 }
 
 /**
- * (1) 카카오 지도 SDK를 로드하는 함수
+ * (1) 카카오 지도 SDK 로드
  */
 function loadKakaoMapScript(callback) {
   if (typeof window === "undefined") return;
@@ -42,7 +42,7 @@ function loadKakaoMapScript(callback) {
 }
 
 /**
- * (2) 두 좌표 간 거리를 km 단위로 계산하는 함수
+ * (2) 두 좌표 간 거리 계산 (km)
  */
 function getDistanceFromLatLng(lat1, lng1, lat2, lng2) {
   const R = 6371; // 지구 반경 (km)
@@ -58,47 +58,50 @@ function getDistanceFromLatLng(lat1, lng1, lat2, lng2) {
 }
 
 /**
+ * (3) 가격 포맷
+ */
+function formatPrice(num) {
+  if (!num || isNaN(num)) return "가격없음";
+  return Number(num).toLocaleString() + "원";
+}
+
+/**
  * NearMeListPage 컴포넌트
- * - 사용자의 현재 위치와 partnership 테이블 데이터를 이용하여,
- *   30km 이내의 매장을 필터링해 화면에 보여줍니다.
- * - 검색 시에는 Supabase에 주소 키워드로 재조회하며, 
- *   첫 번째 결과의 좌표로 지도 중심과 마커를 이동시킵니다.
  */
 export default function NearMeListPage() {
-  const mapRef = useRef(null);          // 지도 컨테이너
-  const markerRef = useRef(null);       // "내 위치" 마커
-  const searchInputRef = useRef(null);  // 검색창 useRef (필수)
+  const mapRef = useRef(null);    // 지도 컨테이너
+  const markerRef = useRef(null); // "내 위치" 마커
+  const searchInputRef = useRef(null);
 
   // 사용자 위치
   const [userLat, setUserLat] = useState(null);
   const [userLng, setUserLng] = useState(null);
 
-  // 지도 중심점 (centerLat, centerLng)
+  // 지도 중심점
   const [centerLat, setCenterLat] = useState(null);
   const [centerLng, setCenterLng] = useState(null);
 
   // 지도 객체
   const [mapObj, setMapObj] = useState(null);
 
-  // Supabase에서 불러온 매장 목록 (partnershipsubmit 테이블)
+  // 전체 매장 목록 + 필터된 매장 목록
   const [shops, setShops] = useState([]);
-  // 30km 이내 필터된 매장 목록
   const [filteredShops, setFilteredShops] = useState([]);
 
-  // 내 위치 주소 (reverse geocoding 결과)
+  // 주소 (reverse geocoding)
   const [address, setAddress] = useState("");
 
-  // 지도 보임/숨김 여부
+  // 지도 보임/숨김
   const [mapHidden, setMapHidden] = useState(false);
 
   // 위치/데이터 로딩 완료 여부
   const [locationLoaded, setLocationLoaded] = useState(false);
 
-  // "처음 자동 닫기" 플래그 (초기 로딩 시 한 번만 적용)
+  // 최초 한 번만 자동 닫기
   const [didAutoClose, setDidAutoClose] = useState(false);
 
   // ─────────────────────────────────────────────────────
-  // (A) 브라우저 Geolocation을 통해 사용자 위치 받아오기
+  // (A) 사용자 위치 받아오기
   // ─────────────────────────────────────────────────────
   useEffect(() => {
     if (!navigator.geolocation) {
@@ -111,7 +114,7 @@ export default function NearMeListPage() {
         const lng = pos.coords.longitude;
         setUserLat(lat);
         setUserLng(lng);
-        // 최초 지도 중심점도 사용자 위치로 설정
+        // 지도 중심점도 사용자 위치
         setCenterLat(lat);
         setCenterLng(lng);
       },
@@ -122,7 +125,7 @@ export default function NearMeListPage() {
   }, []);
 
   // ─────────────────────────────────────────────────────
-  // (B) Supabase에서 partnership 테이블 데이터 조회 (초기)
+  // (B) 매장 목록 로드 (테마/코스/가격 가져오기)
   // ─────────────────────────────────────────────────────
   useEffect(() => {
     async function fetchShops() {
@@ -137,9 +140,12 @@ export default function NearMeListPage() {
           comment,
           greeting,
           lat,
-          lng
+          lng,
+          partnershipsubmit_themes ( themes ( id, name ) ),
+          sections ( courses ( price ) )
         `)
         .eq("final_admitted", true);
+
       if (error) {
         console.error("매장 목록 로딩 오류:", error);
         return;
@@ -150,7 +156,7 @@ export default function NearMeListPage() {
   }, []);
 
   // ─────────────────────────────────────────────────────
-  // (C) 사용자 위치가 준비되면 Kakao 지도 SDK 로드 후 지도 초기화
+  // (C) 사용자 위치 준비되면 지도 초기화
   // ─────────────────────────────────────────────────────
   useEffect(() => {
     if (userLat && userLng) {
@@ -160,30 +166,24 @@ export default function NearMeListPage() {
     }
   }, [userLat, userLng]);
 
-  /** 지도 초기화 함수 */
+  /** 지도 초기화 */
   function initMap(lat, lng) {
     if (!window.kakao || !window.kakao.maps) return;
     if (!mapRef.current) return;
     const pos = new window.kakao.maps.LatLng(lat, lng);
-    const options = {
-      center: pos,
-      level: 5,
-    };
+    const options = { center: pos, level: 5 };
     const newMap = new window.kakao.maps.Map(mapRef.current, options);
     setMapObj(newMap);
-    // 지도 중심점도 갱신
-    setCenterLat(lat);
-    setCenterLng(lng);
 
-    // "내 위치" 마커 생성
+    // "내 위치" 마커
     const marker = new window.kakao.maps.Marker({ position: pos });
     marker.setMap(newMap);
     markerRef.current = marker;
 
-    // 좌표 → 주소 변환 (reverse geocoding)
+    // 주소 변환
     convertCoordToAddress(lng, lat, (addr) => setAddress(addr));
 
-    // 지도 클릭 이벤트 등록
+    // 지도 클릭
     window.kakao.maps.event.addListener(newMap, "click", (evt) => {
       const cLat = evt.latLng.getLat();
       const cLng = evt.latLng.getLng();
@@ -191,11 +191,10 @@ export default function NearMeListPage() {
       setCenterLat(cLat);
       setCenterLng(cLng);
       convertCoordToAddress(cLng, cLat, (addr) => setAddress(addr));
-      // 일반 위치 변경 시 Supabase 매장 목록 필터링
       filterShopsByDistance(cLat, cLng);
     });
 
-    // 지도 드래그 종료 이벤트 등록
+    // 지도 드래그 종료
     window.kakao.maps.event.addListener(newMap, "dragend", () => {
       const center = newMap.getCenter();
       const cLat = center.getLat();
@@ -210,7 +209,7 @@ export default function NearMeListPage() {
     setMapHidden(false);
   }
 
-  /** 마커 이동 함수 */
+  /** 마커 이동 */
   function moveMarker(lat, lng) {
     if (!markerRef.current) return;
     const pos = new window.kakao.maps.LatLng(lat, lng);
@@ -218,7 +217,7 @@ export default function NearMeListPage() {
   }
 
   // ─────────────────────────────────────────────────────
-  // (D) 사용자 위치와 매장 목록이 준비되면 30km 필터 적용
+  // (D) 30km 필터
   // ─────────────────────────────────────────────────────
   useEffect(() => {
     if (userLat && userLng && shops.length > 0) {
@@ -226,7 +225,6 @@ export default function NearMeListPage() {
     }
   }, [userLat, userLng, shops]);
 
-  /** 30km 필터 함수 (Supabase 데이터 기준) */
   function filterShopsByDistance(lat, lng) {
     const MAX_DIST = 30;
     const results = shops.filter((shop) => {
@@ -237,7 +235,7 @@ export default function NearMeListPage() {
     setFilteredShops(results);
     setLocationLoaded(true);
 
-    // 초기 로딩 시 한 번만 자동으로 지도 닫기
+    // 초회 로딩 시 한 번만 지도 닫기
     if (!didAutoClose) {
       setDidAutoClose(true);
       setTimeout(() => {
@@ -246,7 +244,7 @@ export default function NearMeListPage() {
     }
   }
 
-  /** 지도 열기/접기 버튼 핸들러 */
+  // 지도 열고 닫기
   function handleToggleMap() {
     if (!locationLoaded) {
       alert("아직 위치/데이터 로딩 중입니다!");
@@ -255,7 +253,7 @@ export default function NearMeListPage() {
     const newVal = !mapHidden;
     setMapHidden(newVal);
     if (!newVal) {
-      // 지도 열기 시 다시 초기화
+      // 지도 열기 시 재초기화
       setTimeout(() => {
         if (userLat && userLng) {
           initMap(userLat, userLng);
@@ -265,10 +263,7 @@ export default function NearMeListPage() {
   }
 
   /**
-   * (F) 주소 검색 함수 (Supabase 조회)
-   * 검색 시에는 partnershipsubmit 테이블에서 주소 키워드가 포함된 매장을 조회하고,
-   * 결과가 있다면 첫 번째 결과의 좌표로 지도를 이동시키며, 마커도 업데이트합니다.
-   * 이 경우 지도 자동 닫기 로직은 적용하지 않습니다.
+   * (F) 주소 검색
    */
   async function handleSearchAddress() {
     if (!userLat || !userLng) {
@@ -283,34 +278,35 @@ export default function NearMeListPage() {
     const { data, error } = await supabase
       .from("partnershipsubmit")
       .select(`
-          id,
-          final_admitted,
-          company_name,
-          thumbnail_url,
-          address,
-          comment,
-          greeting,
-          lat,
-          lng
-        `)
+        id,
+        final_admitted,
+        company_name,
+        thumbnail_url,
+        address,
+        comment,
+        greeting,
+        lat,
+        lng,
+        partnershipsubmit_themes ( themes ( id, name ) ),
+        sections ( courses ( price ) )
+      `)
       .eq("final_admitted", true)
       .ilike("address", `%${keyword}%`);
+
     if (error) {
       console.error("검색 API 오류:", error);
       return;
     }
-    // 결과가 있을 경우, 첫 번째 결과의 좌표로 지도를 이동시키고 마커를 업데이트합니다.
-    if (data && data.length > 0) {
-      const firstResult = data[0];
-      if (firstResult.lat && firstResult.lng && mapObj) {
-        const newPos = new window.kakao.maps.LatLng(firstResult.lat, firstResult.lng);
-        setCenterLat(firstResult.lat);
-        setCenterLng(firstResult.lng);
+    if (data && data.length > 0 && mapObj) {
+      const first = data[0];
+      if (first.lat && first.lng) {
+        const newPos = new window.kakao.maps.LatLng(first.lat, first.lng);
+        setCenterLat(first.lat);
+        setCenterLng(first.lng);
         mapObj.setCenter(newPos);
-        moveMarker(firstResult.lat, firstResult.lng);
+        moveMarker(first.lat, first.lng);
       }
     }
-    // 검색 결과를 필터된 매장 목록에 저장 (지도 자동 닫기 로직은 적용하지 않음)
     setFilteredShops(data || []);
   }
 
@@ -320,7 +316,7 @@ export default function NearMeListPage() {
     }
   }
 
-  /** 좌표 → 주소 변환 (reverse geocoding) */
+  /** 좌표 → 주소 변환 */
   function convertCoordToAddress(lng, lat, callback) {
     if (!window.kakao || !window.kakao.maps) return;
     const geocoder = new window.kakao.maps.services.Geocoder();
@@ -334,8 +330,11 @@ export default function NearMeListPage() {
     });
   }
 
+  // ─────────────────────────────────────────────────────
+  // 렌더링
+  // ─────────────────────────────────────────────────────
   return (
-    <div className="mt-5 max-w-4xl mx-auto p-4">
+    <div className="mt-5 max-w-7xl mx-auto p-4">
       {locationLoaded ? (
         <div className="mb-3">
           <div className="flex items-center justify-center gap-2 mb-1">
@@ -401,7 +400,8 @@ export default function NearMeListPage() {
 
       <div className="mb-6">
         <h3 className="text-lg font-semibold mb-2">내 주변 (30km) 매장 목록</h3>
-        <div className="space-y-4">
+
+        <div className="space-y-6">
           {filteredShops.map((shop) => (
             <ShopCard
               key={shop.id}
@@ -416,64 +416,136 @@ export default function NearMeListPage() {
   );
 }
 
-/** 매장 카드 컴포넌트 (Supabase 30km 필터 결과) */
-// SearchPage의 디자인을 참고하여 이미지 카드 UI를 동일하게 구성하였습니다.
+/** 
+ * (G) 매장 카드 컴포넌트
+ * 모바일일 때는 화면 꽉 차게, 데스크톱(md) 이상이면 373×217
+ */
 function ShopCard({ shop, userLat, userLng }) {
   const url = shop.thumbnail_url
     ? `https://vejthvawsbsitttyiwzv.supabase.co/storage/v1/object/public/gunma/${shop.thumbnail_url}`
     : "/placeholder.png";
+
   let dist = 99999;
   if (userLat && userLng && shop.lat && shop.lng) {
     dist = getDistanceFromLatLng(userLat, userLng, shop.lat, shop.lng);
   }
-  if (dist < 0.05) dist = 0;
+  if (dist < 0.05) dist = 0; // 0.05km 이내면 0Km로 표시
   const distanceStr = dist.toFixed(1) + "Km";
+
+  const themeList = shop.partnershipsubmit_themes || [];
+
+  let lowestPrice = null;
+  if (shop.sections?.length) {
+    shop.sections.forEach((sec) => {
+      if (sec.courses?.length) {
+        sec.courses.forEach((c) => {
+          if (lowestPrice === null || (c.price && c.price < lowestPrice)) {
+            lowestPrice = c.price;
+          }
+        });
+      }
+    });
+  }
+
   const detailUrl = `/board/details/${shop.id}-${createSlug(shop.company_name)}`;
+
   return (
-   <Link
-  href={detailUrl}
-  className=" md:flex-row items-stretch bg-gray-100 p-4 rounded-lg overflow-hidden"
->
-  {/* 왼쪽 썸네일 영역 - 중앙 정렬 */}
-  <div className="w-[373px] h-[217px] relative flex-shrink-0 flex justify-center items-center">
-    <Image
-      src={url}
-      alt={shop.company_name}
-      layout="fill"
-      className="object-cover rounded-xl"
-    />
-  </div>
-  {/* 오른쪽 텍스트 영역 */}
-  <div className="flex-1 px-4 py-2">
-    <h2 className="text-lg font-semibold mb-1">{shop.company_name}</h2>
-    {/* 주소 및 리뷰 */}
-    <div className="flex items-center text-sm text-gray-600 mb-1 gap-3">
-      <div className="flex items-center gap-1">
-        <svg
-          className="w-4 h-4 text-gray-500"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M12 11c1.656 0 3-1.343 3-3S13.656 5 12 5 9 6.343 9 8s1.344 3 3 3z"
-          />
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M19.5 9.5c0 7.168-7.5 11-7.5 11s-7.5-3.832-7.5-11a7.5 7.5 0 1115 0z"
-          />
-        </svg>
-        <span>{shop.address || "주소 정보 없음"}</span>
+    <Link
+      href={detailUrl}
+      className="
+        block
+        flex flex-col md:flex-row
+        items-stretch
+        p-3
+        rounded-lg
+        overflow-hidden
+        hover:bg-gray-200
+        transition-colors
+        mb-0
+        md:mb-4      "
+    >
+      {/* 
+        (1) 이미지 컨테이너: 모바일에서 w-full h-48 
+        md:에서 373×217
+      */}
+      <div className="relative w-full h-48 mb-3 md:mb-0 md:w-[373px] md:h-[217px] flex-shrink-0">
+        {/* fill 모드로 배치해서, 컨테이너 사이즈에 맞춰! */}
+        <Image
+          src={url}
+          alt={shop.company_name}
+          fill
+          className="object-cover rounded-xl"
+        />
       </div>
-      <div className="text-gray-500">리뷰 {shop.comment ?? 0}</div>
-      <div className="text-red-500">{distanceStr}</div>
-    </div>
-    <p className="text-sm text-gray-800">{shop.greeting}</p>
-  </div>
-</Link>
+
+      {/* (2) 오른쪽 텍스트 영역 */}
+      <div className="flex-1 px-4 py-2">
+        <h2 className="text-lg font-semibold mb-1">{shop.company_name}</h2>
+
+        {/* 주소 + 리뷰 + 거리 */}
+        <div className="flex items-center text-sm text-gray-600 mb-1 gap-3">
+          {/* 주소 */}
+          <div className="flex items-center gap-1">
+            <svg
+              className="w-4 h-4 text-gray-500"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 11c1.656 0
+                   3-1.344
+                   3-3s-1.344-3
+                   -3-3-3
+                   1.344-3
+                   3 1.344
+                   3 3
+                   3z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M19.5 9.5c0
+                   7.168-7.5
+                   11-7.5
+                   11s-7.5-3.832
+                   -7.5-11a7.5
+                   7.5 0
+                   1115
+                   0z"
+              />
+            </svg>
+            <span>{shop.address || "주소 정보 없음"}</span>
+          </div>
+          {/* 리뷰수 */}
+          <div className="text-gray-500">리뷰 {shop.comment ?? 0}</div>
+          {/* 거리 */}
+          <div className="text-red-500">{distanceStr}</div>
+        </div>
+
+        {/* 최저가 */}
+        <div className="text-sm text-red-600 font-semibold mb-1">
+          최저가: {lowestPrice ? formatPrice(lowestPrice) : "가격없음"}
+        </div>
+
+        {/* 인사말 */}
+        <p className="text-sm text-gray-800">{shop.greeting}</p>
+
+        {/* 테마 태그 */}
+        <div className="mt-2 flex flex-wrap gap-2">
+          {themeList.map((pt) => (
+            <span
+              key={pt.themes.id}
+              className="rounded-full border border-gray-300 px-2 py-1 text-xs text-gray-600"
+            >
+              #{pt.themes.name}
+            </span>
+          ))}
+        </div>
+      </div>
+    </Link>
   );
 }
