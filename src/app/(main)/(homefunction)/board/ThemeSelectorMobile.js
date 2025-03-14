@@ -45,13 +45,12 @@ export default function ThemeSelectorMobile({
   return (
     <div style={{ marginBottom: "1.5rem" }}>
       {/* 버튼 */}
-      <button
+      <button className="bg-blue-500 text-white" 
         style={{
           display: "inline-block",
           marginBottom: "1rem",
           padding: "8px 12px",
-          backgroundColor: "#f9665e",
-          color: "#fff",
+          
           border: "none",
           cursor: "pointer",
           fontSize: "14px",
@@ -65,12 +64,7 @@ export default function ThemeSelectorMobile({
       {/* 열렸을 때 테마표 */}
       {isOpen && (
         <>
-          <h2 style={{ fontSize: "16px", marginBottom: "0.5rem", fontWeight: "bold" }}>
-            테마별 샵 선택 
-          </h2>
-          <p style={{ color: "#666", marginBottom: "1rem", fontSize: "14px" }}>
-            원하는 테마를 골라보세요!
-          </p>
+ 
 
           <table style={tableStyle}>
             <tbody>
@@ -81,9 +75,10 @@ export default function ThemeSelectorMobile({
                     const href = `/board/${regionSlug}/${th.name}`;
                     return (
                       <td key={th.id} style={getTdStyle(isSelected)}>
-                        <Link href={href} style={{ display: "block" }}>
+                        <Link className=""href={href} style={{ display: "block" }}>
                           {th.name}
                         </Link>
+                     
                       </td>
                     );
                   })}

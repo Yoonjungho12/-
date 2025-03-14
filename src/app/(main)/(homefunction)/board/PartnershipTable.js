@@ -179,13 +179,8 @@ export default async function PartnershipTable({ regionSlug, themeName }) {
   // (5) 렌더링
   return (
     <div className="w-full">
-      <h2>파트너십 목록 (SSR + Supabase / M:N / Inner Join)</h2>
-      <p>
-        현재 지역: <b>{regionSlug}</b> / 테마: <b>{themeName}</b>
-      </p>
-
       {!posts || posts.length === 0 ? (
-        <p>데이터가 없습니다.</p>
+        <>  <b>{regionSlug}</b>/<b>{themeName}</b>에 해당하는 없체가 없습니다.</>
       ) : (
         <table style={tableStyle}>
           <thead style={theadStyle}>

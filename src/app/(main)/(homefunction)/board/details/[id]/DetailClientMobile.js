@@ -625,7 +625,7 @@ export default function DetailClientMobile({ row, images, numericId }) {
             className={getTabClass("course")}
             onClick={() => handleTabClick("course")}
           >
-            코스안내
+            안내글
           </button>
           <button
             className={getTabClass("review")}
@@ -680,7 +680,7 @@ export default function DetailClientMobile({ row, images, numericId }) {
           <DetailRow label="연락방법" value={fullContact} />
           <DetailRow label="영업시간" value={row.open_hours} />
           <DetailRow label="주차안내" value={row.parking_type} />
-          <DetailRow label="관리사님" value={row.manager_desc} />
+         
 
           {/* (C-1) 출근부 */}
           {loadingMembers ? (
@@ -713,7 +713,7 @@ export default function DetailClientMobile({ row, images, numericId }) {
 
       {/* (D) 코스안내 섹션 */}
       <section id="course" ref={courseRef} className="px-4 pt-4 pb-6 border-t">
-        <h2 className="text-xl font-bold mb-2">코스안내</h2>
+        <h2 className="text-xl font-bold mb-2">안내글</h2>
         <p className="text-sm text-gray-500 mb-2">
           ※ 휴대폰 전원이 OFF인 경우, 샵 휴무 또는 예약이 꽉 찼을 수 있습니다.
         </p>
