@@ -42,7 +42,7 @@ function rewriteSpecialProvince(original) {
 }
 
 export default function MainoneClient({ initialRegion, initialData }) {
-  // 1) 지역 목록 (전부)
+  // 1) 지역 목록
   const regionTabs = [
     "서울", "인천", "대전", "세종", "광주", "대구", "울산", "부산",
     "경기", "강원", "충북", "충남", "전북", "전남", "경북", "경남", "제주",
@@ -51,12 +51,11 @@ export default function MainoneClient({ initialRegion, initialData }) {
   // 2) 선택된 지역
   const [selectedRegion, setSelectedRegion] = useState(initialRegion);
 
-  // 3) 가게 리스트, 로딩 상태
+  // 3) 가게 리스트, 로딩
   const [shopList, setShopList] = useState(initialData || []);
   const [isLoading, setIsLoading] = useState(false);
 
-  // 4) “가로 스크롤”용 Ref
-  //    -- 로딩 여부와 상관없이 *무조건* 최상단에서 호출해야 함!
+  // 4) “가로 스크롤”에 사용할 Ref를 **미리** 선언
   const ulRef = useRef(null);
 
   // 5) Supabase에서 데이터 가져오기
@@ -100,7 +99,7 @@ export default function MainoneClient({ initialRegion, initialData }) {
     setShopList(sliced);
   }
 
-  // 6) 로딩 중일 때 → 스켈레톤만 반환
+  // 6) 로딩 중이면 스켈레톤을 렌더 (Hook 선언 이후에 조건부 렌더)
   if (isLoading) {
     return (
       <div className="w-full bg-white">
@@ -145,7 +144,7 @@ export default function MainoneClient({ initialRegion, initialData }) {
     }
   }
 
-  // (B) 실제 렌더
+  // 8) 실제 렌더
   return (
     <div className="w-full bg-white">
       {/* 상단 타이틀 */}
@@ -158,7 +157,7 @@ export default function MainoneClient({ initialRegion, initialData }) {
         </p>
       </div>
 
-      {/* 탭 영역 */}
+      {/* ▼▼ 가로 스크롤 탭 ▼▼ */}
       <div className="mt-6 w-full">
         <div className="relative p-2">
           {/* 왼쪽 화살표 */}
@@ -207,8 +206,8 @@ export default function MainoneClient({ initialRegion, initialData }) {
                     onClick={() => handleClickRegion(region)}
                     className={
                       isSelected
-                        ? " px-4 py-2 bg-red-600 text-white"
-                        : "border-gray-200 px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 "
+                        ? " px-4 py-2 bg-red-600 text-white md:w-40 text-sm md:text-base"
+                        : "border-gray-200 px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 md:w-40 text-sm md:text-base"
                     }
                     aria-label={`${region} 지역 선택`}
                   >
