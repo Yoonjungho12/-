@@ -4,12 +4,12 @@ import Image from "next/image";
 import { supabase } from "@/lib/supabaseF";
 
 export default function RecommendedShops() {
-  const tags = ["스웨디시", "1인샵", "로미로미", "타이마사지", "사우나/스파", "왁싱"];
-  const [selectedTag, setSelectedTag] = useState("스웨디시");
+  const tags = ["라운지바", "네일샵", "애견미용", "타로", "태닝샵"];
+  const [selectedTag, setSelectedTag] = useState("라운지바");
   const [shops, setShops] = useState([]);
 
   useEffect(() => {
-    handleClickTag("스웨디시");
+    handleClickTag("라운지바");
   }, []);
 
   async function handleClickTag(tagName) {

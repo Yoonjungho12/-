@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { supabase } from "../lib/supabaseF";
 import { useRouter } from "next/navigation";
@@ -24,6 +24,9 @@ export default function NavBar() {
 
   // 로그인 여부
   const isLoggedIn = !!session;
+
+  // 수평 스크롤용 Ref
+  const menuRef = useRef(null);
 
   // ─────────────────────────────────────────────────────
   // 세션 & 프로필 로드
@@ -92,19 +95,14 @@ export default function NavBar() {
       // 1) supabase 로그아웃 (세션 제거)
       await supabase.auth.signOut();
 
-      // 2) localStorage에서 특정 키(remove)  
+      // 2) localStorage에서 특정 키(remove)
       //    예: "anon_user_id"나 "user_id" 등의 key가 있으면 제거
-      //    ※ 프로젝트마다 다를 수 있으니 원하는 key를 정확히 써주세요.
-      // localStorage.removeItem("anon_user_id");
-      localStorage.removeItem("user_id"); 
-      // 위처럼 필요한 키가 더 있다면 추가로 remove 해주시면 됨.
+      localStorage.removeItem("user_id");
 
       // 3) router push
       router.push("/");
     } catch (err) {
       console.error("로그아웃 실패:", err);
-      // 혹시 알림 띄우고 싶으면
-      // alert("로그아웃 중 오류가 발생했습니다!");
     }
   };
 
@@ -138,6 +136,25 @@ export default function NavBar() {
       const query = e.target.value.trim();
       if (!query) return;
       router.push(`/search?q=${encodeURIComponent(query)}`);
+    }
+  };
+
+  // 모바일 메뉴 화살표 스크롤
+  const scrollLeft = () => {
+    if (menuRef.current) {
+      menuRef.current.scrollBy({
+        left: -200,
+        behavior: "smooth",
+      });
+    }
+  };
+
+  const scrollRight = () => {
+    if (menuRef.current) {
+      menuRef.current.scrollBy({
+        left: 200,
+        behavior: "smooth",
+      });
     }
   };
 
@@ -535,54 +552,116 @@ export default function NavBar() {
         </div>
       </div>
 
-      {/* 
-        하단 바 (카테고리 메뉴) 
-        ※ 여기서 모바일/PC 구분 없이 다 보이게 하고, 
-          "전체 카테고리" 버튼만 모바일에서 숨김
-      */}
+      {/* (C) 하단 바 (카테고리 메뉴) */}
       <div className="border-t border-gray-200 bg-white">
-        <div className="relative mx-auto flex max-w-7xl items-center space-x-4 px-6 py-2">
-          {/* 전체 카테고리 버튼 (모바일에선 숨김, md 이상에서만 표시) */}
+        {/* 새로운 래퍼: max-w-7xl px-6 내부에서 화살표 위치를 좀 더 안쪽으로 조정 */}
+        <div className="relative mx-auto max-w-7xl px-6">
+          {/* (C-0) 모바일 전용 화살표 (양쪽) */}
           <button
-            className="hidden md:flex items-center space-x-1 text-gray-700 hover:text-red-500"
-            onClick={toggleMegaMenu}
+            className="absolute left-[0px] top-1/2 -translate-y-1/2
+                       md:hidden z-10"
+            onClick={scrollLeft}
+            aria-label="스크롤 왼쪽으로"
           >
-            <span className="font-medium">전체 카테고리</span>
             <svg
-              className={`h-4 w-4 transition-transform ${
-                showMegaMenu ? "rotate-180" : ""
-              }`}
+              className="h-6 w-6 text-gray-600"
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
               viewBox="0 0 24 24"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+          </button>
+          <button
+            className="absolute right-[0px] top-1/2 -translate-y-1/2
+                       md:hidden z-10"
+            onClick={scrollRight}
+            aria-label="스크롤 오른쪽으로"
+          >
+            <svg
+              className="h-6 w-6 text-gray-600"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M9 5l7 7-7 7"
+              />
             </svg>
           </button>
 
-          {/* 이 아래 링크들은 모바일에서도 계속 보이게 유지 */}
-          <Link href="/board/전체/전체" className="text-gray-700 hover:text-red-500">
-            지역별 샵
-          </Link>
-          <Link
-            href="/today/전체/전체/전체"
-            className="text-gray-700 hover:text-red-500"
+          {/* (C-1) 메뉴 래퍼: 수평 스크롤용 */}
+          <div
+            ref={menuRef}
+            className="overflow-x-auto whitespace-nowrap flex items-center space-x-4 py-2 hide-scrollbar"
           >
-            출근부
-          </Link>
-          <Link href="/near-me" className="text-gray-700 hover:text-red-500">
-            내주변
-          </Link>
-          <Link
-            href="/board/홈케어-방문관리/전체"
-            className="text-gray-700 hover:text-red-500"
-          >
-            홈케어
-          </Link>
-          <Link href="/community" className="text-gray-700 hover:text-red-500">
-            커뮤니티
-          </Link>
+            {/* 전체 카테고리 버튼 (모바일에선 숨김, md 이상에서만 표시) */}
+            <button
+              className="hidden md:flex items-center space-x-1 text-gray-700 hover:text-red-500"
+              onClick={toggleMegaMenu}
+            >
+              <span className="font-medium">전체 카테고리</span>
+              <svg
+                className={`h-4 w-4 transition-transform ${
+                  showMegaMenu ? "rotate-180" : ""
+                }`}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </button>
+
+            {/* 링크들: inline-block으로 해서 수평 스크롤 시 나열 */}
+            <Link
+              href="/board/전체/전체"
+              className="text-gray-700 hover:text-red-500 inline-block"
+            >
+              지역별 검색
+            </Link>
+            <Link
+              href="/today/전체/전체/전체"
+              className="text-gray-700 hover:text-red-500 inline-block"
+            >
+              실시간 인기 업체
+            </Link>
+            <Link
+              href="/near-me"
+              className="text-gray-700 hover:text-red-500 inline-block"
+            >
+              내 주변 업체 찾기
+            </Link>
+            <Link
+              href="/board/홈케어-방문관리/전체"
+              className="text-gray-700 hover:text-red-500 inline-block"
+            >
+              나이트/클럽
+            </Link>
+            <Link
+              href="/community"
+              className="text-gray-700 hover:text-red-500 inline-block"
+            >
+              커뮤니티
+            </Link>
+            {/* 
+              필요하다면 메뉴가 더 있다면 계속 아래와 같이 
+              <Link ...>...</Link> 추가
+            */}
+          </div>
 
           {/* MegaMenu (PC용) */}
           {showMegaMenu && (
@@ -594,7 +673,7 @@ export default function NavBar() {
                 {/* 예: 지역별 샵 */}
                 <div>
                   <h2 className="mb-2 font-semibold text-red-500">지역별 샵</h2>
-                  <ul className="space-y-1 text-sm text-gray-700">
+                  <ul className="space-y-1 text-sm text-gray-700 ">
                     <li>
                       <Link
                         href="/board/강남-서초-송파/전체"

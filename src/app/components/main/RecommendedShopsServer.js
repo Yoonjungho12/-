@@ -4,8 +4,8 @@ import { supabase } from "@/lib/supabaseF";
 import RecommendedShopsClient from "./RecommendedShopsClient";
 
 export default async function RecommendedShopsServer() {
-  // ★ 기본 태그를 "스웨디시"로 설정
-  const defaultTag = "스웨디시";
+
+  const defaultTag = "라운지바";
 
   // (1) themes 테이블에서 name=defaultTag
   let { data: themeRows, error: themeError } = await supabase

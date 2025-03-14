@@ -8,39 +8,41 @@ export default function RecommendedShopsClient({
   initialTag,
   initialShops,
 }) {
-  const tags = ["스웨디시", "1인샵", "로미로미", "타이마사지", "사우나/스파", "왁싱"];
+  // 사용할 태그(테마) 목록
+  const tags = ["라운지바", "네일샵", "애견미용", "타로", "태닝샵"];
 
-  // 서버에서 받은 초기 태그, 초기 샵 목록
-  const [selectedTag, setSelectedTag] = useState(initialTag || "스웨디시");
+  // 서버에서 받은 초기 태그와 초기 샵 목록
+  const [selectedTag, setSelectedTag] = useState(initialTag || "라운지바");
   const [shops, setShops] = useState(initialShops || []);
 
-  // 태그 클릭 시 새로 Supabase 호출
+  // 태그 클릭 시 → Supabase 재호출
   async function handleClickTag(tagName) {
-    // 이미 선택된 태그이면 다시 fetch 안 함
+    // 이미 선택된 태그라면 무시
     if (tagName === selectedTag) return;
-
     setSelectedTag(tagName);
 
     try {
-      // 1) themes에서 name=tagName
+      // 1) themes 테이블에서 name = tagName
       let { data: themeRows } = await supabase
         .from("themes")
         .select("id, name")
         .eq("name", tagName)
         .single();
 
+      // themeRows가 없으면 그냥 빈 값
       if (!themeRows) {
         setShops([]);
         return;
       }
 
-      // 2) partnershipsubmit_themes에서 theme_id
+      // 2) partnershipsubmit_themes 테이블에서 theme_id
       const themeId = themeRows.id;
       let { data: relRows } = await supabase
         .from("partnershipsubmit_themes")
         .select("submit_id")
         .eq("theme_id", themeId);
 
+      // 연관 데이터가 없으면
       if (!relRows || relRows.length === 0) {
         setShops([]);
         return;
@@ -59,10 +61,12 @@ export default function RecommendedShopsClient({
         return;
       }
 
-      // 4) 최종 변환
+      // 4) 받아온 데이터 변환
       const newShops = subRows.map((item) => ({
         id: item.id,
-        imgSrc: `https://vejthvawsbsitttyiwzv.supabase.co/storage/v1/object/public/gunma/${item.thumbnail_url}`,
+        imgSrc:
+          "https://vejthvawsbsitttyiwzv.supabase.co/storage/v1/object/public/gunma/" +
+          item.thumbnail_url,
         title: item.post_title,
         address: item.address + " " + (item.address_street || ""),
         reviewCount: item.comment || 0,
@@ -80,12 +84,16 @@ export default function RecommendedShopsClient({
       <div className="mx-auto max-w-7xl px-4">
         <hr className="mb-6 border-black" />
         <div className="text-center">
-          <h2 className="mb-2 text-2xl font-bold">회원님을 위한 취향별 마사지샵 추천</h2>
-          <p className="text-gray-600">회원님의 취향을 고려해서 테마별로 보여드릴게요!</p>
+          <h2 className="mb-2 text-xl md:text-2xl font-bold">
+            여기닷! 테마별 업체 추천
+          </h2>
+          <p className="text-gray-600 text-sm md:text-[16px]">
+            회원님께서 필요한 업체를 테마별로 빠르게 찾아보세요!
+          </p>
         </div>
 
-        {/* 태그 버튼 */}
-        <div className="mt-6 flex flex-wrap justify-center gap-3">
+        {/* 태그 버튼들 */}
+        <div className="mt-6 flex flex-wrap justify-center gap-1 md:gap-3">
           {tags.map((tag) => {
             const isSelected = tag === selectedTag;
             return (
@@ -94,8 +102,8 @@ export default function RecommendedShopsClient({
                 onClick={() => handleClickTag(tag)}
                 className={
                   isSelected
-                    ? "rounded-full bg-red-500 px-4 py-2 text-white hover:bg-red-600"
-                    : "rounded-full border border-gray-300 px-4 py-2 text-gray-600 hover:bg-gray-100"
+                    ? "rounded-full bg-red-500 px-2 py-2 text-white hover:bg-red-600 text-sm md:text-base"
+                    : "rounded-full border border-gray-300 px-2 py-2 text-gray-600 hover:bg-gray-100 text-sm md:text-base"
                 }
               >
                 {tag}
@@ -105,8 +113,8 @@ export default function RecommendedShopsClient({
         </div>
 
         {/* 
-          (A) 모바일(<640px) 슬라이드 
-          (B) 데스크톱(≥640px) 그리드 
+          (A) 모바일(640px 미만) → 슬라이드 형태
+          (B) 데스크톱(640px 이상) → 그리드 형태
         */}
         <div className="mt-8">
           {/* (A) 모바일 슬라이드 */}
@@ -125,7 +133,7 @@ export default function RecommendedShopsClient({
                   key={shop.id}
                   href={`/board/details/${shop.id}`}
                   className="
-                    shrink-0 
+                    shrink-0
                     snap-start
                     w-[260px]
                     overflow-hidden
@@ -150,9 +158,7 @@ export default function RecommendedShopsClient({
                     <h3 className="mb-1 text-base font-semibold text-gray-800">
                       {shop.title}
                     </h3>
-                    <p className="text-sm text-gray-600">
-                      {shop.address}
-                    </p>
+                    <p className="text-sm text-gray-600">{shop.address}</p>
                     <p className="mt-1 text-xs text-gray-500">
                       리뷰 {shop.reviewCount}
                     </p>
@@ -171,7 +177,8 @@ export default function RecommendedShopsClient({
                 className="
                   block
                   overflow-hidden
-                  rounded-xl border border-gray-200
+                  rounded-xl
+                  border border-gray-200
                   bg-white shadow
                   focus-within:ring-2 focus-within:ring-blue-500
                 "

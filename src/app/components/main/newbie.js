@@ -56,10 +56,14 @@ export default async function NewArrivalsSectionServer() {
       <div className="mx-auto max-w-7xl px-4">
         {/* 섹션 헤더 */}
         <h2 className="mb-2 text-2xl font-bold text-gray-800">
-          신규 입점 했어요
+ 
+ 	
+신규 제휴업체
         </h2>
         <p className="mb-6 text-gray-500">
-          VIP인포의 새로운 스웨디시 샵을 만나보세요!
+ 
+ 	
+여기닷에 등록한 신규 입점업체를 만나보세요!
         </p>
 
         {/* (A) 모바일 슬라이드 + (B) 데스크톱 그리드 */}

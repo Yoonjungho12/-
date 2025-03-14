@@ -1,15 +1,5 @@
 // src/app/(main)/board/ThemeSelectorMobile.js
 "use client";
-
-/**
- * ThemeSelectorMobile
- * 
- * 모바일 전용 테마 선택 컴포넌트 (CSR)
- * - "테마선택" 버튼 → 열고 닫기
- * - 4칸(열)씩 표시해 모바일에서 보기 좋게
- * - 폰트도 조금 작게
- */
-
 import { useState } from "react";
 import Link from "next/link";
 

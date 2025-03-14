@@ -24,3 +24,18 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* 크롬/사파리 (webkit) */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none; 
+}
+
+/* IE, Edge */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+}
+
+/* 파이어폭스 */
+.hide-scrollbar {
+  scrollbar-width: none;
+}
