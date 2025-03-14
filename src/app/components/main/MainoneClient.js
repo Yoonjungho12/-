@@ -51,11 +51,15 @@ export default function MainoneClient({ initialRegion, initialData }) {
   // 2) 선택된 지역
   const [selectedRegion, setSelectedRegion] = useState(initialRegion);
 
-  // 3) 가게 리스트, 로딩
+  // 3) 가게 리스트, 로딩 상태
   const [shopList, setShopList] = useState(initialData || []);
   const [isLoading, setIsLoading] = useState(false);
 
-  // 4) Supabase에서 데이터 가져오기
+  // 4) “가로 스크롤”용 Ref
+  //    -- 로딩 여부와 상관없이 *무조건* 최상단에서 호출해야 함!
+  const ulRef = useRef(null);
+
+  // 5) Supabase에서 데이터 가져오기
   async function handleClickRegion(region) {
     if (region === selectedRegion) return;
     setSelectedRegion(region);
@@ -96,7 +100,7 @@ export default function MainoneClient({ initialRegion, initialData }) {
     setShopList(sliced);
   }
 
-  // (A) 로딩 중 → 스켈레톤
+  // 6) 로딩 중일 때 → 스켈레톤만 반환
   if (isLoading) {
     return (
       <div className="w-full bg-white">
@@ -123,10 +127,7 @@ export default function MainoneClient({ initialRegion, initialData }) {
     );
   }
 
-  // 5) 가로 스크롤 Ref
-  const ulRef = useRef(null);
-
-  // 6) 화살표 클릭 시 → 실제 스크롤 이동
+  // 7) 화살표 클릭 시 → 실제 스크롤 이동
   function scrollLeft() {
     if (ulRef.current) {
       ulRef.current.scrollBy({
@@ -157,7 +158,7 @@ export default function MainoneClient({ initialRegion, initialData }) {
         </p>
       </div>
 
-      {/* ▼▼ 수정 핵심: 가로 스크롤 부분을 전체폭으로 사용하도록 max-w-7xl 제거 및 w-full 사용 ▼▼ */}
+      {/* 탭 영역 */}
       <div className="mt-6 w-full">
         <div className="relative p-2">
           {/* 왼쪽 화살표 */}
@@ -206,8 +207,8 @@ export default function MainoneClient({ initialRegion, initialData }) {
                     onClick={() => handleClickRegion(region)}
                     className={
                       isSelected
-                        ? " px-4 py-2 bg-red-600 text-white md:w-40 text-sm md:text-base"
-                        : "border-gray-200 px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 md:w-40 text-sm md:text-base"
+                        ? " px-4 py-2 bg-red-600 text-white"
+                        : "border-gray-200 px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 "
                     }
                     aria-label={`${region} 지역 선택`}
                   >
@@ -397,7 +398,8 @@ export default function MainoneClient({ initialRegion, initialData }) {
                       ? typeof item.comment === "string"
                         ? item.comment.slice(0, 30)
                         : JSON.stringify(item.comment).slice(0, 30)
-                      : "자세한 정보 보기..."}
+                      : "자세한 정보 보기..."
+                    }
                   </p>
                   <div className="mt-2 text-red-600 text-sm font-semibold">
                     {lowestPrice !== null
