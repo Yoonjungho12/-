@@ -3,6 +3,7 @@
 
 import { supabase } from "@/lib/supabaseF"; // or supabaseE, depending on your setup
 import Image from "next/image";
+import Link from "next/link";
 
 // 간단한 가격 포맷 함수 (원한다면 사용)
 function formatPrice(num) {
@@ -47,27 +48,22 @@ export default async function NewArrivalsSectionServer() {
     imgSrc: `https://vejthvawsbsitttyiwzv.supabase.co/storage/v1/object/public/gunma/${item.thumbnail_url}`,
     title: item.post_title || "제목 없음",
     address: item.address || "주소 미기재",
-    // 필요하다면 price/discount 등 추가
   }));
 
   // 3) JSX 반환
   return (
-    <section className="w-full bg-white py-10">
-      <div className="mx-auto max-w-7xl px-4">
+    <section className="w-full bg-white py-10 flex flex-col items-center">
+      <div className="w-full px-4">
         {/* 섹션 헤더 */}
-        <h2 className="mb-2 text-2xl font-bold text-gray-800">
- 
- 	
-신규 제휴업체
+        <h2 className="mb-2 text-xl md:text-2xl font-bold text-gray-800 text-center">
+          신규 제휴업체
         </h2>
-        <p className="mb-6 text-gray-500">
- 
- 	
-여기닷에 등록한 신규 입점업체를 만나보세요!
+        <p className="mb-6 text-gray-500 text-center">
+          여기닷에 등록한 신규 입점업체를 만나보세요!
         </p>
 
         {/* (A) 모바일 슬라이드 + (B) 데스크톱 그리드 */}
-        <div>
+        <div className="max-w-7xl mx-auto hide-scrollbar">
           {/* (A) 모바일 슬라이더 (<640px) */}
           <div className="block sm:hidden px-2">
             <div
@@ -76,6 +72,7 @@ export default async function NewArrivalsSectionServer() {
                 overflow-x-auto
                 gap-6
                 snap-x snap-mandatory
+                hide-scrollbar
               "
               style={{ scrollBehavior: "smooth" }}
             >
@@ -84,15 +81,21 @@ export default async function NewArrivalsSectionServer() {
                   key={shop.id}
                   className="
                     shrink-0
-                    w-[260px]
+                    w-[270px]
                     snap-start
                     overflow-hidden
-                    rounded-xl border border-gray-200
-                    bg-white shadow
+                    rounded-xl
+                    border border-gray-200
+                    bg-white
+                    shadow
+                    
                   "
                 >
-                  {/* 이미지 영역 (240×130 예시) */}
-                  <div className="w-[240px] h-[130px] mx-auto mt-3 overflow-hidden rounded-xl">
+                  {/* 
+                    (1) 모바일 이미지 래퍼 
+                    -> overflow-hidden + rounded-xl 
+                  */}
+                  <div className="w-[240px] h-[130px] mx-auto mt-3 overflow-hidden rounded-xl ">
                     <Image
                       src={shop.imgSrc}
                       alt={shop.title}
@@ -101,7 +104,6 @@ export default async function NewArrivalsSectionServer() {
                       style={{ objectFit: "cover" }}
                       quality={70}
                       sizes="240px"
-                      className="rounded-xl"
                     />
                   </div>
 
@@ -111,21 +113,6 @@ export default async function NewArrivalsSectionServer() {
                       {shop.title}
                     </h3>
                     <p className="text-sm text-gray-600">{shop.address}</p>
-
-                    {/* 
-                    예: price
-                    <p className="mt-2 text-xs text-gray-400 line-through">
-                      {formatPrice(shop.originalPrice)}
-                    </p>
-                    <div className="mt-1 flex items-baseline space-x-2">
-                      <span className="inline-block rounded bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-600">
-                        {shop.discount}%
-                      </span>
-                      <p className="text-sm font-bold text-gray-900">
-                        {formatPrice(shop.price)}
-                      </p>
-                    </div>
-                    */}
                   </div>
                 </div>
               ))}
@@ -133,14 +120,26 @@ export default async function NewArrivalsSectionServer() {
           </div>
 
           {/* (B) 데스크톱 그리드 (≥640px) */}
-          <div className="hidden sm:grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+          <div className="hidden sm:grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ">
             {shopCards.map((shop) => (
               <div
                 key={shop.id}
-                className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow"
+                className="
+                  block
+                  overflow-hidden
+                  rounded-xl
+                  border border-gray-200
+                  bg-white
+                  shadow-sm
+                  focus-within:ring-2 focus-within:ring-blue-500
+                    w-[290px]
+                "
               >
-                {/* 이미지 영역 */}
-                <div className="h-[153px] w-[263px] mx-auto mt-4 overflow-hidden rounded-xl">
+                {/* 
+                  (2) 데스크톱 이미지 래퍼 
+                  -> overflow-hidden + rounded-xl 
+                */}
+                <div className="h-[153px] w-[263px] overflow-hidden mx-auto mt-3 rounded-xl ">
                   <Image
                     src={shop.imgSrc}
                     alt={shop.title}
@@ -150,7 +149,7 @@ export default async function NewArrivalsSectionServer() {
                     quality={70}
                   />
                 </div>
-                {/* 텍스트 영역 */}
+
                 <div className="p-4">
                   <h3 className="mb-1 text-base font-semibold text-gray-800">
                     {shop.title}
@@ -161,14 +160,15 @@ export default async function NewArrivalsSectionServer() {
             ))}
           </div>
         </div>
-
-        {/* '더보기' 버튼 */}
-        <div className="mt-8 text-center">
-          <button className="rounded border border-gray-300 px-6 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100">
-            더보기 +
-          </button>
-        </div>
       </div>
+
+      {/* '더보기' 버튼 */}
+      <Link
+        href={"/today/전체/전체/전체"}
+        className="mt-15 rounded border-[0.5px] border-gray-500 px-5 py-2 text-gray-500"
+      >
+        더보기 +
+      </Link>
     </section>
   );
 }

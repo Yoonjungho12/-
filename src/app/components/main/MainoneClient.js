@@ -99,7 +99,7 @@ export default function MainoneClient({ initialRegion, initialData }) {
     setShopList(sliced);
   }
 
-  // 6) 로딩 중이면 스켈레톤을 렌더 (Hook 선언 이후에 조건부 렌더)
+  // 6) 로딩 중이면 스켈레톤 렌더
   if (isLoading) {
     return (
       <div className="w-full bg-white">
@@ -126,7 +126,7 @@ export default function MainoneClient({ initialRegion, initialData }) {
     );
   }
 
-  // 7) 화살표 클릭 시 → 실제 스크롤 이동
+  // 7) 화살표 클릭 시 스크롤 이동
   function scrollLeft() {
     if (ulRef.current) {
       ulRef.current.scrollBy({
@@ -158,7 +158,7 @@ export default function MainoneClient({ initialRegion, initialData }) {
       </div>
 
       {/* ▼▼ 가로 스크롤 탭 ▼▼ */}
-      <div className="mt-6 w-full">
+      <div className="mt-6 max-w-7xl mx-auto px-4">
         <div className="relative p-2">
           {/* 왼쪽 화살표 */}
           <button
@@ -247,24 +247,19 @@ export default function MainoneClient({ initialRegion, initialData }) {
       {/* 모바일/데스크톱 카드 */}
       <div className="mt-6 mx-auto max-w-7xl pb-8">
         {/* (모바일) 슬라이드 */}
-        <div className="block sm:hidden px-4">
+        <div className="block sm:hidden px-4 ">
           <div
             className="
               flex
               overflow-x-auto
               gap-8
               snap-x snap-mandatory
+              hide-scrollbar
             "
             style={{ scrollBehavior: "smooth" }}
           >
             {shopList.map((item) => {
-              // 썸네일 URL
-              const imageUrl =
-                "https://vejthvawsbsitttyiwzv.supabase.co/storage/v1/object/public/gunma/" +
-                item.thumbnail_url;
-              const detailUrl = `/board/details/${item.id}`;
-
-              // 최저가 계산
+              // ▼▼ 최저가 계산 ▼▼
               let lowestPrice = null;
               if (item.sections?.length) {
                 item.sections.forEach((sec) => {
@@ -281,19 +276,33 @@ export default function MainoneClient({ initialRegion, initialData }) {
                 });
               }
 
+              // 이미지 URL/상세링크
+              const imageUrl =
+                "https://vejthvawsbsitttyiwzv.supabase.co/storage/v1/object/public/gunma/" +
+                item.thumbnail_url;
+              const detailUrl = `/board/details/${item.id}`;
+
               return (
                 <Link
                   key={item.id}
                   href={detailUrl}
                   className="
                     shrink-0
-                    w-[260px]
+                    w-[270px]
                     snap-start
-                    rounded-xl border border-gray-200 bg-white shadow-sm
+                    rounded-xl
+                    border border-gray-200
+                    bg-white
+                    shadow-sm
                     focus-within:ring-2 focus-within:ring-blue-500
                   "
                 >
-                  <div className="w-[240px] h-[130px] mx-auto mt-2 overflow-hidden">
+                  {/* 
+                    (이미지) 
+                    rounded-xl + overflow-hidden으로 둥글게 자름
+                  */}
+                  <div className="w-[240px] h-[130px] mx-auto mt-3
+                   overflow-hidden rounded-xl">
                     <Image
                       src={imageUrl}
                       alt={`${item.company_name || item.post_title} 썸네일`}
@@ -302,7 +311,6 @@ export default function MainoneClient({ initialRegion, initialData }) {
                       style={{ objectFit: "cover" }}
                       quality={30}
                       priority
-                      className="rounded-2xl"
                       sizes="240px"
                     />
                   </div>
@@ -320,7 +328,11 @@ export default function MainoneClient({ initialRegion, initialData }) {
                             : JSON.stringify(item.comment).slice(0, 30))
                         : "자세한 정보 보기..."}
                     </p>
-                    {/* 최저가 영역 */}
+
+                    {/* 
+                      (최저가 영역) 
+                      lowestPrice 변수를 출력 
+                    */}
                     <div className="mt-2 text-red-600 text-sm font-semibold">
                       {lowestPrice !== null
                         ? formatPrice(lowestPrice)
@@ -336,13 +348,7 @@ export default function MainoneClient({ initialRegion, initialData }) {
         {/* (데스크톱) 그리드 */}
         <div className="hidden sm:grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {shopList.map((item) => {
-            // 썸네일
-            const imageUrl =
-              "https://vejthvawsbsitttyiwzv.supabase.co/storage/v1/object/public/gunma/" +
-              item.thumbnail_url;
-            const detailUrl = `/board/details/${item.id}`;
-
-            // 최저가 계산
+            // ▼▼ 최저가 계산 ▼▼
             let lowestPrice = null;
             if (item.sections?.length) {
               item.sections.forEach((sec) => {
@@ -359,6 +365,12 @@ export default function MainoneClient({ initialRegion, initialData }) {
               });
             }
 
+            // 썸네일/상세링크
+            const imageUrl =
+              "https://vejthvawsbsitttyiwzv.supabase.co/storage/v1/object/public/gunma/" +
+              item.thumbnail_url;
+            const detailUrl = `/board/details/${item.id}`;
+
             return (
               <Link
                 key={item.id}
@@ -371,9 +383,14 @@ export default function MainoneClient({ initialRegion, initialData }) {
                   bg-white
                   shadow-sm
                   focus-within:ring-2 focus-within:ring-blue-500
+                   w-[290px]
                 "
               >
-                <div className="h-[153px] w-[263px] overflow-hidden mx-auto mt-4">
+                {/* 
+                  (이미지) 
+                  overflow-hidden + rounded-xl 
+                */}
+                <div className="h-[153px] w-[263px] overflow-hidden mx-auto mt-3 rounded-xl">
                   <Image
                     src={imageUrl}
                     alt={`${item.company_name || item.post_title} 썸네일`}
@@ -400,6 +417,8 @@ export default function MainoneClient({ initialRegion, initialData }) {
                       : "자세한 정보 보기..."
                     }
                   </p>
+
+                  {/* (최저가 영역) */}
                   <div className="mt-2 text-red-600 text-sm font-semibold">
                     {lowestPrice !== null
                       ? formatPrice(lowestPrice)
@@ -410,6 +429,15 @@ export default function MainoneClient({ initialRegion, initialData }) {
             );
           })}
         </div>
+      </div>
+      <div className="flex justify-center"> 
+
+          <Link
+        href={"/today/전체/전체/전체"}
+        className="md:mt-15 rounded border-[0.5px] border-gray-500 px-5 py-2 text-gray-500"
+      >
+        더보기 +
+      </Link>
       </div>
     </div>
   );

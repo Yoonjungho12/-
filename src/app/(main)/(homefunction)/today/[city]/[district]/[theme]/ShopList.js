@@ -3,7 +3,7 @@
 
 export const dynamic = "force-dynamic";
 
-import { supabase } from "@/lib/supabaseE"; 
+import { supabase } from "@/lib/supabaseE";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -72,16 +72,13 @@ export default async function ShopList({ city, district, theme }) {
         greeting,
         thumbnail_url,
         partnershipsubmit_themes (
-          themes (
-            id,
-            name
-          )
+          themes ( id, name )
         )
       `)
       .eq("final_admitted", true)
       .textSearch("search_tsv", searchString, {
         type: "websearch",
-        config: "simple", 
+        config: "simple",
       });
 
     data = res.data || [];
@@ -102,10 +99,7 @@ export default async function ShopList({ city, district, theme }) {
         greeting,
         thumbnail_url,
         partnershipsubmit_themes (
-          themes (
-            id,
-            name
-          )
+          themes ( id, name )
         )
       `)
       .eq("final_admitted", true)
@@ -123,7 +117,7 @@ export default async function ShopList({ city, district, theme }) {
     );
   }
 
-  // 3) 카드 형태 UI로 렌더링
+  // 3) 카드 형태 UI로 렌더링 (모바일=세로, 데스크톱=가로)
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
       <h2 className="text-2xl font-bold mb-4">
@@ -133,9 +127,9 @@ export default async function ShopList({ city, district, theme }) {
       {data.length === 0 ? (
         <p>검색 결과가 없습니다!</p>
       ) : (
-        <div className="space-y-7">
+        <div className="space-y-6">
           {data.map((item) => {
-            // Supabase 스토리지 경로
+            // 썸네일 URL
             const imageUrl = `https://vejthvawsbsitttyiwzv.supabase.co/storage/v1/object/public/gunma/${item.thumbnail_url}`;
 
             // 상세페이지 링크
@@ -146,102 +140,101 @@ export default async function ShopList({ city, district, theme }) {
             const themeList = item.partnershipsubmit_themes || [];
 
             return (
-              // ★ 여기서 key={item.id}를 최상위 래퍼(div)에 부여
-              <div key={item.id}>
-                <Link
-                  href={detailUrl}
-                  className="
-                    flex flex-col md:flex-row
-                    items-stretch
-                    p-4
-                    rounded-lg
-                    overflow-hidden
-                  "
-                >
-                  {/* 왼쪽 썸네일 */}
-                  <div className="w-[373px] h-[217px] relative flex-shrink-0">
-                    <Image
-                      src={imageUrl}
-                      alt={item.company_name || "썸네일"}
-                      width={373}
-                      height={217}
-                      className="object-cover w-full h-full rounded-xl"
-                    />
-                  </div>
+              <Link
+                key={item.id}
+                href={detailUrl}
+                className="
+                  block
+                  flex flex-col md:flex-row
+                  items-stretch
+                  p-4
+                  rounded-lg
+                  overflow-hidden
+                  hover:bg-gray-100
+                  transition-colors
+                "
+              >
+                {/* (1) 이미지 컨테이너: 모바일 w-full h-48, md에서 373×217 */}
+                <div className="relative w-full h-48 mb-3 md:mb-0 md:w-[373px] md:h-[217px] flex-shrink-0">
+                  <Image
+                    src={imageUrl}
+                    alt={item.company_name || "썸네일"}
+                    fill
+                    className="object-cover rounded-xl"
+                  />
+                </div>
 
-                  {/* 오른쪽 텍스트 영역 */}
-                  <div className="flex-1 px-4 py-2">
-                    <h3 className="text-lg font-semibold mb-1">
-                      {item.company_name || item.post_title}
-                    </h3>
+                {/* (2) 오른쪽 텍스트 영역 */}
+                <div className="flex-1 px-4 py-2">
+                  {/* 업체명 */}
+                  <h3 className="text-lg font-semibold mb-1">
+                    {item.company_name || item.post_title}
+                  </h3>
 
-                    {/* 주소 + 리뷰 */}
-                    <div className="flex items-center text-sm text-gray-600 mb-1 gap-3">
-                      <div className="flex items-center gap-1">
-                        <svg
-                          className="w-4 h-4 text-gray-500"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M12 11c1.656 0
-                               3-1.344
-                               3-3s-1.344-3
-                               -3-3-3
-                               1.344-3
-                               3 3
-                               3 3
-                               3 3z"
-                          />
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M19.5 9.5c0
-                               7.168-7.5
-                               11-7.5
-                               11s-7.5-3.832
-                               -7.5-11a7.5
-                               7.5 0
-                               1115
-                               0z"
-                          />
-                        </svg>
-                        <span>
-                          {item.address || item.address_street || "주소 없음"}
-                        </span>
-                      </div>
-                      <div className="text-gray-500">
-                        리뷰 {item.comment ?? 0}
-                      </div>
+                  {/* 주소 + 리뷰 */}
+                  <div className="flex items-center text-sm text-gray-600 mb-1 gap-3">
+                    {/* 주소 */}
+                    <div className="flex items-center gap-1">
+                      <svg
+                        className="w-4 h-4 text-gray-500"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M12 11c1.656 0
+                             3-1.344
+                             3-3s-1.344-3
+                             -3-3-3
+                             1.344-3
+                             3 1.344
+                             3 3
+                             3z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M19.5 9.5c0
+                             7.168-7.5
+                             11-7.5
+                             11s-7.5-3.832
+                             -7.5-11a7.5
+                             7.5 0
+                             1115
+                             0z"
+                        />
+                      </svg>
+                      <span>
+                        {item.address || item.address_street || "주소 없음"}
+                      </span>
                     </div>
-
-                    {/* 인사말(소개) */}
-                    <p className="text-sm text-gray-800">
-                      {item.greeting}
-                    </p>
-
-                    {/* 해시태그 */}
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {themeList.map((pt) => (
-                        // key는 pt.themes.id 등 고유 값
-                        <span
-                          key={pt.themes.id}
-                          className="rounded-full border border-gray-300 px-2 py-1 text-xs text-gray-600"
-                        >
-                          #{pt.themes.name}
-                        </span>
-                      ))}
+                    {/* 리뷰수 */}
+                    <div className="text-gray-500">
+                      리뷰 {item.comment ?? 0}
                     </div>
                   </div>
-                </Link>
 
-                {/* 수평 줄 */}
-                <hr className="text-gray-300 mt-2" />
-              </div>
+                  {/* 소개(greeting 등) */}
+                  <p className="text-sm text-gray-800">
+                    {item.greeting || ""}
+                  </p>
+
+                  {/* 해시태그(테마) */}
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {themeList.map((pt) => (
+                      <span
+                        key={pt.themes.id}
+                        className="rounded-full border border-gray-300 px-2 py-1 text-xs text-gray-600"
+                      >
+                        #{pt.themes.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </Link>
             );
           })}
         </div>
