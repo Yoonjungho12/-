@@ -50,8 +50,8 @@ export default async function MainPage() {
   );
 
   return (
-    <main className="max-w-5xl mx-auto p-4 mt-10">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+    <main className="max-w-7xl mx-auto p-4 mt-10">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-20 gap-y-6">
         {boardPostsArray.map((boardItem) => (
           <div key={boardItem.id} className="my-5">
             {/* 게시판 제목 + 더보기 링크 */}
