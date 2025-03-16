@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseF";
@@ -81,29 +82,30 @@ export default function PartnershipList({ listType }) {
   }, [router]);
 
   // -----------------------------
-  // 2) 세션 후: 목록조회
+  // 2) 목록조회
   // -----------------------------
   useEffect(() => {
     if (!authChecked) return;
     fetchPartnershipData(sortOrder);
   }, [authChecked, sortOrder, listType]);
 
-  // -----------------------------
-  // 목록조회: 조건에 따라 (필요한 필드만 선택)
-  // -----------------------------
+  // 목록조회 함수
   async function fetchPartnershipData(order) {
     setLoading(true);
     try {
       let query = supabase
         .from("partnershipsubmit")
-        .select("id, company_name, phone_number, address, post_title, created_at, profiles(nickname)")
+        .select("id, user_id, company_name, phone_number, address, post_title, created_at, profiles(nickname)")
         .order("created_at", { ascending: order === "asc" });
 
       if (listType === "finalPending") {
+        // is_admitted=true + final_admitted=false
         query = query.eq("is_admitted", true).eq("final_admitted", false);
       } else if (listType === "legitPartner") {
+        // is_admitted=true + final_admitted=true
         query = query.eq("is_admitted", true).eq("final_admitted", true);
       } else if (listType === "partnership") {
+        // is_admitted=false
         query = query.eq("is_admitted", false);
       }
 
@@ -166,21 +168,19 @@ export default function PartnershipList({ listType }) {
   };
 
   // -----------------------------
-  // 승인 버튼 처리
+  // 승인 버튼 (listType에 따라 처리)
   // -----------------------------
   const handleApprovalSelected = async () => {
     if (selectedIds.length === 0) {
       alert("승인할 항목이 없습니다.");
       return;
     }
-    if (
-      !confirm(
-        listType === "partnership"
-          ? `${selectedIds.length}개 항목을 승인하시겠습니까?`
-          : `${selectedIds.length}개 항목을 최종 승인하시겠습니까? 최종 승인 후에는 모든 일반 사용자들에게 노출됩니다.`
-      )
-    )
-      return;
+    const confirmMsg =
+      listType === "partnership"
+        ? `${selectedIds.length}개 항목을 승인하시겠습니까?`
+        : `${selectedIds.length}개 항목을 최종 승인하시겠습니까? 최종 승인 후에는 모든 일반 사용자에게 노출됩니다.`;
+    if (!confirm(confirmMsg)) return;
+
     try {
       let updateData = {};
       if (listType === "partnership") {
@@ -188,16 +188,39 @@ export default function PartnershipList({ listType }) {
       } else if (listType === "finalPending") {
         updateData = { final_admitted: true };
       }
-      const { error } = await supabase
+      // 1) partnershipsubmit 테이블 업데이트
+      const { data: updatedRows, error } = await supabase
         .from("partnershipsubmit")
         .update(updateData)
-        .in("id", selectedIds);
+        .in("id", selectedIds)
+        .select();
+
       if (error) {
         console.error("승인 처리 중 에러:", error);
         alert("승인 처리 실패");
         return;
       }
+
+      // 2) 최종 승인일 경우 → 해당 user_id들의 profiles.isPartner = true
+      if (listType === "finalPending") {
+        // updatedRows에서 user_id 모으기
+        const userIds = updatedRows.map((r) => r.user_id).filter(Boolean);
+        if (userIds.length > 0) {
+          const { error: profileError } = await supabase
+            .from("profiles")
+            .update({ isPartner: true })
+            .in("user_id", userIds);
+
+          if (profileError) {
+            console.error("프로필 isPartner 업데이트 중 에러:", profileError);
+            alert("파트너 권한 업데이트 중 오류가 발생했습니다.");
+            // continue, not a fatal error
+          }
+        }
+      }
+
       alert("승인 처리 완료");
+      // 승인된 rows는 목록에서 제거(혹은 다시 fetch)
       setRows((prev) => prev.filter((r) => !selectedIds.includes(r.id)));
       setSelectedIds([]);
       setIsAllSelected(false);
@@ -239,7 +262,7 @@ export default function PartnershipList({ listType }) {
     setIsAllSelected(false);
   }
 
-  // 조건부 렌더링
+  // 렌더링 상태
   if (!authChecked) {
     return <div className="p-4 text-blue-600">로그인 여부 확인 중...</div>;
   }
@@ -263,7 +286,9 @@ export default function PartnershipList({ listType }) {
           <select
             className="border border-gray-300 p-1 text-sm"
             value={sortOrder}
-            onChange={(e) => setSortOrder(e.target.value)}
+            onChange={(e) => {
+              setSortOrder(e.target.value);
+            }}
           >
             <option value="desc">최신순</option>
             <option value="asc">오래된순</option>
@@ -325,7 +350,7 @@ export default function PartnershipList({ listType }) {
                     />
                   </Td>
                   <Td>{row.company_name}</Td>
-                  <Td>{row.profiles ? row.profiles.nickname : ""}</Td>
+                  <Td>{row.profiles?.nickname || ""}</Td>
                   <Td>{row.phone_number}</Td>
                   <Td>{row.address}</Td>
                   <Td>{row.post_title}</Td>
@@ -348,11 +373,13 @@ export default function PartnershipList({ listType }) {
             {rows.length === 0 && (
               <tr>
                 <td
-                  colSpan={listType === "finalPending" ? 7 : 6}
+                  colSpan={listType === "finalPending" ? 8 : 7}
                   className="p-4 text-center text-gray-500"
                 >
                   {listType === "partnership"
                     ? "승인 대기중인 신청이 없습니다."
+                    : listType === "finalPending"
+                    ? "최종 승인 대기 항목이 없습니다."
                     : "해당 목록에 항목이 없습니다."}
                 </td>
               </tr>
@@ -364,7 +391,6 @@ export default function PartnershipList({ listType }) {
   );
 }
 
-// 작은 컴포넌트들
 function Th({ children }) {
   return (
     <th className="border-b border-gray-200 p-2 text-left font-semibold">

@@ -164,7 +164,7 @@ export default async function NewArrivalsSectionServer() {
 
       {/* '더보기' 버튼 */}
       <Link
-        href={"/today/전체/전체/전체"}
+        href={"/board/전체/전체"}
         className="mt-15 rounded border-[0.5px] border-gray-500 px-5 py-2 text-gray-500"
       >
         더보기 +
