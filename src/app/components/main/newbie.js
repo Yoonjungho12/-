@@ -34,7 +34,7 @@ export default async function NewArrivalsSectionServer() {
       <section className="w-full bg-white py-10">
         <div className="mx-auto max-w-7xl px-4">
           <h2 className="mb-2 text-2xl font-bold text-gray-800">
-            신규 입점 했어요ㅇ
+            신규 입점 했어요
           </h2>
           <p className="text-red-500">데이터 로드 오류가 발생했습니다!</p>
         </div>
