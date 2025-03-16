@@ -16,6 +16,12 @@ const nextConfig = {
         port: "",
         pathname: "/storage/v1/object/public/gunma/**",
       },
+       {
+        protocol: "https",
+        hostname: "zuxdcurogblcfkedqgvy.supabase.co",
+        port: "",
+        pathname: "/storage/v1/object/public/here-it-is/**",
+      },
       {
         protocol: "https",
         hostname: "cdn.vipgunma.com",

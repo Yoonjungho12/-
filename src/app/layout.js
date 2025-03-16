@@ -5,8 +5,8 @@ import Footer from "@/components/Footer";
 import { Geist } from "next/font/google";
 
 export const metadata = {
-  title: "건마 - 스웨디시 1인샵 정보",
-  description: "스웨디시, 1인샵, 건마 등의 정보를 확인하세요.",
+  title: "여기닷",
+  description: "스웨디시, 1인샵, 여기닷 등의 정보를 확인하세요.",
 };
 
 const geist = Geist({ subsets: ["latin"] });

@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
 import { supabase } from "@/lib/supabaseF";
-
+const directory ='partnershipsubmit'
 export default function ImageUpload({
   editId,
   editIsAdmitted,
@@ -50,9 +50,9 @@ export default function ImageUpload({
       let thumbnailUrl = null;
       if (thumbnailFile) {
         const fileExt = thumbnailFile.name.split(".").pop();
-        const fileName = `thumb_${editId}_${Date.now()}.${fileExt}`;
+        const fileName = `${directory}/thumb_${editId}_${Date.now()}.${fileExt}`;
         const { data: thumbData, error: thumbErr } = await supabase.storage
-          .from("gunma")
+          .from("here-it-is")
           .upload(fileName, thumbnailFile);
 
         if (thumbErr) {

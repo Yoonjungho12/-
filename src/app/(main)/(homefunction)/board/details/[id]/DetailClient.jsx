@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabaseF";
 import CommentsUI from "./comment";
 import MapKakao from "./MapKakao";
 import { MegaphoneIcon } from "@heroicons/react/24/outline";
-
+const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL;
 /** (A) 비로그인 시 localStorage 익명 UUID */
 function generateAnonUuid() {
   return crypto.randomUUID();
@@ -23,7 +23,7 @@ function getOrCreateAnonUuid() {
 
 /** (B) 스토리지 경로 빌더 */
 function buildPublicImageUrl(path) {
-  return `https://vejthvawsbsitttyiwzv.supabase.co/storage/v1/object/public/gunma/${path}`;
+  return `${baseUrl}/partnershipsubmit/${path}`;
 }
 
 /** (C) 라벨-값 표시용 작은 컴포넌트 */
