@@ -1,11 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
-import {supabase} from '@/lib/supabaseE';
+import { supabase } from '@/lib/supabaseE';
 
 export async function POST(request) {
   try {
     const { user_id, name, nickname, phone, email } = await request.json();
 
-    // user_id가 없으면 에러
+    // user_id가 없으면 에러 처리
     if (!user_id) {
       return new Response("user_id is required", { status: 400 });
     }
@@ -14,10 +14,11 @@ export async function POST(request) {
     const { data, error } = await supabase
       .from("profiles")
       .insert({
-        user_id,
-        name,
-        nickname,
-        phone,
+        user_id: user_id,
+        name: name,
+        nickname: nickname,
+        phone: phone,
+        email: email, // ← 여기에서 email 필드도 함께 저장
       })
       .single();
 

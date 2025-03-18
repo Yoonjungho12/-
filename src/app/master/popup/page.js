@@ -5,16 +5,15 @@ import { supabase } from "@/lib/supabaseF";
 import { PaperAirplaneIcon } from "@heroicons/react/24/outline";
 import { CheckCircleIcon } from "@heroicons/react/24/solid";
 import Image from "next/image"; // Import Image from next/image
-const directory ='partnershipsubmit'
+const directory = "partnershipsubmit";
 
 /** 
  * Supabase 스토리지 public URL 빌더 
  * (버킷명: gunma, PROJECT_URL 은 본인 프로젝트 주소로 교체)
  */
-
 export const dynamic = "force-dynamic";
 const PROJECT_URL = process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL;
-console.log('너의 정체는' + PROJECT_URL);
+console.log("너의 정체는" + PROJECT_URL);
 
 function buildPublicImageUrl(path) {
   return `${PROJECT_URL}/${path}`;
@@ -49,11 +48,8 @@ function PartnershipPopupPageContent() {
   // 추가 이미지(1:N)
   const [images, setImages] = useState([]);
 
-  // 프로필 보기 토글
-  const [showProfile, setShowProfile] = useState(false);
-  function toggleProfile() {
-    setShowProfile((prev) => !prev);
-  }
+  // 프로필 표시 여부 (버튼 한 번 누르면 열림)
+  const [profileVisible, setProfileVisible] = useState(false);
 
   // -------------------------------------------
   // 1) 세션 및 rowId로 DB 조회
@@ -305,18 +301,20 @@ function PartnershipPopupPageContent() {
         <DetailItem label="작성일" value={formatLocalTime(row.created_at)} />
       </div>
 
-      {/* 프로필 보기 */}
+      {/* 작성자 프로필 */}
       <div className="mt-4 border border-gray-200 p-2">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
           <span className="font-bold text-sm">작성자 프로필</span>
-          <button
-            onClick={toggleProfile}
-            className="text-blue-600 text-sm underline"
-          >
-            {showProfile ? "프로필 닫기" : "프로필 보기"}
-          </button>
+          {!profileVisible && (
+            <button
+              onClick={() => setProfileVisible(true)}
+              className="text-blue-600 text-sm underline"
+            >
+              프로필 보기
+            </button>
+          )}
         </div>
-        {showProfile && profileObj && (
+        {profileVisible && profileObj && (
           <div className="mt-2 space-y-2 text-sm">
             <DetailItem label="이름" value={profileObj.name} />
             <DetailItem label="닉네임" value={profileObj.nickname} />

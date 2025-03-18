@@ -124,7 +124,7 @@ export default function AdminSidebar() {
           {/* 기타 그룹 */}
           <NavCategory label="기타" isOpen={isOpen} />
           <NavItem
-            href="/admin"
+            href="/master/dashboard"
             icon={<HomeIcon className="h-5 w-5" />}
             label="대시보드"
             isOpen={isOpen}
@@ -136,7 +136,7 @@ export default function AdminSidebar() {
             isOpen={isOpen}
           />
           <NavItem
-            href="/admin/settings"
+            href="/master/dashboard"
             icon={<Cog6ToothIcon className="h-5 w-5" />}
             label="설정"
             isOpen={isOpen}

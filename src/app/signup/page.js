@@ -14,11 +14,12 @@ export default function SignupPage() {
   const [nickname, setNickname] = useState("");
   const [phone, setPhone] = useState("");
 
-
   // 예) 약관동의 체크
   const [checkedTerm1, setCheckedTerm1] = useState(true);
   const [checkedTerm2, setCheckedTerm2] = useState(true);
-      const router = useRouter();
+
+  const router = useRouter();
+
   // 가입하기 버튼 클릭
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -38,7 +39,7 @@ export default function SignupPage() {
     }
 
     // userId(이메일), password는 이미 Supabase Auth에 등록됨
-    // 2) 나머지 정보(이름, 닉네임, 휴대폰, 이메일)를 서버에 전송
+    // 2) 나머지 정보(이름, 닉네임, 휴대폰, + email)를 서버에 전송
     //    Supabase Auth 가입결과로 data.user.id가 나옴(유니크 UUID)
     const user_id = data.user?.id;
     try {
@@ -50,6 +51,7 @@ export default function SignupPage() {
           name: name,
           nickname: nickname,
           phone: phone,
+          email: userId, // ← 여기서 이메일을 함께 넘김 (profiles.email 칼럼에 저장)
         }),
       });
       if (!res.ok) {
@@ -57,7 +59,7 @@ export default function SignupPage() {
         throw new Error(msg);
       }
       alert("가입 완료!");
-      router.push('/login');
+      router.push("/login");
     } catch (err) {
       alert("프로필 저장 중 오류가 발생했습니다: " + err.message);
     }
@@ -69,14 +71,18 @@ export default function SignupPage() {
       <div className="mb-6 text-center">
         <h1 className="text-2xl font-bold text-red-500">
           VIP info
-          <span className="ml-1 text-base font-normal text-green-600">VIP 건마</span>
+          <span className="ml-1 text-base font-normal text-green-600">
+            VIP 건마
+          </span>
         </h1>
       </div>
 
       {/* 흰색 박스 */}
       <div className="w-full max-w-md rounded-md bg-white p-6 shadow">
         {/* 제목 */}
-        <h2 className="mb-4 text-xl font-semibold text-gray-700">간편 회원가입</h2>
+        <h2 className="mb-4 text-xl font-semibold text-gray-700">
+          간편 회원가입
+        </h2>
 
         {/* 약관동의 (예시 2개) */}
         <div className="mb-5 border border-gray-200">
@@ -89,9 +95,15 @@ export default function SignupPage() {
                 strokeWidth="2"
                 viewBox="0 0 24 24"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
-              <span className="text-sm font-medium text-gray-700">전체동의</span>
+              <span className="text-sm font-medium text-gray-700">
+                전체동의
+              </span>
             </div>
           </div>
           <div className="px-4 py-3 space-y-2">
@@ -107,7 +119,9 @@ export default function SignupPage() {
                   회원가입약관의 내용에 동의 (필수)
                 </span>
               </div>
-              <button className="text-sm text-gray-500 hover:underline">보기</button>
+              <button className="text-sm text-gray-500 hover:underline">
+                보기
+              </button>
             </div>
 
             <div className="flex items-center justify-between">
@@ -122,7 +136,9 @@ export default function SignupPage() {
                   개인정보 이용 및 활용 동의 (필수)
                 </span>
               </div>
-              <button className="text-sm text-gray-500 hover:underline">보기</button>
+              <button className="text-sm text-gray-500 hover:underline">
+                보기
+              </button>
             </div>
           </div>
         </div>
@@ -147,7 +163,8 @@ export default function SignupPage() {
           {/* 비밀번호 */}
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-600">
-              비밀번호 (8자리 이상, 문자, 숫자, 특수문자) <span className="text-red-500">*</span>
+              비밀번호 (8자리 이상, 문자, 숫자, 특수문자){" "}
+              <span className="text-red-500">*</span>
             </label>
             <input
               type="password"
@@ -192,7 +209,8 @@ export default function SignupPage() {
           {/* 닉네임 */}
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-600">
-              닉네임(공백없이 한글, 영문, 숫자만 입력가능) <span className="text-red-500">*</span>
+              닉네임(공백없이 한글, 영문, 숫자만 입력가능){" "}
+              <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -203,8 +221,6 @@ export default function SignupPage() {
               onChange={(e) => setNickname(e.target.value)}
             />
           </div>
-
-
 
           {/* 휴대폰 번호 */}
           <div>
