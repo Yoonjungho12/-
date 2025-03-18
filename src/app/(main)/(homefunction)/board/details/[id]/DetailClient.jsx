@@ -23,7 +23,7 @@ function getOrCreateAnonUuid() {
 
 /** (B) 스토리지 경로 빌더 */
 function buildPublicImageUrl(path) {
-  return `${baseUrl}/partnershipsubmit/${path}`;
+  return `${baseUrl}/${path}`;
 }
 
 /** (C) 라벨-값 표시용 작은 컴포넌트 */

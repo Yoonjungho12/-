@@ -130,7 +130,7 @@ export default async function ShopList({ city, district, theme }) {
         <div className="space-y-6">
           {data.map((item) => {
             // 썸네일 URL
-            const imageUrl = `https://vejthvawsbsitttyiwzv.supabase.co/storage/v1/object/public/gunma/${item.thumbnail_url}`;
+            const imageUrl = `${process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL}/${item.thumbnail_url}`;
 
             // 상세페이지 링크
             const slug = createSlug(item.company_name || item.post_title || "");

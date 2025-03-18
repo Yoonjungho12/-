@@ -45,7 +45,7 @@ export default async function NewArrivalsSectionServer() {
   // 2) 데이터 매핑
   const shopCards = (data || []).map((item) => ({
     id: item.id,
-    imgSrc: `https://vejthvawsbsitttyiwzv.supabase.co/storage/v1/object/public/gunma/${item.thumbnail_url}`,
+    imgSrc: `${process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL}/${item.thumbnail_url}`,
     title: item.post_title || "제목 없음",
     address: item.address || "주소 미기재",
   }));

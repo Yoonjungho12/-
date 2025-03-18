@@ -1,39 +1,18 @@
-// src/app/(main)/board/ThemeSelectorMobile.js
 "use client";
+
 import { useState } from "react";
 import Link from "next/link";
 
 export default function ThemeSelectorMobile({
   regionSlug,
+  subregionSlug,
   themeName,
   selectedThemeIds,
   allThemes,
 }) {
   const [isOpen, setIsOpen] = useState(false);
 
-  // 테이블 스타일
-  const tableStyle = {
-    width: "100%",
-    tableLayout: "fixed",
-    borderCollapse: "collapse",
-    marginBottom: "1rem",
-  };
-
-  // 각 칸(TD) 스타일
-  function getTdStyle(isSelected) {
-    return {
-      border: "1px solid #ddd",
-      padding: "6px",          // 폰트 작게, 패딩도 축소
-      cursor: "pointer",
-      backgroundColor: isSelected ? "#f9665e" : "#fff",
-      color: isSelected ? "#fff" : "#333",
-      textAlign: "center",
-      verticalAlign: "middle",
-      fontSize: "14px",        // 폰트 작게 조정
-    };
-  }
-
-  // (1) 4칸씩 나누는 함수
+  // (1) 4칸씩 나누는 함수 (기존 로직 그대로)
   function chunkArray(array, size) {
     const result = [];
     for (let i = 0; i < array.length; i += size) {
@@ -43,64 +22,81 @@ export default function ThemeSelectorMobile({
   }
 
   return (
-    <div style={{ marginBottom: "1.5rem" }}>
-      {/* 버튼 */}
-      <button className="bg-blue-500 text-white" 
-        style={{
-          display: "inline-block",
-          marginBottom: "1rem",
-          padding: "8px 12px",
-          
-          border: "none",
-          cursor: "pointer",
-          fontSize: "14px",
-          borderRadius: "4px",
-        }}
-        onClick={() => setIsOpen(!isOpen)}
-      >
-        {isOpen ? "테마창 닫기" : "테마선택"}
-      </button>
+    <div className="p-2 items-center">
+      {/* (A) 토글 버튼 + 정렬 옵션 */}
+      <div className="flex items-center justify-between">
+        {/* 토글 버튼 (테마선택 + ON/OFF) */}
+        <div
+          className="relative inline-block border border-gray-300 rounded-full px-3 py-1 cursor-pointer"
+          onClick={() => setIsOpen(!isOpen)}
+        >
+          <span className="text-xs">테마선택</span>
+          <span className="absolute top-[-8px] right-[-16px] text-[10px] bg-gray-600 text-white px-1 py-[1px] rounded">
+            {isOpen ? "ON" : "OFF"}
+          </span>
+        </div>
 
-      {/* 열렸을 때 테마표 */}
+        {/* 정렬 옵션: 전체 | 최저가 순 | 조회수 순 */}
+        <div className="flex items-center gap-2 text-xs">
+          {/* 예시는 “최저가 순 / 조회수 순”에 대한 링크만 # 처리. 
+              실제로 /board/... 형태로 교체하면 됩니다. */}
+          <Link href="#" className="font-bold text-black no-underline">
+            전체
+          </Link>
+          <span className="text-gray-300">|</span>
+          <Link href="#" className="text-gray-600 no-underline">
+            최저가 순
+          </Link>
+          <span className="text-gray-300">|</span>
+          <Link href="#" className="text-gray-600 no-underline">
+            조회수 순
+          </Link>
+        </div>
+      </div>
+
+      {/* (B) 테마 표: isOpen일 때만 표시 */}
       {isOpen && (
-        <>
- 
+        <table className="w-full table-fixed border-collapse mb-4 mt-3">
+          <tbody>
+            {chunkArray(allThemes, 4).map((row, rowIdx) => (
+              <tr key={rowIdx}>
+                {row.map((th) => {
+                  // 테마 선택 여부
+                  const isSelected = selectedThemeIds.includes(th.id);
+                  // 이동 경로 (PC 테마 표와 동일하게 region/subregion/테마)
+                  const href = `/board/${regionSlug || "전체"}/${
+                    subregionSlug || "전체"
+                  }/${th.name}`;
 
-          <table style={tableStyle}>
-            <tbody>
-              {chunkArray(allThemes, 4).map((row, rowIdx) => (
-                <tr key={rowIdx}>
-                  {row.map((th) => {
-                    const isSelected = selectedThemeIds.includes(th.id);
-                    const href = `/board/${regionSlug}/${th.name}`;
-                    return (
-                      <td key={th.id} style={getTdStyle(isSelected)}>
-                        <Link className=""href={href} style={{ display: "block" }}>
-                          {th.name}
-                        </Link>
-                     
-                      </td>
-                    );
-                  })}
+                  // 스타일
+                  const tdClass = isSelected
+                    ? "bg-[#f9665e] text-white"
+                    : "bg-white text-gray-800";
 
-                  {/* 남은 칸이 4개 미만이면 빈 칸을 채워서 맞춰주기 */}
-                  {row.length < 4 && 
-                    Array.from({ length: 4 - row.length }).map((_, extraIdx) => (
-                      <td
-                        key={`extra_${extraIdx}`}
-                        style={{
-                          border: "1px solid #ddd",
-                          padding: "6px",
-                          backgroundColor: "#f9f9f9",
-                        }}
-                      />
-                    ))
-                  }
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </>
+                  return (
+                    <td
+                      key={th.id}
+                      className={`border border-gray-200 p-2 text-center align-middle text-sm cursor-pointer ${tdClass}`}
+                    >
+                      <Link href={href} className="block no-underline text-xs">
+                        {th.name}
+                      </Link>
+                    </td>
+                  );
+                })}
+
+                {/* row.length가 4보다 작을 수도 있으니, 빈 칸 채우기 */}
+                {row.length < 4 &&
+                  Array.from({ length: 4 - row.length }).map((_, extraIdx) => (
+                    <td
+                      key={`extra_${extraIdx}`}
+                      className="border border-gray-200 p-2 bg-gray-100"
+                    />
+                  ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
     </div>
   );

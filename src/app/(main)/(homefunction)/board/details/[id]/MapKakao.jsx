@@ -172,7 +172,8 @@ export default function MapKakao({ address, id }) {
                     {shop.thumbnail_url ? (
                       <Image
                         src={
-                          "https://vejthvawsbsitttyiwzv.supabase.co/storage/v1/object/public/gunma/" +
+                          process.env.
+NEXT_PUBLIC_SUPABASE_STORAGE_URL +'/'+
                           shop.thumbnail_url
                         }
                         alt={shop.company_name}

@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabaseF";
 import { PaperAirplaneIcon } from "@heroicons/react/24/outline";
 import { CheckCircleIcon } from "@heroicons/react/24/solid";
 import Image from "next/image"; // Import Image from next/image
+const directory ='partnershipsubmit'
 
 /** 
  * Supabase 스토리지 public URL 빌더 
@@ -12,9 +13,11 @@ import Image from "next/image"; // Import Image from next/image
  */
 
 export const dynamic = "force-dynamic";
-const PROJECT_URL = "https://vejthvawsbsitttyiwzv.supabase.co";
+const PROJECT_URL = process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL;
+console.log('너의 정체는' + PROJECT_URL);
+
 function buildPublicImageUrl(path) {
-  return `${PROJECT_URL}/storage/v1/object/public/gunma/${path}`;
+  return `${PROJECT_URL}/${path}`;
 }
 
 /** 

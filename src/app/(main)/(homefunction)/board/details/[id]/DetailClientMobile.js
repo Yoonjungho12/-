@@ -1,9 +1,12 @@
 "use client";
+
 import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { supabase } from "@/lib/supabaseF";
 import CommentsUI from "./comment";
+
 const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL;
+
 /** (A) 비로그인 시 localStorage 익명 UUID */
 function generateAnonUuid() {
   return crypto.randomUUID();
@@ -20,7 +23,7 @@ function getOrCreateAnonUuid() {
 
 /** (B) 스토리지 경로 빌더 */
 function buildPublicImageUrl(path) {
-  return `${baseUrl}/partnershipsubmit/${path}`;
+  return `${baseUrl}/${path}`;
 }
 
 /** (C) 라벨-값 표시용 */
@@ -85,7 +88,7 @@ function NearbyShops({ currentShopId }) {
     }
     const R = 6371; // 지구 반지름(km)
     const dLat = deg2rad(lat2 - lat1);
-    const dLng = deg2rad(lng2 - lng1);
+    const dLng = deg2rad(lng2 - lng1); // ← 여기 버그없도록 꼭 lng2-lng1
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
       Math.cos(deg2rad(lat1)) *
@@ -155,13 +158,10 @@ function NearbyShops({ currentShopId }) {
           className="block rounded hover:bg-gray-50"
         >
           <div className="flex items-center gap-3">
-            {/* 썸네일: parent relative + fill */}
             <div className="relative w-40 h-25 flex-shrink-0 rounded overflow-hidden">
               {shop.thumbnail_url ? (
                 <Image
-                  src={
-                    baseUrl + '/partnershipsubmit/'+shop.thumbnail_url
-                  }
+                  src={baseUrl + "/" + shop.thumbnail_url}
                   alt={shop.company_name}
                   fill
                   className="object-cover"
@@ -172,7 +172,6 @@ function NearbyShops({ currentShopId }) {
                 </div>
               )}
             </div>
-            {/* 정보 */}
             <div>
               <p className="font-bold">{shop.company_name}</p>
               <p className="text-sm text-gray-600">{shop.address || "주소 미입력"}</p>
@@ -202,9 +201,7 @@ export default function DetailClientMobile({ row, images, numericId }) {
   const [views, setViews] = useState(row.views || 0);
   const [hasCountedView, setHasCountedView] = useState(false);
 
-  // ─────────────────────────────────────────────────────────
-  // 1) 세션 불러오기 및 상태 감지
-  // ─────────────────────────────────────────────────────────
+  // 세션 체크
   useEffect(() => {
     supabase.auth
       .getSession()
@@ -235,9 +232,7 @@ export default function DetailClientMobile({ row, images, numericId }) {
     };
   }, []);
 
-  // ─────────────────────────────────────────────────────────
-  // 2) userId 결정 + 조회수 카운트(24시간 중복 방지)
-  // ─────────────────────────────────────────────────────────
+  // (2) userId 결정 + 조회수
   let userId = null;
   if (session?.user?.id) {
     userId = session.user.id;
@@ -265,7 +260,6 @@ export default function DetailClientMobile({ row, images, numericId }) {
             .single();
 
           const newViews = (rowData?.views || 0) + 1;
-
           const { data: updated } = await supabase
             .from("partnershipsubmit")
             .update({ views: newViews })
@@ -293,9 +287,7 @@ export default function DetailClientMobile({ row, images, numericId }) {
     })();
   }, [userId, numericId, hasCountedView]);
 
-  // ─────────────────────────────────────────────────────────
-  // 3) “가고싶다” 여부 체크
-  // ─────────────────────────────────────────────────────────
+  // (3) “가고싶다” 여부 체크
   useEffect(() => {
     if (!session?.user?.id || !numericId) return;
     supabase
@@ -312,7 +304,7 @@ export default function DetailClientMobile({ row, images, numericId }) {
       .catch(console.error);
   }, [session, numericId]);
 
-  // “가고싶다” 토글
+  // 토글
   async function handleSave() {
     if (!session?.user?.id) {
       alert("로그인 먼저 해주세요!");
@@ -358,9 +350,7 @@ export default function DetailClientMobile({ row, images, numericId }) {
     }
   }
 
-  // ─────────────────────────────────────────────────────────
-  // 4) 이미지들 처리 (썸네일 + 상세)
-  // ─────────────────────────────────────────────────────────
+  // (4) 이미지 슬라이드
   const allImages = [];
   if (row.thumbnail_url) {
     allImages.push(buildPublicImageUrl(row.thumbnail_url));
@@ -371,20 +361,57 @@ export default function DetailClientMobile({ row, images, numericId }) {
     });
   }
 
-  // 가로 슬라이드
+  // 인덱스
   const [currentIndex, setCurrentIndex] = useState(0);
 
+  // 자동 넘김
   useEffect(() => {
     if (allImages.length <= 1) return;
     const timer = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % allImages.length);
+      handleNext();
     }, 3000);
     return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allImages]);
 
-  // ─────────────────────────────────────────────────────────
-  // 5) 코스 데이터 + 최저가
-  // ─────────────────────────────────────────────────────────
+  // 직접 드래그(스와이프)
+  const startXRef = useRef(0);
+
+  function handleTouchStart(e) {
+    startXRef.current = e.touches[0].clientX;
+  }
+
+  function handleTouchMove(e) {
+    // e.touches[0].clientX - startXRef.current 로 이동 거리 계산 가능
+    // 여기서는 애니메이션까지 하려면 추가 로직이 필요하지만,
+    // 간단히 "어느 방향으로 얼마나 움직였는지"만 확인해도 됩니다.
+  }
+
+  function handleTouchEnd(e) {
+    const endX = e.changedTouches[0].clientX;
+    const diff = endX - startXRef.current;
+    if (diff > 50) {
+      // 오른쪽 스와이프 → 이전
+      handlePrev();
+    } else if (diff < -50) {
+      // 왼쪽 스와이프 → 다음
+      handleNext();
+    }
+  }
+
+  function handlePrev() {
+    setCurrentIndex((prev) =>
+      prev === 0 ? allImages.length - 1 : prev - 1
+    );
+  }
+
+  function handleNext() {
+    setCurrentIndex((prev) =>
+      prev === allImages.length - 1 ? 0 : prev + 1
+    );
+  }
+
+  // (5) 코스 + 최저가
   const [sectionsData, setSectionsData] = useState([]);
   const [loadingSections, setLoadingSections] = useState(true);
   const [lowestPrice, setLowestPrice] = useState(0);
@@ -453,14 +480,10 @@ export default function DetailClientMobile({ row, images, numericId }) {
     );
   }
 
-  // ─────────────────────────────────────────────────────────
-  // 6) 리뷰 (댓글) 개수 관리
-  // ─────────────────────────────────────────────────────────
+  // (6) 리뷰 개수
   const [reviewCount, setReviewCount] = useState(0);
 
-  // ─────────────────────────────────────────────────────────
-  // 7) 출근부 (멤버)
-  // ─────────────────────────────────────────────────────────
+  // (7) 출근부
   const [members, setMembers] = useState([]);
   const [loadingMembers, setLoadingMembers] = useState(true);
 
@@ -486,7 +509,6 @@ export default function DetailClientMobile({ row, images, numericId }) {
     })();
   }, [numericId]);
 
-  // 파스텔 색상 목록
   const pastelArr = [
     "bg-blue-50 text-blue-500",
     "bg-pink-50 text-pink-500",
@@ -496,16 +518,12 @@ export default function DetailClientMobile({ row, images, numericId }) {
     "bg-yellow-50 text-yellow-500",
   ];
 
-  // ─────────────────────────────────────────────────────────
-  // 8) 연락방법
-  // ─────────────────────────────────────────────────────────
+  // (8) 연락방법
   const fullContact = row.contact_method
     ? row.contact_method + (row.near_building ? ` / ${row.near_building}` : "")
     : row.near_building || "";
 
-  // ─────────────────────────────────────────────────────────
-  // 9) 탭(샵정보 / 코스안내 / 리뷰) + 스크롤 이동
-  // ─────────────────────────────────────────────────────────
+  // (9) 탭 + 스크롤
   const [activeTab, setActiveTab] = useState("info");
   const infoRef = useRef(null);
   const courseRef = useRef(null);
@@ -518,7 +536,7 @@ export default function DetailClientMobile({ row, images, numericId }) {
   }
   function scrollToRef(ref) {
     if (!ref.current) return;
-    const offset = 50; // 헤더 높이나 약간의 여백
+    const offset = 50;
     const yPos = ref.current.offsetTop - offset;
     window.scrollTo({ top: yPos, behavior: "smooth" });
   }
@@ -533,82 +551,136 @@ export default function DetailClientMobile({ row, images, numericId }) {
     }
   }
 
-  // ─────────────────────────────────────────────────────────
-  // 최종 렌더링
-  // ─────────────────────────────────────────────────────────
   return (
     <div className="relative max-w-md mx-auto bg-white">
-      {/* (A) 이미지 슬라이드 영역 */}
-      <div className="relative w-full overflow-hidden" style={{ height: "250px" }}>
-        {allImages.length > 0 ? (
-          <div
-            className="flex h-full transition-transform duration-500 ease-in-out"
-            style={{
-              width: `${allImages.length * 100}%`,
-              transform: `translateX(-${currentIndex * 100}%)`,
-            }}
-          >
-            {allImages.map((imgUrl, idx) => (
-              <div
-                key={idx}
-                className="flex-shrink-0 w-full h-full relative"
-                style={{ flexBasis: "100%" }}
+      {/* 이미지 슬라이드 영역 */}
+      <div
+        className="relative w-full overflow-hidden"
+        style={{
+          // 414:241 ≈ 58.21%
+          paddingBottom: "58.21%",
+        }}
+      >
+        <div className="absolute top-0 left-0 w-full h-full">
+          {allImages.length > 0 ? (
+            <div
+              className="flex h-full transition-transform duration-500 ease-in-out"
+              style={{
+                width: `${allImages.length * 100}%`,
+                transform: `translateX(-${currentIndex * 100}%)`,
+              }}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
+              {allImages.map((imgUrl, idx) => (
+                <div
+                  key={idx}
+                  className="relative flex-shrink-0 justify-center"
+                  style={{
+                    width: "100%",
+                    height: "250px",
+                  }}
+                >
+                  <Image
+                    src={imgUrl}
+                    alt={`슬라이드 이미지 ${idx + 1}`}
+                    width={450}
+                    height={262}
+                    className="object-contain object-center bg-black/10"
+                  />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex items-center justify-center w-full h-full text-gray-500">
+              이미지 없음
+            </div>
+          )}
+
+          {/* 이전/다음 버튼 (이미지가 2장이상일 때만) */}
+          {allImages.length > 1 && (
+            <>
+              <button
+                onClick={handlePrev}
+                className="absolute top-1/2 left-2 -translate-y-1/2 bg-black/40 text-white w-8 h-8 rounded-full flex items-center justify-center"
               >
-                {/* fill 모드로 Image */}
-                <Image
-                  src={imgUrl}
-                  alt={`슬라이드 이미지 ${idx + 1}`}
-                  fill
-                  className="object-cover"
-                />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="flex items-center justify-center h-full text-gray-500">
-            이미지 없음
-          </div>
-        )}
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                  className="w-4 h-4"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15.75 19.5L8.25 12l7.5-7.5"
+                  />
+                </svg>
+              </button>
+              <button
+                onClick={handleNext}
+                className="absolute top-1/2 right-2 -translate-y-1/2 bg-black/40 text-white w-8 h-8 rounded-full flex items-center justify-center"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                  className="w-4 h-4"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M8.25 4.5l7.5 7.5-7.5 7.5"
+                  />
+                </svg>
+              </button>
+            </>
+          )}
 
-        {/* (A-1) 이미지 인덱스 표시 */}
-        {allImages.length > 0 && (
-          <div className="absolute bottom-2 right-2 px-2 py-1 text-sm bg-black/60 text-white rounded">
-            {currentIndex + 1} / {allImages.length}
-          </div>
-        )}
+          {/* 인덱스 표시 */}
+          {allImages.length > 0 && (
+            <div className="absolute bottom-2 right-2 px-2 py-1 text-sm bg-black/60 text-white rounded">
+              {currentIndex + 1} / {allImages.length}
+            </div>
+          )}
 
-        {/* (A-2) “가고싶다” 버튼 */}
-        <button
-          onClick={handleSave}
-          className={`absolute top-2 right-2 w-8 h-8 bg-black/60 rounded-full 
-            flex items-center justify-center
-            ${isSaved ? "text-red-400" : "text-white"}`}
-        >
-          {/* 하트 아이콘 */}
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            strokeWidth="2"
-            stroke="currentColor"
-            className="w-4 h-4"
-            viewBox="0 0 24 24"
+          {/* “가고싶다” 버튼 */}
+          <button
+            onClick={handleSave}
+            className={`absolute top-2 right-2 w-8 h-8 bg-black/60 rounded-full
+              flex items-center justify-center
+              ${isSaved ? "text-red-400" : "text-white"}`}
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M12 21l-1.45-1.342C5.4
-                15.36 2 12.28 2 8.5 2 5.42 4.42 3
-                7.5 3c1.74 0 3.41.81 4.5
-                2.09A5.987 5.987 0 0 1
-                16.5 3c3.08 0 5.5 2.42
-                5.5 5.5 0 3.78-3.4
-                6.86-8.55 11.158L12 21z"
-            />
-          </svg>
-        </button>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              strokeWidth="2"
+              stroke="currentColor"
+              className="w-4 h-4"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 21l-1.45-1.342C5.4
+                  15.36 2 12.28 2 8.5 2 5.42 4.42 3
+                  7.5 3c1.74 0 3.41.81 4.5
+                  2.09A5.987 5.987 0 0 1
+                  16.5 3c3.08 0 5.5 2.42
+                  5.5 5.5 0 3.78-3.4
+                  6.86-8.55 11.158L12 21z"
+              />
+            </svg>
+          </button>
+        </div>
       </div>
 
-      {/* (B) 탭 영역 */}
+      {/* 탭 영역 */}
       <div
         className="sticky top-[50px] bg-white z-10 flex flex-col border-b border-gray-200"
         style={{ marginTop: 0 }}
@@ -637,14 +709,11 @@ export default function DetailClientMobile({ row, images, numericId }) {
 
       {/* (C) 샵정보 섹션 */}
       <section id="info" ref={infoRef} className="px-4 pt-4 pb-6">
-        {/* 샵 이름 */}
         <div className="p-2 text-center">
           <h2 className="text-xl font-bold">{row.company_name}</h2>
         </div>
 
-        {/* 조회수, 리뷰수 표시 */}
         <div className="flex items-center justify-center gap-6 pb-2 text-gray-500">
-          {/* 조회수 */}
           <div className="flex justify-center items-center gap-1">
             <img
               src="/icons/views.svg"
@@ -654,7 +723,6 @@ export default function DetailClientMobile({ row, images, numericId }) {
             />
             <span>{views.toLocaleString()}</span>
           </div>
-          {/* 리뷰수 */}
           <div className="flex items-center gap-1">
             <img
               src="/icons/man.svg"
@@ -666,10 +734,8 @@ export default function DetailClientMobile({ row, images, numericId }) {
           </div>
         </div>
 
-        {/* 지도 */}
         <MapKakao address={row.address} />
 
-        {/* DetailRows */}
         <div className="mt-4">
           <DetailRow label="오시는길" value={row.address_street} />
           {lowestPrice > 0 && (
@@ -679,7 +745,6 @@ export default function DetailClientMobile({ row, images, numericId }) {
           <DetailRow label="연락방법" value={fullContact} />
           <DetailRow label="영업시간" value={row.open_hours} />
           <DetailRow label="주차안내" value={row.parking_type} />
-         
 
           {/* (C-1) 출근부 */}
           {loadingMembers ? (
@@ -743,9 +808,7 @@ export default function DetailClientMobile({ row, images, numericId }) {
                 {sec.isOpen && (
                   <div className="px-4 py-3">
                     {sec.courses.length === 0 ? (
-                      <div className="text-sm text-gray-500">
-                        코스가 없습니다.
-                      </div>
+                      <div className="text-sm text-gray-500">코스가 없습니다.</div>
                     ) : (
                       <ul className="space-y-2">
                         {sec.courses.map((c) => (
@@ -786,8 +849,6 @@ export default function DetailClientMobile({ row, images, numericId }) {
         <p className="text-sm text-gray-500 mb-2">
           {row.company_name} 업체에 리뷰를 남겨보세요!
         </p>
-
-        {/* 댓글 컴포넌트 */}
         <CommentsUI
           company_name={row.company_name}
           id={row.id}

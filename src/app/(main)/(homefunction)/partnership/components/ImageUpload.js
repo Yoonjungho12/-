@@ -75,9 +75,9 @@ export default function ImageUpload({
       for (let i = 0; i < multiFiles.length; i++) {
         const file = multiFiles[i];
         const ext = file.name.split(".").pop();
-        const fname = `multi_${editId}_${Date.now()}_${i}.${ext}`;
+        const fname = `${directory}/multi_${editId}_${Date.now()}_${i}.${ext}`;
         const { data: fileData, error: fileErr } = await supabase.storage
-          .from("gunma")
+          .from("here-it-is")
           .upload(fname, file);
 
         if (fileErr) {

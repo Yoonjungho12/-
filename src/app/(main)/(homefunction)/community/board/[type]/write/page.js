@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
@@ -8,6 +8,30 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// 테마 목록 상수
+const THEMES = [
+  { id: 0,  name: "전체",         sort_order: 0 },
+  { id: 1,  name: "신규업체",     sort_order: 1 },
+  { id: 19, name: "눈썹문신",     sort_order: 19 },
+  { id: 20, name: "애견펜션",     sort_order: 20 },
+  { id: 21, name: "사주",        sort_order: 21 },
+  { id: 22, name: "타로",        sort_order: 22 },
+  { id: 23, name: "아이폰-스냅",   sort_order: 23 },
+  { id: 24, name: "웨딩플래너",   sort_order: 24 },
+  { id: 25, name: "룸카페",      sort_order: 25 },
+  { id: 26, name: "성인용품",    sort_order: 26 },
+  { id: 27, name: "클럽",       sort_order: 27 },
+  { id: 28, name: "나이트클럽",   sort_order: 28 },
+  { id: 29, name: "네일샵",     sort_order: 29 },
+  { id: 30, name: "애견미용",   sort_order: 30 },
+  { id: 31, name: "태닝샵",     sort_order: 31 },
+  { id: 32, name: "왁싱샵",     sort_order: 32 },
+  { id: 33, name: "라운지바",   sort_order: 33 },
+  { id: 34, name: "헌팅포차",   sort_order: 34 },
+  { id: 35, name: "바",        sort_order: 35 },
+  { id: 36, name: "감성주점",   sort_order: 36 },
+];
 
 export default function WritePage() {
   const router = useRouter();
@@ -20,6 +44,9 @@ export default function WritePage() {
   // 글 제목, 내용 상태
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+
+  // 테마 선택 상태 (기본값: THEMES[0].id)
+  const [theme, setTheme] = useState(THEMES[0].id);
 
   // 게시판 타입별 ID와 이름 매핑
   let boardTitle = { name: '', id: 0 };
@@ -63,8 +90,7 @@ export default function WritePage() {
       }
       const currentUserId = data.session?.user?.id;
       if (!currentUserId) {
-        // 로그인 안 된 경우 처리
-        console.log('로그인 안 됨!');
+        console.log('로그인이 필요합니다!');
       } else {
         console.log('로그인 사용자 ID:', currentUserId);
         setUserId(currentUserId);
@@ -82,12 +108,13 @@ export default function WritePage() {
         return;
       }
 
-      // 3) posts 테이블에 데이터 삽입
+      // 3) posts 테이블에 데이터 삽입 (theme_id에 선택한 theme 값 저장)
       const { data, error } = await supabase.from('posts').insert({
         board_id: boardTitle.id,
         user_id: userId,
         title: title,
         content: content,
+        theme_id: theme,
       });
 
       if (error) {
@@ -97,7 +124,6 @@ export default function WritePage() {
       }
 
       alert('글이 성공적으로 저장되었습니다!');
-      // ex) router.push(`/community/board/${type}`) 등으로 이동
       router.push('/community');
     } catch (err) {
       console.error('에러 발생:', err);
@@ -133,6 +159,25 @@ export default function WritePage() {
               />
             </td>
           </tr>
+          {/* 테마 선택 */}
+          {boardTitle.name === '방문후기' && (
+            <tr className="border-b border-gray-300">
+              <td className="w-24 p-2 bg-gray-100 align-middle">테마</td>
+              <td className="p-2">
+                <select
+                  className="w-full border p-2 text-sm"
+                  value={theme}
+                  onChange={(e) => setTheme(Number(e.target.value))}
+                >
+                  {THEMES.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name}
+                    </option>
+                  ))}
+                </select>
+              </td>
+            </tr>
+          )}
           <tr>
             <td className="w-24 p-2 bg-gray-100 align-top">내용</td>
             <td className="p-2">

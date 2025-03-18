@@ -626,34 +626,34 @@ export default function NavBar() {
               </svg>
             </button>
 
-            {/* 링크들: inline-block으로 해서 수평 스크롤 시 나열 */}
+            {/* 링크들: inline-block md:mx-5으로 해서 수평 스크롤 시 나열 */}
             <Link
-              href="/board/전체/전체"
-              className="text-gray-700 hover:text-red-500 inline-block"
+              href="/board/전체/전체/전체"
+              className="text-gray-700 hover:text-red-500 inline-block md:mx-5"
             >
               지역별 검색
             </Link>
             <Link
               href="/today/전체/전체/전체"
-              className="text-gray-700 hover:text-red-500 inline-block"
+              className="text-gray-700 hover:text-red-500 inline-block md:mx-5"
             >
               실시간 인기 업체
             </Link>
             <Link
               href="/near-me"
-              className="text-gray-700 hover:text-red-500 inline-block"
+              className="text-gray-700 hover:text-red-500 inline-block md:mx-5"
             >
               내 주변 업체 찾기
             </Link>
             <Link
               href="/board/홈케어-방문관리/전체"
-              className="text-gray-700 hover:text-red-500 inline-block"
+              className="text-gray-700 hover:text-red-500 inline-block md:mx-5"
             >
               나이트/클럽
             </Link>
             <Link
               href="/community"
-              className="text-gray-700 hover:text-red-500 inline-block"
+              className="text-gray-700 hover:text-red-500 inline-block md:mx-5"
             >
               커뮤니티
             </Link>

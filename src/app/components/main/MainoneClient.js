@@ -278,7 +278,7 @@ export default function MainoneClient({ initialRegion, initialData }) {
 
               // 이미지 URL/상세링크
               const imageUrl =
-                "https://vejthvawsbsitttyiwzv.supabase.co/storage/v1/object/public/gunma/" +
+                process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL +'/'+
                 item.thumbnail_url;
               const detailUrl = `/board/details/${item.id}`;
 
@@ -366,10 +366,10 @@ export default function MainoneClient({ initialRegion, initialData }) {
             }
 
             // 썸네일/상세링크
-            const imageUrl =
-              "https://vejthvawsbsitttyiwzv.supabase.co/storage/v1/object/public/gunma/" +
-              item.thumbnail_url;
-            const detailUrl = `/board/details/${item.id}`;
+           const imageUrl =
+                process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL +'/'+
+                item.thumbnail_url;
+              const detailUrl = `/board/details/${item.id}`;
 
             return (
               <Link
