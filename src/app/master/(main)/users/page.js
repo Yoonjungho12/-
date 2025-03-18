@@ -76,8 +76,8 @@ export default function UsersPage() {
   // -------------------------------------
   const handleRowClick = (row) => {
     // 팝업 창 사이즈 및 위치
-    const w = 1500;
-    const h = 1200;
+    const w = 1300;
+    const h = 800;
     const top = window.screenY + 100;
     const left = window.screenX + 100;
 

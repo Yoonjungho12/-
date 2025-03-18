@@ -74,8 +74,8 @@ export default function RegionSelectorSSR({
   // ─────────────────────────────────────────────────────
   function renderCell(item, isSelected, linkHref) {
     return (
-    <Link href={linkHref}>  <div
-        key={item.id}
+    <Link href={linkHref} key={item.id}>  <div
+        
         className={`flex items-center text-xs md:text-sm  region-cell ${isSelected ? "selected" : ""}`}
       >
         {item.name}
@@ -141,12 +141,13 @@ export default function RegionSelectorSSR({
             }/${th.name}`;
 
             return (
-            <Link href={href}>   <div
-                key={th.id}
+            <Link href={href} key={th.id}>   <div
+                
                 className={`text-xs md:text-sm region-cell ${isSelected ? "selected" : ""}`}
               >
                {th.name}
-              </div></Link>
+              </div>
+              </Link>
             );
           })}
         </div>

@@ -19,14 +19,14 @@ function formatLocalTime(isoString) {
     localDate.getFullYear(),
     localDate.getMonth(),
     localDate.getDate(),
-    0,0,0
+    0, 0, 0
   );
   const now = new Date();
   const nowNoTime = new Date(
     now.getFullYear(),
     now.getMonth(),
     now.getDate(),
-    0,0,0
+    0, 0, 0
   );
   let dayDiff = Math.floor((nowNoTime - createdNoTime) / (1000 * 60 * 60 * 24));
   if (dayDiff < 0) dayDiff = 0; // 미래 데이터 방어
@@ -113,14 +113,14 @@ export default function UserCommentsPopup() {
         <table className="border border-gray-300 text-sm w-full">
           <thead className="bg-gray-50">
             <tr>
-              {/* 1) 게시글 제목 (왼쪽) */}
+              {/* 1) 게시글 제목 */}
               <Th>게시글 제목</Th>
-              {/* 2) 댓글 내용 (가운데) */}
-              <Th className="text-center">댓글 내용</Th>
-              {/* 3) 작성일 (가운데) */}
-              <Th className="text-center">작성일</Th>
-              {/* 4) 승인 여부 (가운데) */}
-              <Th className="text-center">승인</Th>
+              {/* 2) 댓글 내용 */}
+              <Th>댓글 내용</Th>
+              {/* 3) 작성일 */}
+              <Th>작성일</Th>
+              {/* 4) 승인 여부 */}
+              <Th>승인</Th>
             </tr>
           </thead>
           <tbody>
@@ -142,16 +142,14 @@ export default function UserCommentsPopup() {
                     )}
                   </Td>
 
-                  {/* 댓글 내용 (가운데 정렬) */}
-                  <Td className="text-center">{cmt.comment}</Td>
+                  {/* 댓글 내용 */}
+                  <Td>{cmt.comment}</Td>
 
-                  {/* 작성일 (가운데 정렬 + 포맷) */}
-                  <Td className="text-center">
-                    {formatLocalTime(cmt.created_at)}
-                  </Td>
+                  {/* 작성일 (포맷) */}
+                  <Td>{formatLocalTime(cmt.created_at)}</Td>
 
                   {/* 승인 여부 (색상 표시) */}
-                  <Td className="text-center">
+                  <Td>
                     {cmt.is_admitted ? (
                       <span className="text-green-600 font-semibold">
                         승인
@@ -172,23 +170,17 @@ export default function UserCommentsPopup() {
   );
 }
 
-// 공용 Th/Td 컴포넌트
-function Th({ children, className }) {
+/** 공용 Th/Td 컴포넌트 - 모두 가운데 정렬 */
+function Th({ children }) {
   return (
-    <th
-      className={`border-b border-gray-300 p-2 text-left font-semibold ${
-        className || ""
-      }`}
-    >
+    <th className="border-b border-gray-300 p-2 text-center font-semibold">
       {children}
     </th>
   );
 }
-function Td({ children, className }) {
+function Td({ children }) {
   return (
-    <td
-      className={`border-b border-gray-200 p-2 ${className || ""}`}
-    >
+    <td className="border-b border-gray-200 p-2 text-center">
       {children}
     </td>
   );

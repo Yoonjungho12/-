@@ -32,7 +32,7 @@ const THEMES = [
  * regionSlug==="전체" => 상위 지역
  * regionSlug!=="전체" => 하위 지역
  * 테마(PC/모바일)는 항상 표시
- * 
+ *
  * 디자인/스타일은 최대한 유지:
  * - 배경색, 테두리, 선택효과, cursor, padding 등
  * - 모바일에서는 2컬럼 grid
@@ -43,9 +43,7 @@ export default function RegionSelectorSSR({
   subregionSlug,
   themeName,
 }) {
-  // ─────────────────────────────────────────────────────
   // 1) 상위 지역
-  // ─────────────────────────────────────────────────────
   let selectedParentId = 0;
   if (regionSlug !== "전체") {
     const foundMain = REGIONS.find(
@@ -59,9 +57,7 @@ export default function RegionSelectorSSR({
     ...REGIONS.filter((r) => r.parent_id === null),
   ];
 
-  // ─────────────────────────────────────────────────────
   // 2) 하위 지역
-  // ─────────────────────────────────────────────────────
   let selectedSubregionId = 0;
   let subregionItems = [];
   if (selectedParentId !== 0) {
@@ -85,9 +81,7 @@ export default function RegionSelectorSSR({
     }
   }
 
-  // ─────────────────────────────────────────────────────
   // 3) 테마 선택
-  // ─────────────────────────────────────────────────────
   let selectedThemeIds = [];
   if (themeName === "전체") {
     selectedThemeIds = [0];
@@ -97,29 +91,28 @@ export default function RegionSelectorSSR({
   }
 
   // ─────────────────────────────────────────────────────
-  // 4) 렌더 함수
+  // 4) 렌더 함수 - key를 <Link>에 넣음
   // ─────────────────────────────────────────────────────
   function renderCell(item, isSelected, linkHref) {
     return (
-    <Link href={linkHref}>  <div
-        key={item.id}
-        className={`flex items-center text-xs md:text-sm  region-cell ${isSelected ? "selected" : ""}`}
-      >
-        {item.name}
-      </div></Link>
+      <Link key={item.id} href={linkHref}>
+        <div
+          className={`flex items-center text-xs md:text-sm region-cell ${
+            isSelected ? "selected" : ""
+          }`}
+        >
+          {item.name}
+        </div>
+      </Link>
     );
   }
 
-  // ─────────────────────────────────────────────────────
   // 5) 렌더링
-  // ─────────────────────────────────────────────────────
   return (
     <div className="w-full">
-      {/* (A) 상단 안내 (PC 전용) */}
+      {/* 상단 안내 (PC 전용) */}
       <div className="flex flex-col md:flex-row items-center mt-3 md:mt-10 mb-3">
-        <h2 className="font-bold text-xl mr-3 hide-on-mobile">
-          지역별 업체 선택
-        </h2>
+        <h2 className="font-bold text-xl mr-3 hide-on-mobile">지역별 업체 선택</h2>
         <p className="text-base text-gray-600 m-0 p-0 hide-on-mobile">
           인기있는 지역들을 보기쉽게 모아놨어요!
         </p>
@@ -160,7 +153,7 @@ export default function RegionSelectorSSR({
       {/* (D) 테마 (PC/모바일) */}
       <div className="pc-theme mt-6">
         <h3 className="text-md font-bold mb-1">테마 선택</h3>
-        <div className="theme-grid-container  mb-2">
+        <div className="theme-grid-container mb-2">
           {THEMES.map((th) => {
             const isSelected = selectedThemeIds.includes(th.id);
             const href = `/board/${regionSlug || "전체"}/${
@@ -168,12 +161,15 @@ export default function RegionSelectorSSR({
             }/${th.name}`;
 
             return (
-           < Link href={href}>  <div
-                key={th.id}
-                className={`text-xs md:text-sm region-cell ${isSelected ? "selected" : ""}`}
-              >
-                {th.name}
-              </div></Link>
+              <Link key={th.id} href={href}>
+                <div
+                  className={`text-xs md:text-sm region-cell ${
+                    isSelected ? "selected" : ""
+                  }`}
+                >
+                  {th.name}
+                </div>
+              </Link>
             );
           })}
         </div>
