@@ -374,7 +374,7 @@ export default function DetailClient({ row, images, numericId }) {
           {/* 메인 이미지 */}
           <div
             className="relative flex-1 bg-gray-100 rounded overflow-hidden"
-            style={{ minHeight: 390 }}
+            style={{ height: 390 }}
           >
             {allImages.length > 0 ? (
               <>
@@ -430,7 +430,7 @@ export default function DetailClient({ row, images, numericId }) {
           {/* 오른쪽 썸네일 (190x113) */}
           <div
             className="flex flex-col gap-2 overflow-y-auto"
-            style={{ maxHeight: 450, width: "190px" }}
+            style={{ height: 390, width: "190px" }}
           >
             {hasDetailImages
               ? allImages.map((imgUrl, idx) => (
@@ -439,7 +439,7 @@ export default function DetailClient({ row, images, numericId }) {
                     className={`relative cursor-pointer border ${
                       idx === currentIndex ? "border-red-500" : "border-transparent"
                     }`}
-                    style={{ width: "190px", height: "113px" }}
+                    style={{ width: "190px", height: "113px", display: 'flex' }}
                     onClick={() => handleThumbnailClick(idx)}
                   >
                     <Image src={imgUrl} alt={`썸네일 ${idx}`} fill className="object-cover" />

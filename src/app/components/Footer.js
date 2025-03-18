@@ -3,7 +3,7 @@ import React from "react";
 
 export default function Footer() {
   return (
-    <footer className="bg-gray-100 text-gray-600 text-sm py-10">
+    <footer className="mb-[60px] md:mb-0 bg-gray-100 text-gray-600 text-sm py-10">
       <div className="mx-auto max-w-7xl px-4">
         {/* 상단 정보(테라피, 힐링 - VIP인포 ... ) */}
            <p className="text-sm">© 2025 All Rights Reserved. </p>

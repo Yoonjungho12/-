@@ -646,7 +646,7 @@ export default function NavBar() {
               내 주변 업체 찾기
             </Link>
             <Link
-              href="/board/홈케어-방문관리/전체"
+              href="/club/전체/전체/전체"
               className="text-gray-700 hover:text-red-500 inline-block md:mx-5"
             >
               나이트/클럽
