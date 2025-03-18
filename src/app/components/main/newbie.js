@@ -95,7 +95,7 @@ export default async function NewArrivalsSectionServer() {
                     (1) 모바일 이미지 래퍼 
                     -> overflow-hidden + rounded-xl 
                   */}
-                  <div className="w-[240px] h-[130px] mx-auto mt-3 overflow-hidden rounded-xl ">
+                  <div className="w-[240px] h-[130px] mx-auto mt-3 overflow-hidden rounded-xl flex ">
                     <Image
                       src={shop.imgSrc}
                       alt={shop.title}
@@ -139,7 +139,7 @@ export default async function NewArrivalsSectionServer() {
                   (2) 데스크톱 이미지 래퍼 
                   -> overflow-hidden + rounded-xl 
                 */}
-                <div className="h-[153px] w-[263px] overflow-hidden mx-auto mt-3 rounded-xl ">
+                <div className="h-[153px] w-[263px] overflow-hidden mx-auto mt-3 rounded-xl flex ">
                   <Image
                     src={shop.imgSrc}
                     alt={shop.title}

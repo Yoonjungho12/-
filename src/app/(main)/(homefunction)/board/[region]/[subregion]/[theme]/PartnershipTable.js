@@ -1,16 +1,9 @@
 
-
-// ↑ Next.js 13 서버 컴포넌트에서만 쓰려면 "use client"를 빼야 하지만,
-//   만약 뭔가 client behavior가 필요할 수도 있으니 일단 붙였습니다.
-//   사실 "서버 컴포넌트"라고 명시하셨으니 "use client"는 빼야 100% SSR이 됩니다.
-//
-//   만약 완전히 서버 컴포넌트로만 사용하신다면 이 파일 상단에 "use client"를 제거하고
-//   page.js 에서 import PartnershipTable (서버컴포넌트) 해도 됩니다.
-
 import React from "react";
 import { supabase } from "@/lib/supabaseE";
 import Link from "next/link";
 
+// (1) 헬퍼 함수
 function createSlug(text) {
   if (typeof text !== "string" || text.trim() === "") return "no-slug";
   const slug = text
@@ -42,10 +35,9 @@ function getLowestPrice(item) {
   return lowestPrice || 0;
 }
 
+/** (2) sortPosts : "가격 높은 순(priceDesc)" & "조회수 낮은 순(viewsAsc)" 제거 */
 function sortPosts(posts, sortType) {
   if (!posts || posts.length === 0) return;
-
- 
 
   posts.sort((a, b) => {
     const aVIP = a.ad_type === "VIP" || a.ad_type === "VIP+";
@@ -64,30 +56,38 @@ function sortPosts(posts, sortType) {
     switch (sortType) {
       case "priceAsc":
         return aPrice - bPrice;
-      case "priceDesc":
-        return bPrice - aPrice;
-      case "viewsAsc":
-        return aViews - bViews;
       case "viewsDesc":
         return bViews - aViews;
       default:
+        // 그 외 or ''
         return 0; // VIP 우선만
     }
   });
-
-
-
-
 }
 
-// (스타일 생략)
+// (3) 테이블 스타일
 const tableStyle = {
   width: "100%",
   borderCollapse: "collapse",
 };
-const thStyle = { padding: "8px", border: "1px solid #ccc", textAlign: "center", whiteSpace: "nowrap" };
-const tdStyle = { padding: "8px", border: "1px solid #eee", verticalAlign: "middle" };
-const titleCellStyle = { ...tdStyle, maxWidth: "500px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" };
+const thStyle = {
+  padding: "8px",
+  border: "1px solid #ccc",
+  textAlign: "center",
+  whiteSpace: "nowrap",
+};
+const tdStyle = {
+  padding: "8px",
+  border: "1px solid #eee",
+  verticalAlign: "middle",
+};
+const titleCellStyle = {
+  ...tdStyle,
+  maxWidth: "500px",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+};
 const vipTrStyle = { backgroundColor: "#fff5f0" };
 const baseTrStyle = { backgroundColor: "#ffffff" };
 const vipBadgeStyle = {
@@ -112,20 +112,24 @@ const normalBadgeStyle = {
   fontSize: "12px",
 };
 const rightCellStyle = { ...tdStyle, textAlign: "center" };
-const mobileInfoStyle = { display: "none", fontSize: "12px", color: "#888", marginTop: "4px" };
+const mobileInfoStyle = {
+  display: "none",
+  fontSize: "12px",
+  color: "#888",
+  marginTop: "4px",
+};
 
+/** (4) 메인 컴포넌트 (서버 컴포넌트) */
 export default async function PartnershipTable({
   searchParams,
   regionSlug,
   subregionSlug,
   themeName,
 }) {
-  // 예) searchParams = { sort: 'viewsDesc' }
-
+  // (A) 정렬 파라미터
   const sortParam = searchParams?.sort || "";
 
-  // 1) region/subregion 찾기
-  // ...
+  // (B) region/subregion 찾기
   let regionId = null;
   let subRegionId = null;
 
@@ -155,7 +159,7 @@ export default async function PartnershipTable({
     }
   }
 
-  // 2) theme 찾기
+  // (C) theme 찾기
   let themeId = null;
   if (themeName && themeName !== "전체") {
     const { data: themeRow, error: themeErr } = await supabase
@@ -171,22 +175,24 @@ export default async function PartnershipTable({
     }
   }
 
-  // 3) partnershipsubmit 조회
-  let query = supabase.from("partnershipsubmit").select(`
-    id,
-    company_name,
-    post_title,
-    region_id,
-    sub_region_id,
-    ad_type,
-    comment,
-    views,
-    final_admitted,
-    partnershipsubmit_themes!inner(theme_id),
-    sections (
-      courses ( price )
-    )
-  `);
+  // (D) partnershipsubmit 조회
+  let query = supabase
+    .from("partnershipsubmit")
+    .select(`
+      id,
+      company_name,
+      post_title,
+      region_id,
+      sub_region_id,
+      ad_type,
+      comment,
+      views,
+      final_admitted,
+      partnershipsubmit_themes!inner(theme_id),
+      sections (
+        courses ( price )
+      )
+    `);
 
   if (subRegionId) {
     query = query.eq("sub_region_id", subRegionId);
@@ -204,7 +210,7 @@ export default async function PartnershipTable({
     return <div>데이터 조회 에러 발생</div>;
   }
 
-  // 4) 정렬
+  // (E) 정렬
   sortPosts(posts, sortParam);
 
   if (!posts || posts.length === 0) {
@@ -216,12 +222,20 @@ export default async function PartnershipTable({
     );
   }
 
-  // 정렬 링크
+  // (F) 정렬 링크 (가격 높은순, 조회수 낮은순 제거)
   const baseUrl = `/board/${regionSlug}/${subregionSlug}/${themeName}`;
 
   return (
     <div className="w-full" style={{ marginTop: "1rem" }}>
-      <div style={{ marginBottom: "1rem", display: "flex", gap: "16px", fontSize: "14px" }}>
+      <div
+        style={{
+          marginBottom: "1rem",
+          display: "flex",
+          gap: "16px",
+          fontSize: "14px",
+        }}
+      >
+        {/* 기본 */}
         <Link
           href={baseUrl}
           style={{
@@ -233,6 +247,7 @@ export default async function PartnershipTable({
         </Link>
         <span style={{ color: "#ccc" }}>|</span>
 
+        {/* 가격 낮은 순 */}
         <Link
           href={`${baseUrl}?sort=priceAsc`}
           style={{
@@ -242,30 +257,10 @@ export default async function PartnershipTable({
         >
           가격 낮은순
         </Link>
+
         <span style={{ color: "#ccc" }}>|</span>
 
-        <Link
-          href={`${baseUrl}?sort=priceDesc`}
-          style={{
-            color: sortParam === "priceDesc" ? "#000" : "#666",
-            fontWeight: sortParam === "priceDesc" ? "bold" : "normal",
-          }}
-        >
-          가격 높은순
-        </Link>
-        <span style={{ color: "#ccc" }}>|</span>
-
-        <Link
-          href={`${baseUrl}?sort=viewsAsc`}
-          style={{
-            color: sortParam === "viewsAsc" ? "#000" : "#666",
-            fontWeight: sortParam === "viewsAsc" ? "bold" : "normal",
-          }}
-        >
-          조회수 낮은순
-        </Link>
-        <span style={{ color: "#ccc" }}>|</span>
-
+        {/* 조회수 높은 순 */}
         <Link
           href={`${baseUrl}?sort=viewsDesc`}
           style={{
@@ -280,10 +275,18 @@ export default async function PartnershipTable({
       <table style={tableStyle} className="text-sm PartnershipTable">
         <thead>
           <tr>
-            <th style={thStyle} className="desktop-only">제목</th>
-            <th style={thStyle} className="desktop-only">최저가</th>
-            <th style={thStyle} className="desktop-only">조회수</th>
-            <th style={thStyle} className="desktop-only">리뷰수</th>
+            <th style={thStyle} className="desktop-only">
+              제목
+            </th>
+            <th style={thStyle} className="desktop-only">
+              최저가
+            </th>
+            <th style={thStyle} className="desktop-only">
+              조회수
+            </th>
+            <th style={thStyle} className="desktop-only">
+              리뷰수
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -292,27 +295,36 @@ export default async function PartnershipTable({
             const rowStyle = isVIP ? vipTrStyle : baseTrStyle;
 
             const priceNum = getLowestPrice(item);
-            const displayPrice = priceNum > 0 ? formatPrice(priceNum) : "가격 없음";
+            const displayPrice =
+              priceNum > 0 ? formatPrice(priceNum) : "가격 없음";
 
-            const mobileInfo = `조회수 ${Number(item.views || 0).toLocaleString()} / 리뷰 ${
-              item.comment || 0
-            } / 최저가 ${displayPrice}`;
+            const mobileInfo = `조회수 ${Number(
+              item.views || 0
+            ).toLocaleString()} / 리뷰 ${item.comment || 0} / 최저가 ${
+              displayPrice
+            }`;
 
             const slug = createSlug(item.company_name);
 
             return (
               <tr key={item.id} style={rowStyle}>
+                {/* 제목 셀 */}
                 <td style={titleCellStyle}>
                   {isVIP ? (
-                    <span style={vipBadgeStyle} className="badge-desktop">VIP</span>
+                    <span style={vipBadgeStyle} className="badge-desktop">
+                      VIP
+                    </span>
                   ) : (
-                    <span style={normalBadgeStyle} className="badge-desktop">일반</span>
+                    <span style={normalBadgeStyle} className="badge-desktop">
+                      일반
+                    </span>
                   )}
                   <Link
                     href={`/board/details/${item.id}-${slug}`}
                     style={{
                       display: "inline-block",
-                      color: isVIP && item.ad_type === "VIP+" ? "#0066cc" : "#333",
+                      color:
+                        isVIP && item.ad_type === "VIP+" ? "#0066cc" : "#333",
                       maxWidth: "80%",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
@@ -326,12 +338,18 @@ export default async function PartnershipTable({
                     {mobileInfo}
                   </div>
                 </td>
+
+                {/* 최저가 */}
                 <td style={rightCellStyle} className="desktop-only">
                   {displayPrice}
                 </td>
+
+                {/* 조회수 */}
                 <td style={rightCellStyle} className="desktop-only">
                   {Number(item.views || 0).toLocaleString()}
                 </td>
+
+                {/* 리뷰수 */}
                 <td style={rightCellStyle} className="desktop-only">
                   {item.comment || 0}
                 </td>

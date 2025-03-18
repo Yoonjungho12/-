@@ -302,13 +302,14 @@ export default function MainoneClient({ initialRegion, initialData }) {
                     rounded-xl + overflow-hidden으로 둥글게 자름
                   */}
                   <div className="w-[240px] h-[130px] mx-auto mt-3
-                   overflow-hidden rounded-xl">
+                   overflow-hidden rounded-xl flex">
                     <Image
                       src={imageUrl}
                       alt={`${item.company_name || item.post_title} 썸네일`}
+
                       width={240}
                       height={130}
-                      style={{ objectFit: "cover" }}
+                      style={{ objectFit: "cover", objectPosition: "center",  }}
                       quality={30}
                       priority
                       sizes="240px"
@@ -390,13 +391,13 @@ export default function MainoneClient({ initialRegion, initialData }) {
                   (이미지) 
                   overflow-hidden + rounded-xl 
                 */}
-                <div className="h-[153px] w-[263px] overflow-hidden mx-auto mt-3 rounded-xl">
+                <div className="h-[153px] w-[263px] overflow-hidden mx-auto mt-3 rounded-xl flex">
                   <Image
                     src={imageUrl}
                     alt={`${item.company_name || item.post_title} 썸네일`}
                     width={263}
                     height={153}
-                    style={{ objectFit: "cover" }}
+                     style={{ objectFit: "cover", objectPosition: "center" }}
                     quality={30}
                     priority
                   />
