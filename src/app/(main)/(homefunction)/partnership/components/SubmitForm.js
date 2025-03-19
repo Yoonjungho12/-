@@ -1,5 +1,3 @@
-//src/app/%28main%29/%28homefunction%29/partnership/components/SubmitForm.js
-
 import React from "react";
 import MapSelector from "./MapSelector";
 
@@ -7,6 +5,7 @@ export default function SubmitForm({
   editId,
 
   // 지역
+  isMaster = false,
   adType, setAdType,
   regions,
   selectedRegionId, setSelectedRegionId,
@@ -49,7 +48,6 @@ export default function SubmitForm({
   programInfo, setProgramInfo,
   postTitle, setPostTitle,
 
-
   // 지도
   mapRef,
   handleAddressSearch,
@@ -70,61 +68,67 @@ export default function SubmitForm({
     <>
       {/* ─────────────────────────────────────────
           (1) 광고위치: VIP / VIP+ / 선택 안함
+          isMaster가 true이면 자동 승인 처리이므로 UI에서 광고위치 선택을 숨김
       ───────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row gap-2 items-center">
-        <label className="w-32 font-semibold">상품(광고위치)*</label>
-        <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={() => {
-              // 이미 VIP 선택 상태라면 해제(빈 문자열)
-              if (adType === "VIP") {
-                setAdType("");
-              } else {
-                setAdType("VIP");
-              }
-            }}
-            className={`px-6 py-2 rounded border ${
-              adType === "VIP"
-                ? "bg-red-500 text-white border-red-500"
-                : "bg-white text-gray-700 border-gray-300"
-            } hover:opacity-80`}
-          >
-            VIP
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              // 이미 VIP+ 선택 상태라면 해제
-              if (adType === "VIP+") {
-                setAdType("");
-              } else {
-                setAdType("VIP+");
-              }
-            }}
-            className={`px-6 py-2 rounded border ${
-              adType === "VIP+"
-                ? "bg-red-500 text-white border-red-500"
-                : "bg-white text-gray-700 border-gray-300"
-            } hover:opacity-80`}
-          >
-            VIP+
-          </button>
-
-          {/* "선택 안함" 버튼 */}
-          <button
-            type="button"
-            onClick={() => setAdType("")}
-            className={`px-6 py-2 rounded border ${
-              adType === ""
-                ? "bg-red-500 text-white border-red-500"
-                : "bg-white text-gray-700 border-gray-300"
-            } hover:opacity-80`}
-          >
-            선택 안함
-          </button>
+      {!isMaster ? (
+        <div className="flex flex-col sm:flex-row gap-2 items-center">
+          <label className="w-32 font-semibold">상품(광고위치)*</label>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                if (adType === "VIP") {
+                  setAdType("");
+                } else {
+                  setAdType("VIP");
+                }
+              }}
+              className={`px-6 py-2 rounded border ${
+                adType === "VIP"
+                  ? "bg-red-500 text-white border-red-500"
+                  : "bg-white text-gray-700 border-gray-300"
+              } hover:opacity-80`}
+            >
+              VIP
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (adType === "VIP+") {
+                  setAdType("");
+                } else {
+                  setAdType("VIP+");
+                }
+              }}
+              className={`px-6 py-2 rounded border ${
+                adType === "VIP+"
+                  ? "bg-red-500 text-white border-red-500"
+                  : "bg-white text-gray-700 border-gray-300"
+              } hover:opacity-80`}
+            >
+              VIP+
+            </button>
+            <button
+              type="button"
+              onClick={() => setAdType("")}
+              className={`px-6 py-2 rounded border ${
+                adType === ""
+                  ? "bg-red-500 text-white border-red-500"
+                  : "bg-white text-gray-700 border-gray-300"
+              } hover:opacity-80`}
+            >
+              선택 안함
+            </button>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="flex flex-col sm:flex-row gap-2 items-center">
+          <label className="w-32 font-semibold">상품(광고위치)</label>
+          <div className="text-green-600 font-semibold">
+            마스터 모드 – 자동 승인
+          </div>
+        </div>
+      )}
 
       {/* ─────────────────────────────────────────
           (2) 상위 지역
@@ -257,17 +261,15 @@ export default function SubmitForm({
       </div>
 
       {/* ─────────────────────────────────────────
-          (5) 업체 휴무일
-          (이름만 수정: closedDay* -> holiday*)
+          (5) 업체 휴무일 (closedDay -> holiday)
       ───────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row gap-2">
         <label className="w-32 font-semibold">업체 휴무일</label>
-
         <div className="flex flex-col sm:flex-row gap-2 flex-1">
           <select
-            value={holidaySelectVal} // 변경
+            value={holidaySelectVal}
             onChange={(e) => {
-              setHolidaySelectVal(e.target.value); // 변경
+              setHolidaySelectVal(e.target.value);
               if (e.target.value !== "직접입력") {
                 setHolidayDirect("");
               }
@@ -285,13 +287,12 @@ export default function SubmitForm({
             <option value="토요일 휴무">토요일 휴무</option>
             <option value="일요일 휴무">일요일 휴무</option>
           </select>
-
-          {holidaySelectVal === "직접입력" && ( // 변경
+          {holidaySelectVal === "직접입력" && (
             <input
               type="text"
               placeholder="예: 공휴일 휴무 / 둘째주 수요일 휴무 등"
-              value={holidayDirect} // 변경
-              onChange={(e) => setHolidayDirect(e.target.value)} // 변경
+              value={holidayDirect}
+              onChange={(e) => setHolidayDirect(e.target.value)}
               className="border border-gray-300 rounded px-2 py-1 w-full sm:w-1/2"
             />
           )}
@@ -305,7 +306,6 @@ export default function SubmitForm({
         <label className="w-32 font-semibold">
           주차방법 <span className="text-red-500">*</span>
         </label>
-
         <div className="flex flex-col sm:flex-row gap-2 flex-1">
           <select
             value={parkingSelectVal}
@@ -322,7 +322,6 @@ export default function SubmitForm({
             <option value="주차 가능(문의)">주차 가능(문의)</option>
             <option value="건물 내 주차(문의)">건물 내 주차(문의)</option>
           </select>
-
           {parkingSelectVal === "직접입력" && (
             <input
               type="text"
@@ -334,8 +333,6 @@ export default function SubmitForm({
           )}
         </div>
       </div>
-
-
 
       {/* 예약방법 */}
       <div className="flex flex-col sm:flex-row gap-2">
@@ -393,10 +390,7 @@ export default function SubmitForm({
         <label className="w-32 font-semibold mb-1">
           영업시간 <span className="text-red-500">*</span>
         </label>
-
-        {/* 시작/종료 셀렉트 */}
         <div className="flex items-center gap-4 flex-wrap">
-          {/* 시작 */}
           <div className="flex items-center gap-1">
             <span className="text-gray-700">시작</span>
             <select
@@ -413,8 +407,6 @@ export default function SubmitForm({
               ))}
             </select>
           </div>
-
-          {/* 종료 */}
           <div className="flex items-center gap-1">
             <span className="text-gray-700">종료</span>
             <select
@@ -431,12 +423,9 @@ export default function SubmitForm({
               ))}
             </select>
           </div>
-
-          {/* 24시간 버튼 */}
           <button
             type="button"
             onClick={() => {
-              // 토글
               if (!is24Hours) {
                 setIs24Hours(true);
                 setStartTime("");
@@ -453,8 +442,6 @@ export default function SubmitForm({
           >
             24시간
           </button>
-
-          {/* 안내 문구 */}
           <span className="text-gray-500 ml-2">
             ※24시간 영업 시 선택해주세요.
           </span>
@@ -490,14 +477,14 @@ export default function SubmitForm({
           onChange={(e) => setNearBuilding(e.target.value)}
           className="border border-gray-300 rounded px-2 py-1 w-full mb-2"
         />
-
-        {/* 지도 */}
         <MapSelector mapRef={mapRef} markerPosition={markerPosition} />
       </div>
 
       {/* 도로명 주소 */}
       <div>
-        <label className="block font-semibold mb-1">도로명 주소 (자동)</label>
+        <label className="block font-semibold mb-1">
+          도로명 주소 (자동)
+        </label>
         <input
           type="text"
           placeholder="지도 클릭 or 검색 시 자동 입력됩니다."
@@ -536,7 +523,6 @@ export default function SubmitForm({
           className="w-full border border-gray-300 rounded px-2 py-1"
         />
       </div>
-
     </>
   );
 }

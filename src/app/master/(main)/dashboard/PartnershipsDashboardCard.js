@@ -215,7 +215,7 @@ export default function PartnershipsDashboardCard() {
 
   return (
     <div className="w-full mx-auto bg-white p-4 border border-slate-200 rounded-md shadow-sm">
-      <h1 className="text-2xl font-bold mb-6 text-slate-700">제휴신청 대시보드</h1>
+      <h1 className="text-2xl font-bold mb-6 text-slate-700">신규 제휴 신청</h1>
 
       {/* 1) 승인 대기 목록 */}
       <section className="mb-8">

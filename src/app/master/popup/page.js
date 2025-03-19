@@ -50,17 +50,24 @@ function PartnershipPopupPageContent() {
   // 1) 세션 체크 + partnershipsubmit 조회
   // ------------------------------------------------
   useEffect(() => {
-    if (!rowId) return;
+    if (!rowId) {
+      console.error("DEBUG: rowId가 없습니다.");
+      return;
+    }
+    console.log("DEBUG: rowId 존재:", rowId);
     supabase.auth.getSession().then(({ data, error }) => {
       if (error) {
         console.error("세션 체크 오류:", error);
+        console.log("DEBUG: 세션 체크 오류로 팝업을 닫습니다.");
         window.close();
         return;
       }
       if (!data.session) {
-        alert("로그인 정보가 없습니다. 팝업 닫습니다.");
+        console.error("DEBUG: 로그인 세션이 존재하지 않습니다.");
+        alert("로그인 정보가 없습니다. 팝업을 닫습니다.");
         window.close();
       } else {
+        console.log("DEBUG: 로그인 세션 확인됨:", data.session);
         fetchOneRow(rowId);
       }
     });
@@ -80,7 +87,6 @@ function PartnershipPopupPageContent() {
           phone_number,
           manager_contact,
           parking_type,
-          sponsor,
           contact_method,
           greeting,
           event_info,
@@ -102,9 +108,11 @@ function PartnershipPopupPageContent() {
 
       if (error || !data) {
         console.error("DB 조회 오류:", error);
+        console.log("DEBUG: DB 조회 오류로 팝업을 닫습니다.");
         window.close();
         return;
       }
+      console.log("DEBUG: DB 조회 성공:", data);
       setRow(data);
     } catch (err) {
       console.error("조회 오류:", err);
@@ -147,6 +155,7 @@ function PartnershipPopupPageContent() {
         setLoadingSections(false);
         return;
       }
+      console.log("DEBUG: 섹션 조회 성공:", data);
       setSections(data || []);
     } catch (err) {
       console.error("섹션 fetch 오류:", err);
@@ -175,6 +184,7 @@ function PartnershipPopupPageContent() {
         console.error("이미지 조회 오류:", error);
         return;
       }
+      console.log("DEBUG: 이미지 조회 성공:", data);
       setImages(data || []);
     } catch (err) {
       console.error("이미지 fetch 오류:", err);
@@ -185,6 +195,7 @@ function PartnershipPopupPageContent() {
   // 버튼 핸들러
   // ------------------------------------------------
   function handleCloseWindow() {
+    console.log("DEBUG: 팝업 창 닫기 버튼 클릭");
     window.close();
   }
 
@@ -201,6 +212,7 @@ function PartnershipPopupPageContent() {
         return;
       }
       alert("삭제 완료");
+      console.log("DEBUG: 삭제 후 팝업을 닫습니다.");
       window.close();
     } catch (err) {
       console.error("삭제 오류:", err);
@@ -288,12 +300,15 @@ function PartnershipPopupPageContent() {
 
   // 로딩/에러
   if (!rowId) {
+    console.error("DEBUG: URL에 id 파라미터가 없습니다.");
     return <div className="p-4">잘못된 접근 (id 없음)</div>;
   }
   if (loading) {
+    console.log("DEBUG: 로딩 중...");
     return <div className="p-4">로딩 중...</div>;
   }
   if (!row) {
+    console.error("DEBUG: row 데이터가 없습니다.");
     return <div className="p-4">데이터를 찾을 수 없습니다.</div>;
   }
 
@@ -323,8 +338,6 @@ function PartnershipPopupPageContent() {
 
   return (
     <div className="flex flex-col w-full h-full bg-white overflow-hidden">
-    
-
       {/* 메인 영역 */}
       <div className="flex-1 overflow-auto p-4 space-y-4">
         {/* 작성자 프로필 */}

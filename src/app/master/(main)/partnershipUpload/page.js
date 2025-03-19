@@ -1,18 +1,15 @@
-//src/app/%28main%29/%28homefunction%29/partnership/page.js
 "use client";
 import React, { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseF";
-
-// 각각 분리된 컴포넌트 임포트
-import SubmitList from "@/(main)/(homefunction)/partnership/components/SubmitList";
 import SubmitForm from "@/(main)/(homefunction)/partnership/components/SubmitForm";
 import ImageUpload from "@/(main)/(homefunction)/partnership/components/ImageUpload";
 
-
-
 export default function NewListingPage() {
   const router = useRouter();
+
+  // isMaster 값 (true이면 자동 승인/최종승인 처리)
+  const isMaster = true; // 필요에 따라 true로 변경하세요.
 
   // ──────────────────────────────────────────────────────────
   // 1) 로그인 세션 & 내가 올린 신청서 리스트
@@ -81,7 +78,6 @@ export default function NewListingPage() {
   async function handleEditClick(submitId, isAdmitted) {
     setEditId(submitId);
     setEditIsAdmitted(isAdmitted);
-
     // 승인완료된 신청서면 이미지 업로드 섹션으로 스크롤
     setShouldFocusImage(isAdmitted);
 
@@ -97,15 +93,12 @@ export default function NewListingPage() {
         return;
       }
 
-      // ─────────────────────────────────────────────
       // 가져온 row로 state들 세팅
-      // ─────────────────────────────────────────────
       setAdType(row.ad_type || "");
       setSelectedRegionId(row.region_id || null);
       setPendingSubRegionId(row.sub_region_id || null);
       setCompanyName(row.company_name || "");
       setPhoneNumber(row.phone_number || "");
-
 
       // 주차방법
       const knownParkingValues = ["주차 가능(문의)", "건물 내 주차(문의)"];
@@ -120,7 +113,7 @@ export default function NewListingPage() {
       setGreeting(row.greeting || "");
       setEventInfo(row.event_info || "");
 
-      // holiday 편집 (원래 closed_day였던 부분)
+      // 휴무일
       const knownHolidays = [
         "연중무휴",
         "월요일 휴무",
@@ -167,13 +160,11 @@ export default function NewListingPage() {
       setProgramInfo(row.program_info || "");
       setPostTitle(row.post_title || "");
 
-
       // 테마 M:N
       const { data: themeRows } = await supabase
         .from("partnershipsubmit_themes")
         .select("theme_id")
         .eq("submit_id", submitId);
-
       if (themeRows) {
         const themeIds = themeRows.map((t) => t.theme_id);
         setSelectedThemeIds(themeIds);
@@ -198,7 +189,7 @@ export default function NewListingPage() {
   const [selectedSubRegionId, setSelectedSubRegionId] = useState(null);
   const [pendingSubRegionId, setPendingSubRegionId] = useState(null);
 
-  // 바뀐 부분: holiday
+  // 휴무일 관련
   const [holidaySelectVal, setHolidaySelectVal] = useState("");
   const [holidayDirect, setHolidayDirect] = useState("");
 
@@ -225,7 +216,6 @@ export default function NewListingPage() {
   const [programInfo, setProgramInfo] = useState("");
   const [postTitle, setPostTitle] = useState("");
 
-
   const [themes, setThemes] = useState([]);
   const [selectedThemeIds, setSelectedThemeIds] = useState([]);
 
@@ -236,7 +226,6 @@ export default function NewListingPage() {
     lat: 37.497951,
     lng: 127.027618,
   });
-
 
   // ──────────────────────────────────────────────────────────
   // 4) 지역(상위/하위) & 테마 로드
@@ -256,7 +245,6 @@ export default function NewListingPage() {
     }
     fetchRegions();
 
-    // 테마
     async function fetchThemes() {
       try {
         const { data, error } = await supabase
@@ -287,7 +275,6 @@ export default function NewListingPage() {
         } else {
           setChildRegions(data || []);
         }
-
         if (pendingSubRegionId) {
           setSelectedSubRegionId(pendingSubRegionId);
           setPendingSubRegionId(null);
@@ -342,17 +329,14 @@ export default function NewListingPage() {
     const options = { center: new kakao.maps.LatLng(lat, lng), level: 3 };
     const map = new kakao.maps.Map(container, options);
     mapObjectRef.current = map;
-
     const markerPos = new kakao.maps.LatLng(lat, lng);
     const marker = new kakao.maps.Marker({ position: markerPos });
     marker.setMap(map);
     markerRef.current = marker;
-
     kakao.maps.event.addListener(map, "click", (mouseEvent) => {
       const latlng = mouseEvent.latLng;
       marker.setPosition(latlng);
       setMarkerPosition({ lat: latlng.getLat(), lng: latlng.getLng() });
-
       const geocoder = new kakao.maps.services.Geocoder();
       geocoder.coord2Address(
         latlng.getLng(),
@@ -370,7 +354,6 @@ export default function NewListingPage() {
             } else {
               setAddressStreet("");
             }
-
             if (jibun) {
               setAddressInput(jibun.address_name);
             } else {
@@ -385,14 +368,12 @@ export default function NewListingPage() {
   function handleAddressSearch() {
     const { kakao } = window;
     if (!kakao || !kakao.maps) return;
-
     const geocoder = new kakao.maps.services.Geocoder();
     geocoder.addressSearch(addressInput, (result, status) => {
       if (status === kakao.maps.services.Status.OK) {
         const newLat = result[0].y;
         const newLng = result[0].x;
         setMarkerPosition({ lat: newLat, lng: newLng });
-
         if (mapObjectRef.current && markerRef.current) {
           const moveLatLng = new kakao.maps.LatLng(newLat, newLng);
           mapObjectRef.current.setCenter(moveLatLng);
@@ -400,12 +381,10 @@ export default function NewListingPage() {
         } else {
           initMap(newLat, newLng);
         }
-
         geocoder.coord2Address(newLng, newLat, (res2, stat2) => {
           if (stat2 === kakao.maps.services.Status.OK) {
             const road = res2[0].road_address;
             const jibun = res2[0].address;
-
             if (road) {
               let fullRoad = road.address_name;
               if (road.building_name && road.building_name.trim()) {
@@ -415,7 +394,6 @@ export default function NewListingPage() {
             } else {
               setAddressStreet("");
             }
-
             if (jibun) {
               setAddressInput(jibun.address_name);
             } else {
@@ -440,23 +418,16 @@ export default function NewListingPage() {
   // 6) 폼 검증 & 전송
   // ──────────────────────────────────────────────────────────
   function validateForm() {
-
     if (!selectedRegionId) return "지역을 선택해주세요.";
     if (!companyName.trim()) return "업체명은 필수입니다.";
     if (!phoneNumber.trim()) return "전화번호 필수입니다.";
     if (!managerContact.trim()) return "담당자 연락처 필수입니다.";
-
     const finalParkingType =
       parkingSelectVal === "직접입력" ? parkingDirect : parkingSelectVal;
     if (!finalParkingType.trim()) return "주차방법을 입력(혹은 선택)해주세요.";
-
-
-    // 이번 코드는 holiday가 optional이라 필수 체크는 안 함
-
     if (!is24Hours && (!startTime || !endTime)) {
       return "영업시간(시작/종료)을 입력해주세요.";
     }
-
     if (!addressInput.trim() || !addressStreet.trim()) {
       return "지번 주소와 도로명 주소 모두 필요합니다. 지도를 클릭하거나 검색을 다시 확인해주세요.";
     }
@@ -465,8 +436,8 @@ export default function NewListingPage() {
     if (!greeting.trim()) return "업체 소개를 입력해주세요.";
     if (!eventInfo.trim()) return "업체 이벤트 내용을 입력해주세요.";
     if (!postTitle.trim()) return "글 제목을 입력해주세요.";
-    if (selectedThemeIds.length === 0) return "테마를 최소 1개 이상 선택해주세요.";
-
+    if (selectedThemeIds.length === 0)
+      return "테마를 최소 1개 이상 선택해주세요.";
     return null;
   }
 
@@ -477,7 +448,6 @@ export default function NewListingPage() {
       alert(msg);
       return;
     }
-
     if (!editId) {
       doSubmitOrUpdate(false);
     } else {
@@ -486,22 +456,16 @@ export default function NewListingPage() {
   }
 
   async function doSubmitOrUpdate(isEdit) {
-    // 주차방법 최종
     const finalParkingType =
       parkingSelectVal === "직접입력" ? parkingDirect : parkingSelectVal;
-
-    // holiday 최종
     const finalHoliday =
       holidaySelectVal === "직접입력" ? holidayDirect : holidaySelectVal;
-
-    // 영업시간 최종
     let finalOpenHours = "";
     if (is24Hours) {
       finalOpenHours = "24시간";
     } else {
       finalOpenHours = `${startTime} ~ ${endTime}`;
     }
-
     const payload = {
       ad_type: adType,
       region_id: selectedRegionId,
@@ -513,10 +477,7 @@ export default function NewListingPage() {
       contact_method: contactMethod,
       greeting,
       event_info: eventInfo,
-
-      // holiday
-      holiday: finalHoliday || null, // optional 칼럼
-
+      holiday: finalHoliday || null,
       open_hours: finalOpenHours,
       address: addressInput,
       address_street: addressStreet,
@@ -527,6 +488,11 @@ export default function NewListingPage() {
       lat: markerPosition.lat,
       lng: markerPosition.lng,
     };
+
+    // 만약 isMaster가 true이면 자동 승인 및 최종승인 처리
+    if (isMaster) {
+      payload.isMaster = true;
+    }
 
     const { data: sessionData } = await supabase.auth.getSession();
     const token = sessionData?.session?.access_token;
@@ -572,13 +538,10 @@ export default function NewListingPage() {
 
   return (
     <div className="max-w-4xl mx-auto p-4">
-     
-
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-
         <SubmitForm
           editId={editId}
-          // 지역
+          isMaster={isMaster}
           adType={adType}
           setAdType={setAdType}
           regions={regions}
@@ -596,24 +559,20 @@ export default function NewListingPage() {
           setPhoneNumber={setPhoneNumber}
           managerContact={managerContact}
           setManagerContact={setManagerContact}
-          // holiday
           holidaySelectVal={holidaySelectVal}
           setHolidaySelectVal={setHolidaySelectVal}
           holidayDirect={holidayDirect}
           setHolidayDirect={setHolidayDirect}
-          // 주차방법
           parkingSelectVal={parkingSelectVal}
           setParkingSelectVal={setParkingSelectVal}
           parkingDirect={parkingDirect}
           setParkingDirect={setParkingDirect}
-
           contactMethod={contactMethod}
           setContactMethod={setContactMethod}
           greeting={greeting}
           setGreeting={setGreeting}
           eventInfo={eventInfo}
           setEventInfo={setEventInfo}
-          // 영업시간
           is24Hours={is24Hours}
           setIs24Hours={setIs24Hours}
           startTime={startTime}
@@ -621,35 +580,29 @@ export default function NewListingPage() {
           endTime={endTime}
           setEndTime={setEndTime}
           timeOptions={timeOptions}
-          // 주소
           addressInput={addressInput}
           setAddressInput={setAddressInput}
           addressStreet={addressStreet}
           setAddressStreet={setAddressStreet}
           nearBuilding={nearBuilding}
           setNearBuilding={setNearBuilding}
-          // 프로그램, 글 제목, 관리사
-          openHours={""} // 기존에 사용하던 값은 안 쓰거나 "" 처리
+          openHours={""}
           setOpenHours={() => {}}
           programInfo={programInfo}
           setProgramInfo={setProgramInfo}
           postTitle={postTitle}
           setPostTitle={setPostTitle}
-
-          // 지도
           mapRef={mapRef}
           handleAddressSearch={handleAddressSearch}
           handleKeyDown={handleKeyDown}
           markerPosition={markerPosition}
         />
-
-   
-      <ImageUpload
+        <ImageUpload
           editId={editId}
           editIsAdmitted={editIsAdmitted}
           imageUploadSectionRef={imageUploadSectionRef}
         />
-             <div className="flex justify-center">
+        <div className="flex justify-center">
           <button
             type="submit"
             className="px-4 py-2 rounded bg-blue-600 text-white font-semibold hover:bg-blue-700"
@@ -658,7 +611,6 @@ export default function NewListingPage() {
           </button>
         </div>
       </form>
-
     </div>
   );
 }

@@ -297,7 +297,7 @@ export default function CommentsPendingList() {
       {/* 헤더 영역 */}
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-slate-700">
-          미승인 댓글 목록
+          댓글 승인 대기
         </h2>
         <div className="flex items-center gap-2">
           {/* 정렬 셀렉트 */}
