@@ -3,8 +3,6 @@ import MapSelector from "./MapSelector";
 
 export default function SubmitForm({
   editId,
-
-  // 지역
   isMaster = false,
   adType, setAdType,
   regions,
@@ -13,42 +11,25 @@ export default function SubmitForm({
   selectedSubRegionId, setSelectedSubRegionId,
   themes,
   selectedThemeIds, setSelectedThemeIds,
-
-  // 업체
   companyName, setCompanyName,
   phoneNumber, setPhoneNumber,
   managerContact, setManagerContact,
-
-  // 휴무일 (이름 변경: closedDay -> holiday)
   holidaySelectVal, setHolidaySelectVal,
   holidayDirect, setHolidayDirect,
-
-  // 주차방법
   parkingSelectVal, setParkingSelectVal,
   parkingDirect, setParkingDirect,
-
   contactMethod, setContactMethod,
-
-  // 업체 소개, 이벤트
   greeting, setGreeting,
   eventInfo, setEventInfo,
-
-  // 영업시간
   is24Hours, setIs24Hours,
   startTime, setStartTime,
   endTime, setEndTime,
   timeOptions,
-
-  // 주소
   addressInput, setAddressInput,
   addressStreet, setAddressStreet,
   nearBuilding, setNearBuilding,
-
-  // 프로그램(코스), 글제목, 관리사
   programInfo, setProgramInfo,
   postTitle, setPostTitle,
-
-  // 지도
   mapRef,
   handleAddressSearch,
   handleKeyDown,
@@ -66,10 +47,7 @@ export default function SubmitForm({
 
   return (
     <>
-      {/* ─────────────────────────────────────────
-          (1) 광고위치: VIP / VIP+ / 선택 안함
-          isMaster가 true이면 자동 승인 처리이므로 UI에서 광고위치 선택을 숨김
-      ───────────────────────────────────────── */}
+      {/* (1) 광고위치 */}
       {!isMaster ? (
         <div className="flex flex-col sm:flex-row gap-2 items-center">
           <label className="w-32 font-semibold">상품(광고위치)*</label>
@@ -129,10 +107,7 @@ export default function SubmitForm({
           </div>
         </div>
       )}
-
-      {/* ─────────────────────────────────────────
-          (2) 상위 지역
-      ───────────────────────────────────────── */}
+      {/* (2) 상위 지역 */}
       <div>
         <label className="block font-semibold mb-1">
           지역선택 <span className="text-red-500">*</span>
@@ -157,8 +132,7 @@ export default function SubmitForm({
           })}
         </div>
       </div>
-
-      {/* 하위 지역 */}
+      {/* (3) 하위 지역 */}
       {childRegions.length > 0 && (
         <div>
           <label className="block font-semibold mb-1">
@@ -185,10 +159,7 @@ export default function SubmitForm({
           </div>
         </div>
       )}
-
-      {/* ─────────────────────────────────────────
-          (3) 테마(M:N)
-      ───────────────────────────────────────── */}
+  
       {themes.length > 0 && (
         <div>
           <label className="block font-semibold mb-1">
@@ -215,10 +186,7 @@ export default function SubmitForm({
           </div>
         </div>
       )}
-
-      {/* ─────────────────────────────────────────
-          (4) 업체명
-      ───────────────────────────────────────── */}
+      {/* (5) 업체 정보 */}
       <div className="flex flex-col sm:flex-row gap-2">
         <label className="w-32 font-semibold">
           업체명 <span className="text-red-500">*</span>
@@ -231,8 +199,6 @@ export default function SubmitForm({
           className="flex-1 border border-gray-300 rounded px-2 py-1"
         />
       </div>
-
-      {/* 전화번호 */}
       <div className="flex flex-col sm:flex-row gap-2">
         <label className="w-32 font-semibold">
           전화번호 <span className="text-red-500">*</span>
@@ -245,8 +211,6 @@ export default function SubmitForm({
           className="flex-1 border border-gray-300 rounded px-2 py-1"
         />
       </div>
-
-      {/* 담당자 연락처 */}
       <div className="flex flex-col sm:flex-row gap-2">
         <label className="w-32 font-semibold">
           담당자 연락처 <span className="text-red-500">*</span>
@@ -259,10 +223,7 @@ export default function SubmitForm({
           className="flex-1 border border-gray-300 rounded px-2 py-1"
         />
       </div>
-
-      {/* ─────────────────────────────────────────
-          (5) 업체 휴무일 (closedDay -> holiday)
-      ───────────────────────────────────────── */}
+      {/* (6) 업체 휴무일 */}
       <div className="flex flex-col sm:flex-row gap-2">
         <label className="w-32 font-semibold">업체 휴무일</label>
         <div className="flex flex-col sm:flex-row gap-2 flex-1">
@@ -298,10 +259,7 @@ export default function SubmitForm({
           )}
         </div>
       </div>
-
-      {/* ─────────────────────────────────────────
-          (6) 주차방법 (Select + 직접입력)
-      ───────────────────────────────────────── */}
+      {/* (7) 주차방법 */}
       <div className="flex flex-col sm:flex-row gap-2">
         <label className="w-32 font-semibold">
           주차방법 <span className="text-red-500">*</span>
@@ -333,8 +291,7 @@ export default function SubmitForm({
           )}
         </div>
       </div>
-
-      {/* 예약방법 */}
+      {/* (8) 예약방법 */}
       <div className="flex flex-col sm:flex-row gap-2">
         <label className="w-32 font-semibold">
           예약방법 <span className="text-red-500">*</span>
@@ -356,8 +313,7 @@ export default function SubmitForm({
           </option>
         </select>
       </div>
-
-      {/* 업체 소개 */}
+      {/* (9) 업체 소개 */}
       <div>
         <label className="block font-semibold mb-1">
           업체 소개 <span className="text-red-500">*</span>
@@ -370,8 +326,7 @@ export default function SubmitForm({
           className="w-full border border-gray-300 rounded px-2 py-1"
         />
       </div>
-
-      {/* 업체 이벤트 */}
+      {/* (10) 업체 이벤트 */}
       <div>
         <label className="block font-semibold mb-1">
           업체 이벤트 <span className="text-red-500">*</span>
@@ -384,8 +339,7 @@ export default function SubmitForm({
           className="w-full border border-gray-300 rounded px-2 py-1"
         />
       </div>
-
-      {/* 영업시간 */}
+      {/* (11) 영업시간 */}
       <div className="flex flex-col sm:flex-row gap-2 items-center">
         <label className="w-32 font-semibold mb-1">
           영업시간 <span className="text-red-500">*</span>
@@ -447,8 +401,7 @@ export default function SubmitForm({
           </span>
         </div>
       </div>
-
-      {/* 주소 + 지도 */}
+      {/* (12) 주소 및 지도 */}
       <div>
         <label className="block font-semibold mb-1">
           지번 주소 <span className="text-red-500">*</span>
@@ -479,8 +432,7 @@ export default function SubmitForm({
         />
         <MapSelector mapRef={mapRef} markerPosition={markerPosition} />
       </div>
-
-      {/* 도로명 주소 */}
+      {/* (13) 도로명 주소 */}
       <div>
         <label className="block font-semibold mb-1">
           도로명 주소 (자동)
@@ -493,8 +445,7 @@ export default function SubmitForm({
           className="w-full border border-gray-300 rounded px-2 py-1 mb-2"
         />
       </div>
-
-      {/* 프로그램(코스) */}
+      {/* (14) 프로그램(코스) */}
       <div>
         <label className="block font-semibold mb-1">
           프로그램(코스) <span className="text-red-500">*</span>
@@ -509,8 +460,7 @@ export default function SubmitForm({
           rows={3}
         />
       </div>
-
-      {/* 글 제목 */}
+      {/* (15) 글 제목 */}
       <div>
         <label className="block font-semibold mb-1">
           글 제목 <span className="text-red-500">*</span>

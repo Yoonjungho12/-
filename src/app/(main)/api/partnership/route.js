@@ -2,40 +2,32 @@ import { supabase } from "@/lib/supabaseE"; // 서비스 역할 키
 import { NextResponse } from "next/server";
 
 /** 
- * "동(숫자optional)가" → ["효자","효자동"] 등으로 분리하는 부함수
+ * "동(숫자optional)가" → ["효자", "효자동"] 등으로 분리하는 부함수
  */
 function parseOneToken(token) {
   const reDongGa = /^(.+?)동(\d*)가$/;
   const match = token.match(reDongGa);
-
   if (match) {
     const prefix = match[1]; // 예: "효자"
     const prefixPlusDong = prefix + "동"; // 예: "효자동"
     return [prefix, prefixPlusDong];
   }
-
-  // 일반 접미어
-  const suffixes = [
-    "특별자치도", "광역시", "특별시", "자치도", "시", "군", "구", "동",
-  ];
-
+  const suffixes = ["특별자치도", "광역시", "특별시", "자치도", "시", "군", "구", "동"];
   for (const sfx of suffixes) {
     if (token.endsWith(sfx)) {
       const removed = token.slice(0, token.length - sfx.length);
       return [removed];
     }
   }
-
   return [token];
 }
 
 /** 
- * 주소 -> 공백Split -> 분해 -> Flatten -> Join
+ * 주소를 공백으로 분할한 후, 각 토큰을 분해하여 평탄화한 후 재조합
  */
 function destructAddress(original) {
   if (!original) return "";
   const rawTokens = original.split(/\s+/).filter(Boolean);
-
   let resultTokens = [];
   for (const t of rawTokens) {
     const sub = parseOneToken(t);
@@ -71,10 +63,12 @@ export async function POST(request) {
       lat,
       lng,
       holiday,    // nullable
-      isMaster    // 조건에 따라 true이면 자동 승인 처리 (클라이언트에서 전달)
+      isMaster,   // 마스터 모드 여부 (true이면 자동 승인 처리)
+      thumbnail_image, // (옵션) 썸네일 이미지 데이터 (예: base64 문자열)
+      multi_images     // (옵션) 추가 이미지 데이터 배열
     } = payload;
 
-    // 필수 체크
+    // 필수 필드 체크
     if (
       !region_id ||
       !company_name ||
@@ -97,7 +91,7 @@ export async function POST(request) {
       return NextResponse.json({ error: "필수 필드 누락" }, { status: 400 });
     }
 
-    // 인증 토큰
+    // 인증 토큰 체크
     const authHeader = request.headers.get("authorization") || "";
     const token = authHeader.replace("Bearer ", "");
     if (!token) {
@@ -111,10 +105,10 @@ export async function POST(request) {
     }
     const user_id = userData.user.id;
 
-    // 1) address 분해
+    // 주소 분해
     const destructed_address = destructAddress(address);
 
-    // 2) themes 테이블에서 name 조회 후 theme_text 만들기
+    // 테마 이름 조회 및 theme_text 생성
     const { data: themeRows, error: themeErr } = await supabase
       .from("themes")
       .select("name")
@@ -126,7 +120,7 @@ export async function POST(request) {
     const themeNames = themeRows.map(r => r.name);
     const theme_text = themeNames.join(", ");
 
-    // 3) Insert payload 구성
+    // 기본 Insert payload 구성
     const insertPayload = {
       ad_type,
       region_id: parseInt(region_id, 10),
@@ -152,17 +146,33 @@ export async function POST(request) {
       theme_text,
     };
 
-    // 만약 isMaster가 true이면 자동 승인 및 최종승인 처리
+    // 마스터 모드이면 자동 승인 및 최종승인 처리
     if (isMaster === true) {
       insertPayload.is_admitted = true;
       insertPayload.final_admitted = true;
     }
 
-    // 4) partnershipsubmit Insert
+    // 썸네일 이미지 업로드 처리 (옵션)
+    if (thumbnail_image) {
+      const { data: thumbData, error: thumbErr } = await supabase
+        .storage
+        .from('partnership_images')
+        .upload(`thumbnails/${user_id}_${Date.now()}.png`, thumbnail_image, {
+          contentType: 'image/png'
+        });
+      if (thumbErr) {
+        console.error("Thumbnail upload error:", thumbErr);
+      } else {
+        const thumbnailUrl = `${process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL}/thumbnails/${thumbData.path}`;
+        insertPayload.thumbnail_url = thumbnailUrl;
+      }
+    }
+
+    // partnershipsubmit Insert
     const { data: submitData, error: submitErr } = await supabase
       .from("partnershipsubmit")
       .insert([insertPayload])
-      .select("id, ad_type, region_id, sub_region_id, company_name, phone_number, manager_contact, parking_type, contact_method, greeting, event_info, address, address_street, near_building, open_hours, program_info, post_title, user_id, lat, lng, holiday, destructed_address, theme_text, is_admitted, final_admitted")
+      .select("id, ad_type, region_id, sub_region_id, company_name, phone_number, manager_contact, parking_type, contact_method, greeting, event_info, address, address_street, near_building, open_hours, program_info, post_title, user_id, lat, lng, holiday, destructed_address, theme_text, is_admitted, final_admitted, thumbnail_url")
       .single();
     if (submitErr) {
       console.error("Submit Insert Error:", submitErr);
@@ -170,7 +180,30 @@ export async function POST(request) {
     }
     const newSubmitId = submitData.id;
 
-    // 5) M:N bridging: partnershipsubmit_themes 삽입
+    // 추가 이미지 업로드 처리 (옵션: multi_images)
+    if (multi_images && Array.isArray(multi_images)) {
+      for (const imageData of multi_images) {
+        const { data: multiData, error: multiErr } = await supabase
+          .storage
+          .from('partnership_images')
+          .upload(`multi/${user_id}_${Date.now()}_${Math.random().toString(36).substr(2, 5)}.png`, imageData, {
+            contentType: 'image/png'
+          });
+        if (multiErr) {
+          console.error("Multi image upload error:", multiErr);
+          continue;
+        }
+        const multiUrl = `${process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL}/multi/${multiData.path}`;
+        const { error: imgErr } = await supabase
+          .from("partnershipsubmit_images")
+          .insert([{ submit_id: newSubmitId, image_url: multiUrl }]);
+        if (imgErr) {
+          console.error("Insert multi image error:", imgErr);
+        }
+      }
+    }
+
+    // M:N bridging: partnershipsubmit_themes 삽입
     for (const themeId of themes) {
       const tId = parseInt(themeId, 10);
       const { error: themeBridgeErr } = await supabase
@@ -178,7 +211,6 @@ export async function POST(request) {
         .insert([{ submit_id: newSubmitId, theme_id: tId }]);
       if (themeBridgeErr) {
         console.error("Theme bridging insert error:", themeBridgeErr);
-        // 필요시 롤백 또는 부분 실패 처리
       }
     }
 
@@ -228,6 +260,8 @@ export async function PUT(request) {
       lng,
       holiday,  // nullable
       isMaster, // 클라이언트에서 전달된 isMaster 값
+      thumbnail_image, // (옵션) 썸네일 이미지 데이터
+      multi_images     // (옵션) 추가 이미지 데이터 배열
     } = payload;
 
     // 필수 체크
@@ -318,10 +352,26 @@ export async function PUT(request) {
       theme_text,
     };
 
-    // 만약 isMaster가 true이면 자동 승인 및 최종승인 처리
+    // 마스터 모드이면 자동 승인 처리
     if (isMaster === true) {
       updatePayload.is_admitted = true;
       updatePayload.final_admitted = true;
+    }
+
+    // 썸네일 이미지 업로드 처리 (옵션)
+    if (thumbnail_image) {
+      const { data: thumbData, error: thumbErr } = await supabase
+        .storage
+        .from('partnership_images')
+        .upload(`thumbnails/${user_id}_${Date.now()}.png`, thumbnail_image, {
+          contentType: 'image/png'
+        });
+      if (thumbErr) {
+        console.error("Thumbnail upload error:", thumbErr);
+      } else {
+        const thumbnailUrl = `${process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL}/thumbnails/${thumbData.path}`;
+        updatePayload.thumbnail_url = thumbnailUrl;
+      }
     }
 
     // 8) update 실행
@@ -334,6 +384,29 @@ export async function PUT(request) {
       return NextResponse.json({ error: updateErr.message }, { status: 400 });
     }
 
+    // 추가 이미지 업로드 처리 (옵션)
+    if (multi_images && Array.isArray(multi_images)) {
+      for (const imageData of multi_images) {
+        const { data: multiData, error: multiErr } = await supabase
+          .storage
+          .from('partnership_images')
+          .upload(`multi/${user_id}_${Date.now()}_${Math.random().toString(36).substr(2, 5)}.png`, imageData, {
+            contentType: 'image/png'
+          });
+        if (multiErr) {
+          console.error("Multi image upload error:", multiErr);
+          continue;
+        }
+        const multiUrl = `${process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL}/multi/${multiData.path}`;
+        const { error: imgErr } = await supabase
+          .from("partnershipsubmit_images")
+          .insert([{ submit_id: parseInt(submitId, 10), image_url: multiUrl }]);
+        if (imgErr) {
+          console.error("Insert multi image error:", imgErr);
+        }
+      }
+    }
+
     // 9) 테마 재설정
     const { error: delErr } = await supabase
       .from("partnershipsubmit_themes")
@@ -341,7 +414,6 @@ export async function PUT(request) {
       .eq("submit_id", submitId);
     if (delErr) {
       console.error("Theme Delete Error:", delErr);
-      // 부분 실패 시 처리 필요
     }
     for (const themeId of themes) {
       const tId = parseInt(themeId, 10);
@@ -350,7 +422,6 @@ export async function PUT(request) {
         .insert([{ submit_id: parseInt(submitId, 10), theme_id: tId }]);
       if (themeBridgeErr) {
         console.error("Theme Insert Error:", themeBridgeErr);
-        // 부분 실패 시 처리 필요
       }
     }
 
