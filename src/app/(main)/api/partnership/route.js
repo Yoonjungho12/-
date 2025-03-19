@@ -43,6 +43,25 @@ function destructAddress(original) {
   }
   return resultTokens.join(" ").trim();
 }
+async function checkShopTypeColumn() {
+  const { data, error } = await supabase
+    .from("information_schema.columns")
+    .select("column_name")
+    .eq("table_name", "partnershipsubmit")
+    .eq("column_name", "shop_type");
+
+  if (error) {
+    console.error("칼럼 확인 에러:", error);
+  } else {
+    if (data && data.length > 0) {
+      console.log("shop_type 칼럼이 존재합니다:", data);
+    } else {
+      console.log("shop_type 칼럼이 존재하지 않습니다.");
+    }
+  }
+}
+
+checkShopTypeColumn();
 
 /** POST: 새 파트너십 신청서 등록 */
 export async function POST(request) {

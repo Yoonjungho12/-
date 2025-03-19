@@ -2,7 +2,7 @@
 "use client";
 import React, { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "../../../lib/supabaseF";
+import { supabase } from "@/lib/supabaseF";
 
 // 각각 분리된 컴포넌트 임포트
 import SubmitList from "./components/SubmitList";
@@ -116,8 +116,6 @@ export default function NewListingPage() {
         setParkingDirect(row.parking_type || "");
       }
 
-      setShopType(row.shop_type || "");
-      setHashtagSponsor(row.sponsor || "");
       setContactMethod(row.contact_method || "");
       setGreeting(row.greeting || "");
       setEventInfo(row.event_info || "");
@@ -168,7 +166,7 @@ export default function NewListingPage() {
       setNearBuilding(row.near_building || "");
       setProgramInfo(row.program_info || "");
       setPostTitle(row.post_title || "");
-      setManagerDesc(row.manager_desc || "");
+
 
       // 테마 M:N
       const { data: themeRows } = await supabase
@@ -211,8 +209,7 @@ export default function NewListingPage() {
   const [parkingSelectVal, setParkingSelectVal] = useState("");
   const [parkingDirect, setParkingDirect] = useState("");
 
-  const [shopType, setShopType] = useState("");
-  const [hashtagSponsor, setHashtagSponsor] = useState("");
+
   const [contactMethod, setContactMethod] = useState("");
   const [greeting, setGreeting] = useState("");
   const [eventInfo, setEventInfo] = useState("");
@@ -457,11 +454,6 @@ export default function NewListingPage() {
       parkingSelectVal === "직접입력" ? parkingDirect : parkingSelectVal;
     if (!finalParkingType.trim()) return "주차방법을 입력(혹은 선택)해주세요.";
 
-    if (!shopType) return "샵형태를 선택해주세요.";
-
-    // holiday (원래 closed_day)
-    // 이번 코드는 holiday가 optional이라 필수 체크는 안 함
-
     if (!is24Hours && (!startTime || !endTime)) {
       return "영업시간(시작/종료)을 입력해주세요.";
     }
@@ -474,7 +466,6 @@ export default function NewListingPage() {
     if (!greeting.trim()) return "업체 소개를 입력해주세요.";
     if (!eventInfo.trim()) return "업체 이벤트 내용을 입력해주세요.";
     if (!postTitle.trim()) return "글 제목을 입력해주세요.";
-    if (!managerDesc.trim()) return "관리사 정보를 입력해주세요.";
     if (selectedThemeIds.length === 0) return "테마를 최소 1개 이상 선택해주세요.";
 
     return null;
@@ -520,23 +511,17 @@ export default function NewListingPage() {
       phone_number: phoneNumber,
       manager_contact: managerContact,
       parking_type: finalParkingType,
-      shop_type: shopType,
-      sponsor: hashtagSponsor,
       contact_method: contactMethod,
       greeting,
       event_info: eventInfo,
-
-      // holiday
-      holiday: finalHoliday || null, // optional 칼럼
-
-      open_hours: finalOpenHours,
+     holiday: finalHoliday || null, // optional 칼럼
+     open_hours: finalOpenHours,
       address: addressInput,
       address_street: addressStreet,
       near_building: nearBuilding,
       program_info: programInfo,
       post_title: postTitle,
-      manager_desc: managerDesc,
-      themes: selectedThemeIds,
+     themes: selectedThemeIds,
       lat: markerPosition.lat,
       lng: markerPosition.lng,
     };
@@ -603,7 +588,7 @@ export default function NewListingPage() {
       />
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <h1 className="text-2xl font-bold mb-4">업체 등록 (Kakao 지도)</h1>
+        <h1 className="text-2xl font-bold mb-4">업체 등록</h1>
 
         <SubmitForm
           editId={editId}
@@ -635,11 +620,7 @@ export default function NewListingPage() {
           setParkingSelectVal={setParkingSelectVal}
           parkingDirect={parkingDirect}
           setParkingDirect={setParkingDirect}
-          // 샵형태/후원/예약방법
-          shopType={shopType}
-          setShopType={setShopType}
-          hashtagSponsor={hashtagSponsor}
-          setHashtagSponsor={setHashtagSponsor}
+
           contactMethod={contactMethod}
           setContactMethod={setContactMethod}
           greeting={greeting}

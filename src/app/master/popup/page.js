@@ -80,7 +80,6 @@ function PartnershipPopupPageContent() {
           phone_number,
           manager_contact,
           parking_type,
-          shop_type,
           sponsor,
           contact_method,
           greeting,
@@ -90,7 +89,6 @@ function PartnershipPopupPageContent() {
           open_hours,
           program_info,
           post_title,
-          manager_desc,
           created_at,
           user_id,
           thumbnail_url,
@@ -312,8 +310,6 @@ function PartnershipPopupPageContent() {
   // 추가필드
   const extraFields = [
     { label: "주차방법", value: row.parking_type },
-    { label: "샵형태", value: row.shop_type },
-    { label: "후원", value: row.sponsor },
     { label: "연락방법", value: row.contact_method },
     { label: "인사말", value: row.greeting },
     { label: "이벤트", value: row.event_info },
@@ -322,7 +318,6 @@ function PartnershipPopupPageContent() {
     { label: "영업시간", value: row.open_hours },
     { label: "프로그램", value: row.program_info },
     { label: "글제목", value: row.post_title },
-    { label: "관리사", value: row.manager_desc },
     { label: "작성일", value: formatLocalTime(row.created_at) },
   ];
 

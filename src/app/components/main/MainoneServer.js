@@ -36,7 +36,6 @@ export default async function MainoneServer() {
       company_name,
       address,
       address_street,
-      shop_type,
       comment,
       greeting,
       thumbnail_url,

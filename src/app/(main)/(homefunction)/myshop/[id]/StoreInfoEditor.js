@@ -42,9 +42,7 @@ export default function StoreInfoEditor({ shopId, onClose }) {
   const [parkingSelectVal, setParkingSelectVal] = useState("");
   const [parkingDirect, setParkingDirect] = useState("");
 
-  // 샵형태, 후원, 예약방법
-  const [shopType, setShopType] = useState("");
-  const [hashtagSponsor, setHashtagSponsor] = useState("");
+
   const [contactMethod, setContactMethod] = useState("");
 
   // 업체 소개, 이벤트
@@ -187,8 +185,6 @@ export default function StoreInfoEditor({ shopId, onClose }) {
           setParkingDirect(row.parking_type);
         }
 
-        setShopType(row.shop_type || "");
-        setHashtagSponsor(row.sponsor || "");
         setContactMethod(row.contact_method || "");
         setGreeting(row.greeting || "");
         setEventInfo(row.event_info || "");
@@ -233,7 +229,7 @@ export default function StoreInfoEditor({ shopId, onClose }) {
         setNearBuilding(row.near_building || "");
         setProgramInfo(row.program_info || "");
         setPostTitle(row.post_title || "");
-        setManagerDesc(row.manager_desc || "");
+
 
         // 좌표
         if (row.lat) setLat(row.lat);
@@ -412,8 +408,6 @@ export default function StoreInfoEditor({ shopId, onClose }) {
       phone_number: phoneNumber.trim(),
       manager_contact: managerContact.trim(),
       parking_type: finalParking.trim() || null,
-      shop_type: shopType || null,
-      sponsor: hashtagSponsor || null,
       contact_method: contactMethod || null,
       greeting: greeting.trim(),
       event_info: eventInfo.trim(),
@@ -424,7 +418,6 @@ export default function StoreInfoEditor({ shopId, onClose }) {
       near_building: nearBuilding.trim(),
       program_info: programInfo.trim(),
       post_title: postTitle.trim(),
-      manager_desc: managerDesc.trim(),
       lat: lat,
       lng: lng,
     };
@@ -730,30 +723,7 @@ export default function StoreInfoEditor({ shopId, onClose }) {
 
       {/* 샵형태, 후원, 예약방법 */}
       <div className="mb-4 flex flex-col sm:flex-row gap-2">
-        <label className="w-32 font-semibold">샵형태</label>
-        <select
-          value={shopType}
-          onChange={(e) => setShopType(e.target.value)}
-          className="flex-1 border border-gray-300 rounded px-2 py-1"
-        >
-          <option value="">선택</option>
-          <option value="오피스텔">오피스텔</option>
-          <option value="주택/빌라">주택/빌라</option>
-          <option value="기타">기타</option>
-        </select>
-      </div>
-      <div className="mb-4 flex flex-col sm:flex-row gap-2">
-        <label className="w-32 font-semibold">#후원</label>
-        <select
-          value={hashtagSponsor}
-          onChange={(e) => setHashtagSponsor(e.target.value)}
-          className="flex-1 border border-gray-300 rounded px-2 py-1"
-        >
-          <option value="">선택</option>
-          <option value="possible">후원 가능</option>
-          <option value="impossible">후원 불가</option>
-        </select>
-      </div>
+       
       <div className="mb-4 flex flex-col sm:flex-row gap-2">
         <label className="w-32 font-semibold">예약방법</label>
         <select
@@ -773,7 +743,7 @@ export default function StoreInfoEditor({ shopId, onClose }) {
           </option>
         </select>
       </div>
-
+          </div>
       {/* 업체 소개, 이벤트 */}
       <div className="mb-4">
         <label className="block font-semibold mb-1">업체 소개</label>
@@ -949,16 +919,7 @@ export default function StoreInfoEditor({ shopId, onClose }) {
           placeholder="ex) [지역/업체명] ..."
         />
       </div>
-      <div className="mb-4">
-        <label className="block font-semibold mb-1">관리사</label>
-        <textarea
-          rows={3}
-          value={managerDesc}
-          onChange={(e) => setManagerDesc(e.target.value)}
-          className="w-full border border-gray-300 rounded px-2 py-1"
-          placeholder="ex) ○○(23) 주간, ○○(32) 심야 등"
-        />
-      </div>
+
 
       {/* 저장/닫기 버튼 */}
       <div className="flex gap-2">

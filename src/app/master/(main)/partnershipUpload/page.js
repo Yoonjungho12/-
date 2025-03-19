@@ -7,7 +7,6 @@ import { supabase } from "@/lib/supabaseF";
 // 각각 분리된 컴포넌트 임포트
 import SubmitList from "@/(main)/(homefunction)/partnership/components/SubmitList";
 import SubmitForm from "@/(main)/(homefunction)/partnership/components/SubmitForm";
-import TermsAgreement from "@/(main)/(homefunction)/partnership/components/TermsAgreement";
 import ImageUpload from "@/(main)/(homefunction)/partnership/components/ImageUpload";
 
 

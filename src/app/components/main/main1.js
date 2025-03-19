@@ -114,7 +114,6 @@ export default function PopularShops() {
         company_name,
         address,
         address_street,
-        shop_type,
         comment,
         greeting,
         thumbnail_url,

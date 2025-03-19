@@ -74,7 +74,6 @@ export default function MainoneClient({ initialRegion, initialData }) {
         company_name,
         address,
         address_street,
-        shop_type,
         comment,
         greeting,
         thumbnail_url,

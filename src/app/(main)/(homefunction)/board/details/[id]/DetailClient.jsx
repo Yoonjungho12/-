@@ -488,26 +488,7 @@ export default function DetailClient({ row, images, numericId }) {
             </div>
           </div>
 
-          <div
-            className="
-              inline-flex
-              items-center
-              gap-1
-              text-gray-700
-              mb-[3rem]
-              mt-4
-              border-[0.5px]
-              border-gray-400
-              p-3
-              rounded
-              
-              bg-gray-50
-            "
-          >
-            <MegaphoneIcon className="w-5 h-5 text-red-500 mr-2" />
-            <span>{row.shop_type || "샵형태 미입력"}</span>
-          </div>
-
+        
           {/* 필드 */}
           <DetailRow label="업체소개" value={row.greeting} />
           <DetailRow label="오시는 길" value={row.address_street} />
@@ -529,7 +510,7 @@ export default function DetailClient({ row, images, numericId }) {
           )}
           <DetailRow label="휴무일" value={row.holiday} />
           <DetailRow label="주차안내" value={row.parking_type} />
-          <DetailRow label="관리사님" value={row.manager_desc} />
+
 
           {/* 출근부 */}
           {loadingMembers ? (
