@@ -1,19 +1,23 @@
 "use client";
-
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseF";
 
-// 두 개의 컴포넌트 import
+// 대시보드 컴포넌트들
+import DashboardSummary from "./DashboardSummary";
 import PartnershipsDashboardCard from "./PartnershipsDashboardCard";
 import CommentsPendingList from "./CommentsPendingList";
+import RecentlyJoinedList from "./RecentlyJoinedList";
+
+// 새로 만든 '게시글 승인 대기' 컴포넌트
+import PostsPendingList from "./PostsPendingList";
 
 export default function DashboardPage() {
   const router = useRouter();
   const [authChecked, setAuthChecked] = useState(false);
   const [sessionUserId, setSessionUserId] = useState(null);
 
-  // 우선 상위에서도 세션 체크를 해둡니다.
+  // 세션 체크
   useEffect(() => {
     supabase.auth.getSession().then(({ data, error }) => {
       if (error) {
@@ -36,16 +40,26 @@ export default function DashboardPage() {
 
   return (
     <div className="p-4">
-      {/* flex-col → 모바일(기본), md:flex-row → md 이상 사이즈에선 가로배치 */}
+      {/* 1) 상단 요약 섹션 */}
+      <DashboardSummary />
+
+      {/* 2) 기존 파트너십, 댓글, 가입회원 섹션 */}
       <div className="flex flex-col md:flex-row gap-4">
-        {/* 왼쪽 영역 (md일 때 60%) */}
-        <div className="w-full md:w-3/5 border border-gray-200 rounded-md">
+        {/* 왼쪽 영역 */}
+        <div className="w-full md:w-1/2 border-gray-200 rounded-md flex flex-col space-y-5">
+          <RecentlyJoinedList />
           <PartnershipsDashboardCard />
         </div>
 
-        {/* 오른쪽 영역 (md일 때 40%) */}
-        <div className="w-full md:w-2/5 border border-gray-200 rounded-md">
+        {/* 오른쪽 영역 */}
+        <div className="w-full md:w-1/2 border-gray-200 rounded-md">
+          {/* 댓글 승인 대기 */}
           <CommentsPendingList />
+
+          {/* 게시글 승인 대기 (새로 추가) */}
+          <div className="mt-4">
+            <PostsPendingList />
+          </div>
         </div>
       </div>
     </div>

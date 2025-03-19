@@ -1,5 +1,4 @@
 // app/community/board/[type]/page.js (서버 컴포넌트 예시)
-
 import React from "react";
 import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
@@ -102,14 +101,15 @@ export default async function BoardPage({ params, searchParams }) {
       views,
       user_id,
       theme_id,
+      is_admitted,
       profiles(nickname),
       post_comments(id)
     `)
     .eq("board_id", boardInfo.id)
+    .eq("is_admitted", true)  // <= ★ 추가: 승인된 글(is_admitted=true)만 조회
     .order("created_at", { ascending: false });
 
-  // themeParam != "0" 이면 theme_id 필터 추가 (방문후기에서만)
-  // boardInfo.name 대신 boardInfo.id === 3 로 조건 걸어도 동일한 결과
+  // themeParam != "0" 이면 theme_id 필터 (방문후기)
   if (boardInfo.name === "방문후기" && themeParam !== "0") {
     query = query.eq("theme_id", Number(themeParam));
   }

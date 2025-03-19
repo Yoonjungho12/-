@@ -58,8 +58,6 @@ export async function POST(request) {
       phone_number,
       manager_contact,
       parking_type,
-      shop_type,
-      sponsor,
       contact_method,
       greeting,
       event_info,
@@ -69,7 +67,6 @@ export async function POST(request) {
       open_hours,
       program_info,
       post_title,
-      manager_desc,
       themes,     // Array of themeId
       lat,
       lng,
@@ -83,7 +80,6 @@ export async function POST(request) {
       !phone_number ||
       !manager_contact ||
       !parking_type ||
-      !shop_type ||
       !address ||
       !address_street ||
       !open_hours ||
@@ -92,7 +88,6 @@ export async function POST(request) {
       !greeting ||
       !event_info ||
       !post_title ||
-      !manager_desc ||
       !Array.isArray(themes) ||
       themes.length === 0 ||
       lat == null ||
@@ -142,8 +137,6 @@ export async function POST(request) {
       phone_number,
       manager_contact,
       parking_type,
-      shop_type,
-      sponsor: sponsor || null,
       contact_method,
       greeting,
       event_info,
@@ -153,7 +146,6 @@ export async function POST(request) {
       open_hours,
       program_info,
       post_title,
-      manager_desc,
       user_id,
       lat: parseFloat(lat),
       lng: parseFloat(lng),
@@ -220,8 +212,6 @@ export async function PUT(request) {
       phone_number,
       manager_contact,
       parking_type,
-      shop_type,
-      sponsor,
       contact_method,
       greeting,
       event_info,
@@ -231,7 +221,6 @@ export async function PUT(request) {
       open_hours,
       program_info,
       post_title,
-      manager_desc,
       themes,   // Array of themeId
       lat,
       lng,
@@ -245,7 +234,6 @@ export async function PUT(request) {
       !phone_number ||
       !manager_contact ||
       !parking_type ||
-      !shop_type ||
       !address ||
       !address_street ||
       !open_hours ||
@@ -254,7 +242,6 @@ export async function PUT(request) {
       !greeting ||
       !event_info ||
       !post_title ||
-      !manager_desc ||
       !Array.isArray(themes) ||
       themes.length === 0 ||
       lat == null ||
@@ -314,8 +301,6 @@ export async function PUT(request) {
       phone_number,
       manager_contact,
       parking_type,
-      shop_type,
-      sponsor: sponsor || null,
       contact_method,
       greeting,
       event_info,
@@ -325,7 +310,6 @@ export async function PUT(request) {
       open_hours,
       program_info,
       post_title,
-      manager_desc,
       lat: parseFloat(lat),
       lng: parseFloat(lng),
       holiday: holiday || null,

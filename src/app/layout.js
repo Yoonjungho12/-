@@ -23,13 +23,7 @@ export default function RootLayout({ children }) {
           {children}
         </div>
 
-        {/* 3) 푸터: children 아래에 고정적으로 위치 */}
-        <Footer />
-
-        {/* 4) 모바일 하단 바 (fixed) */}
-        <div className="block md:hidden fixed bottom-0 left-0 right-0 z-50">
-          <MobileBottomNav />
-        </div>
+  
       </body>
     </html>
   );

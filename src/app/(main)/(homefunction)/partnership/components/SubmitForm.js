@@ -1,3 +1,5 @@
+//src/app/%28main%29/%28homefunction%29/partnership/components/SubmitForm.js
+
 import React from "react";
 import MapSelector from "./MapSelector";
 
@@ -26,9 +28,6 @@ export default function SubmitForm({
   parkingSelectVal, setParkingSelectVal,
   parkingDirect, setParkingDirect,
 
-  // 샵형태, 후원, 예약방법
-  shopType, setShopType,
-  hashtagSponsor, setHashtagSponsor,
   contactMethod, setContactMethod,
 
   // 업체 소개, 이벤트
@@ -49,7 +48,7 @@ export default function SubmitForm({
   // 프로그램(코스), 글제목, 관리사
   programInfo, setProgramInfo,
   postTitle, setPostTitle,
-  managerDesc, setManagerDesc,
+
 
   // 지도
   mapRef,
@@ -336,36 +335,7 @@ export default function SubmitForm({
         </div>
       </div>
 
-      {/* 샵형태 */}
-      <div className="flex flex-col sm:flex-row gap-2">
-        <label className="w-32 font-semibold">
-          샵형태 <span className="text-red-500">*</span>
-        </label>
-        <select
-          value={shopType}
-          onChange={(e) => setShopType(e.target.value)}
-          className="flex-1 border border-gray-300 rounded px-2 py-1"
-        >
-          <option value="">선택</option>
-          <option value="오피스텔">오피스텔</option>
-          <option value="주택/빌라">주택/빌라</option>
-          <option value="기타">기타</option>
-        </select>
-      </div>
 
-      {/* #후원 */}
-      <div className="flex flex-col sm:flex-row gap-2">
-        <label className="w-32 font-semibold">#후원</label>
-        <select
-          value={hashtagSponsor}
-          onChange={(e) => setHashtagSponsor(e.target.value)}
-          className="flex-1 border border-gray-300 rounded px-2 py-1"
-        >
-          <option value="">선택</option>
-          <option value="possible">후원 가능</option>
-          <option value="impossible">후원 불가</option>
-        </select>
-      </div>
 
       {/* 예약방법 */}
       <div className="flex flex-col sm:flex-row gap-2">
@@ -567,19 +537,6 @@ export default function SubmitForm({
         />
       </div>
 
-      {/* 관리사 */}
-      <div>
-        <label className="block font-semibold mb-1">
-          관리사 <span className="text-red-500">*</span>
-        </label>
-        <textarea
-          placeholder="예) 보나(23) 주간, 빛나(32) 중간..."
-          value={managerDesc}
-          onChange={(e) => setManagerDesc(e.target.value)}
-          className="w-full border border-gray-300 rounded px-2 py-1"
-          rows={3}
-        />
-      </div>
     </>
   );
 }

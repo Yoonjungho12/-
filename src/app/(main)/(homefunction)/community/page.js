@@ -1,4 +1,3 @@
-// app/page.jsx
 
 import React from 'react';
 import { createClient } from '@supabase/supabase-js';
@@ -9,7 +8,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// board_id와 이름 매핑 (8개)
+// board_id와 이름 매핑
 const boardMap = [
   { id: 1, name: '공지사항' },
   { id: 2, name: '가입인사' },
@@ -25,8 +24,7 @@ const boardMap = [
 export const revalidate = 0;
 
 export default async function MainPage() {
-  // 8개 게시판 각각에서 최신 5개 게시글 (+ 댓글 수)
-  // post_comments(id) => 댓글 배열, 길이 = 댓글 수
+  // 8개 게시판 각각에서 승인된(is_admitted=true) 최신 5개 게시글 (+ 댓글 수)
   const boardPostsArray = await Promise.all(
     boardMap.map(async (board) => {
       const { data, error } = await supabase
@@ -37,6 +35,7 @@ export default async function MainPage() {
           post_comments(id)
         `)
         .eq('board_id', board.id)
+        .eq('is_admitted', true)  // ★ 추가: 승인된 글만
         .order('created_at', { ascending: false })
         .limit(5);
 
@@ -44,7 +43,6 @@ export default async function MainPage() {
         console.error(`게시글 조회 오류 (board_id=${board.id}):`, error.message);
         return { ...board, posts: [] };
       }
-      // data = [{ id:..., title:..., post_comments: [ { id:... }, ... ] }, ...]
       return { ...board, posts: data || [] };
     })
   );
@@ -57,7 +55,6 @@ export default async function MainPage() {
             {/* 게시판 제목 + 더보기 링크 */}
             <div className="flex justify-between items-center mb-2">
               <h2 className="text-lg font-bold">{boardItem.name}</h2>
-              {/* 전체 게시판으로 이동 */}
               <Link
                 href={`/community/board/${encodeURIComponent(boardItem.name)}`}
                 className="text-sm text-red-600"
@@ -80,14 +77,12 @@ export default async function MainPage() {
                     : 0;
                   return (
                     <li key={post.id}>
-                      {/* 게시글 상세보기 링크 */}
                       <Link
                         href={`/community/board/detail/${boardItem.id}/${post.id}`}
                         className="hover:underline"
                       >
                         {post.title}
                       </Link>
-                      {/* 댓글 수가 1 이상이면 주황색 숫자 표시, 0이면 표시 X */}
                       {commentCount > 0 && (
                         <span className="text-orange-500 text-xs ml-2">
                           {commentCount}

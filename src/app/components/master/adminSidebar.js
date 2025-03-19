@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -11,57 +12,167 @@ import {
   EnvelopeIcon,
   CheckBadgeIcon,
   ChatBubbleOvalLeftEllipsisIcon,
+  BriefcaseIcon
 } from "@heroicons/react/24/outline";
 import { supabase } from "../../lib/supabaseF";
 
 export default function AdminSidebar() {
   const [isOpen, setIsOpen] = useState(true);
 
-  // partnershipsubmit 미확인 건수
-  const [unreadPartnershipCount, setUnreadPartnershipCount] = useState(0);
+  // ★ "is_admitted=false"인 개수(제휴 신청)
+  const [partnershipCount, setPartnershipCount] = useState(0);
+  // ★ "is_admitted=true && final_admitted=false"인 개수(최종 승인 대기)
+  const [finalPendingCount, setFinalPendingCount] = useState(0);
+  // ★ comments.is_admitted=false인 댓글 개수 (댓글 미승인)
+  const [commentsCount, setCommentsCount] = useState(0);
 
+  // 현재 로그인 사용자의 닉네임과 user_id
+  const [nickname, setNickname] = useState("");
+  const [myUid, setMyUid] = useState("");
+
+  // "읽지 않은" 쪽지 개수 (내 계정으로 온 메시지 중 read_at이 null)
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // --------------------------
+  // 1) 로그인된 유저 정보 (user_id, 닉네임) 가져오기
+  // --------------------------
   useEffect(() => {
-    loadPartnershipUnreadCount();
+    async function fetchUserInfo() {
+      try {
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
+
+        if (sessionError) {
+          throw sessionError;
+        }
+        if (!session?.user?.id) {
+          console.warn("로그인이 필요합니다!");
+          return;
+        }
+        const uid = session.user.id;
+        setMyUid(uid);
+
+        const { data: profileData, error: profileError } = await supabase
+          .from("profiles")
+          .select("nickname")
+          .eq("user_id", uid)
+          .single();
+
+        if (profileError) {
+          console.error("프로필 조회 오류:", profileError);
+        } else {
+          setNickname(profileData?.nickname || "");
+        }
+      } catch (err) {
+        console.error("오류:", err);
+      }
+    }
+    fetchUserInfo();
   }, []);
 
-  async function loadPartnershipUnreadCount() {
+  // --------------------------
+  // 2) 제휴, 댓글, 쪽지 건수 로딩
+  // --------------------------
+  useEffect(() => {
+    loadPartnershipCounts();
+  }, []);
+
+  async function loadPartnershipCounts() {
     try {
-      const { count, error } = await supabase
+      // 제휴 신청: is_admitted=false
+      const { count: admittedFalseCount, error: admittedFalseError } =
+        await supabase
+          .from("partnershipsubmit")
+          .select("id", { count: "exact", head: true })
+          .eq("is_admitted", false);
+
+      if (admittedFalseError) {
+        console.error("is_admitted=false 카운트 조회 에러:", admittedFalseError);
+      } else if (admittedFalseCount !== null) {
+        setPartnershipCount(admittedFalseCount);
+      }
+
+      // 최종 승인 대기: is_admitted=true & final_admitted=false
+      const { count: finalFalseCount, error: finalFalseError } = await supabase
         .from("partnershipsubmit")
         .select("id", { count: "exact", head: true })
-        .eq("is_read", false);
+        .eq("is_admitted", true)
+        .eq("final_admitted", false);
 
-      if (error) {
-        console.error("미확인 제휴 카운트 조회 에러:", error);
-        return;
+      if (finalFalseError) {
+        console.error(
+          "is_admitted=true & final_admitted=false 카운트 조회 에러:",
+          finalFalseError
+        );
+      } else if (finalFalseCount !== null) {
+        setFinalPendingCount(finalFalseCount);
       }
-      if (count !== null) {
-        setUnreadPartnershipCount(count);
+
+      // 댓글 미승인: comments.is_admitted=false
+      const { count: cCount, error: cErr } = await supabase
+        .from("comments")
+        .select("id", { count: "exact", head: true })
+        .eq("is_admitted", false);
+      if (cErr) {
+        console.error("댓글 미승인 건수 조회 에러:", cErr);
+      } else if (cCount !== null) {
+        setCommentsCount(cCount);
       }
     } catch (err) {
-      console.error("unreadPartnershipCount 조회 오류:", err);
+      console.error("loadPartnershipCounts 오류:", err);
+    }
+  }
+
+  // --------------------------
+  // 3) 내 계정으로 온 쪽지 중, 읽지 않은 쪽지 개수 로딩
+  // --------------------------
+  useEffect(() => {
+    if (myUid) {
+      fetchUnreadCount(myUid);
+    }
+  }, [myUid]);
+
+  async function fetchUnreadCount(uid) {
+    try {
+      const { count, error } = await supabase
+        .from("messages")
+        .select("id", { count: "exact", head: true })
+        .eq("receiver_id", uid)
+        .is("read_at", null);
+      if (error) {
+        console.error("unreadCount 조회 오류:", error);
+        setUnreadCount(0);
+      } else {
+        setUnreadCount(count || 0);
+      }
+    } catch (err) {
+      console.error("unreadCount 로딩 오류:", err);
+      setUnreadCount(0);
     }
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex min-h-screen bg-zinc-100">
       <aside
         className={`${
           isOpen ? "w-64" : "w-20"
-        } relative flex flex-col border-r border-gray-200 bg-white transition-all duration-300`}
+        } relative flex flex-col bg-zinc-800 shadow-md transition-all duration-300`}
       >
-        {/* 로고 + 사이드바 토글 버튼 */}
-        <div className="flex items-center justify-between p-4">
+        {/* 로고 + 토글 버튼 */}
+        <div className="flex items-center justify-between p-4 border-b border-zinc-700">
           <div
             className={`${
               isOpen ? "opacity-100" : "opacity-0"
             } overflow-hidden transition-opacity duration-200`}
           >
-            <span className="text-xl font-bold text-blue-600">Admin Panel</span>
+            <h1 className="text-xl font-bold text-white">관리자 페이지</h1>
+            <h2 className="text-white">{nickname ? ` ${nickname}` : ""}</h2>
           </div>
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="ml-auto rounded p-2 text-gray-600 hover:bg-gray-100"
+            className="ml-auto rounded p-2 text-zinc-300 hover:bg-zinc-700"
           >
             <svg
               className={`h-5 w-5 transform transition-transform ${
@@ -72,18 +183,22 @@ export default function AdminSidebar() {
               strokeWidth="2"
               viewBox="0 0 24 24"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15 19l-7-7 7-7"
-              />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
           </button>
         </div>
 
         {/* 메뉴 그룹 */}
         <nav className="mt-4 flex-1 space-y-4 px-2">
-          {/* 일반 회원 그룹 */}
+          {/* 대시보드를 맨 위로 */}
+          <NavItem
+            href="/master/dashboard"
+            icon={<HomeIcon className="h-5 w-5" />}
+            label="대시보드"
+            isOpen={isOpen}
+          />
+
+          {/* 일반 회원 */}
           <NavCategory label="일반 회원" isOpen={isOpen} />
           <NavItem
             href="/master/users"
@@ -91,15 +206,15 @@ export default function AdminSidebar() {
             label="사용자 관리"
             isOpen={isOpen}
           />
-          {/* ==== 새로 추가된 "전체 댓글" 아이템 ==== */}
           <NavItem
-            href="/master/comments" // 원하는 경로로 설정
+            href="/master/comments"
             icon={<ChatBubbleOvalLeftEllipsisIcon className="h-5 w-5" />}
             label="전체 댓글"
             isOpen={isOpen}
+            badge={commentsCount > 0 && commentsCount}
           />
 
-          {/* 제휴 섹션 그룹 */}
+          {/* 제휴 섹션 */}
           <NavCategory label="제휴 섹션" isOpen={isOpen} />
           <NavItem
             href="/master/legitPartner"
@@ -112,28 +227,24 @@ export default function AdminSidebar() {
             icon={<CheckBadgeIcon className="h-5 w-5" />}
             label="최종 승인 대기"
             isOpen={isOpen}
+            badge={finalPendingCount > 0 && finalPendingCount}
           />
           <NavItem
             href="/master/partnership"
             icon={<PaperAirplaneIcon className="h-5 w-5" />}
             label="제휴 신청"
             isOpen={isOpen}
-            badge={unreadPartnershipCount > 0 && unreadPartnershipCount}
+            badge={partnershipCount > 0 && partnershipCount}
           />
 
-          {/* 기타 그룹 */}
+          {/* 기타 */}
           <NavCategory label="기타" isOpen={isOpen} />
-          <NavItem
-            href="/master/dashboard"
-            icon={<HomeIcon className="h-5 w-5" />}
-            label="대시보드"
-            isOpen={isOpen}
-          />
           <NavItem
             href="/master/messages"
             icon={<EnvelopeIcon className="h-5 w-5" />}
             label="쪽지함"
             isOpen={isOpen}
+            badge={unreadCount > 0 && unreadCount}
           />
           <NavItem
             href="/master/dashboard"
@@ -141,10 +252,17 @@ export default function AdminSidebar() {
             label="설정"
             isOpen={isOpen}
           />
+          {/* 업체 업로드 메뉴 추가 */}
+          <NavItem
+            href="/master/partnershipUpload"
+            icon={<BriefcaseIcon className="h-5 w-5" />}
+            label="업체 업로드"
+            isOpen={isOpen}
+          />
         </nav>
 
-        {/* 하단 로그아웃 */}
-        <div className="mt-auto p-4">
+        {/* 로그아웃 */}
+        <div className="mt-auto p-4 border-t border-zinc-700">
           <NavItem
             href="/logout"
             icon={<ArrowLeftOnRectangleIcon className="h-5 w-5" />}
@@ -160,24 +278,23 @@ export default function AdminSidebar() {
 function NavCategory({ label, isOpen }) {
   if (!isOpen) return null;
   return (
-    <div className="px-2 text-xs font-bold uppercase text-gray-400">{label}</div>
+    <div className="px-2 text-xs font-bold uppercase tracking-wider text-zinc-400">
+      {label}
+    </div>
   );
 }
 
 function NavItem({ href, icon, label, isOpen, badge }) {
   const pathname = usePathname();
-  // 현재 경로가 이 아이템의 href(또는 하위 경로)와 일치하면 active 상태
   const isActive = pathname === href || pathname.startsWith(href);
 
+  const baseClasses =
+    "relative flex items-center gap-3 rounded-md p-2 text-sm font-medium transition-colors";
+  const activeClasses = "bg-zinc-700 text-white hover:bg-zinc-700";
+  const inactiveClasses = "text-zinc-300 hover:bg-zinc-700 hover:text-white";
+
   return (
-    <Link
-      href={href}
-      className={`flex items-center gap-3 rounded-md p-2 ${
-        isActive
-          ? "bg-blue-100 text-blue-600"
-          : "text-gray-700 hover:bg-gray-100"
-      }`}
-    >
+    <Link href={href} className={`${baseClasses} ${isActive ? activeClasses : inactiveClasses}`}>
       <div className="relative">
         {icon}
         {badge && (
@@ -186,7 +303,7 @@ function NavItem({ href, icon, label, isOpen, badge }) {
           </span>
         )}
       </div>
-      {isOpen && <span className="text-sm font-medium">{label}</span>}
+      {isOpen && <span>{label}</span>}
     </Link>
   );
 }

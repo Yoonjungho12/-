@@ -1,14 +1,16 @@
-//
+//src/app/%28main%29/%28homefunction%29/partnership/page.js
 "use client";
 import React, { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseF";
 
 // 각각 분리된 컴포넌트 임포트
-import SubmitList from "@//components/SubmitList";
-import SubmitForm from "./components/SubmitForm";
-import TermsAgreement from "./components/TermsAgreement";
-import ImageUpload from "./components/ImageUpload";
+import SubmitList from "@/(main)/(homefunction)/partnership/components/SubmitList";
+import SubmitForm from "@/(main)/(homefunction)/partnership/components/SubmitForm";
+import TermsAgreement from "@/(main)/(homefunction)/partnership/components/TermsAgreement";
+import ImageUpload from "@/(main)/(homefunction)/partnership/components/ImageUpload";
+
+
 
 export default function NewListingPage() {
   const router = useRouter();
@@ -104,7 +106,7 @@ export default function NewListingPage() {
       setPendingSubRegionId(row.sub_region_id || null);
       setCompanyName(row.company_name || "");
       setPhoneNumber(row.phone_number || "");
-      setManagerContact(row.manager_contact || "");
+
 
       // 주차방법
       const knownParkingValues = ["주차 가능(문의)", "건물 내 주차(문의)"];
@@ -115,9 +117,6 @@ export default function NewListingPage() {
         setParkingSelectVal("직접입력");
         setParkingDirect(row.parking_type || "");
       }
-
-      setShopType(row.shop_type || "");
-      setHashtagSponsor(row.sponsor || "");
       setContactMethod(row.contact_method || "");
       setGreeting(row.greeting || "");
       setEventInfo(row.event_info || "");
@@ -168,7 +167,7 @@ export default function NewListingPage() {
       setNearBuilding(row.near_building || "");
       setProgramInfo(row.program_info || "");
       setPostTitle(row.post_title || "");
-      setManagerDesc(row.manager_desc || "");
+
 
       // 테마 M:N
       const { data: themeRows } = await supabase
@@ -211,8 +210,6 @@ export default function NewListingPage() {
   const [parkingSelectVal, setParkingSelectVal] = useState("");
   const [parkingDirect, setParkingDirect] = useState("");
 
-  const [shopType, setShopType] = useState("");
-  const [hashtagSponsor, setHashtagSponsor] = useState("");
   const [contactMethod, setContactMethod] = useState("");
   const [greeting, setGreeting] = useState("");
   const [eventInfo, setEventInfo] = useState("");
@@ -228,7 +225,7 @@ export default function NewListingPage() {
 
   const [programInfo, setProgramInfo] = useState("");
   const [postTitle, setPostTitle] = useState("");
-  const [managerDesc, setManagerDesc] = useState("");
+
 
   const [themes, setThemes] = useState([]);
   const [selectedThemeIds, setSelectedThemeIds] = useState([]);
@@ -241,7 +238,6 @@ export default function NewListingPage() {
     lng: 127.027618,
   });
 
-  const [termsAgreed, setTermsAgreed] = useState(false);
 
   // ──────────────────────────────────────────────────────────
   // 4) 지역(상위/하위) & 테마 로드
@@ -445,9 +441,7 @@ export default function NewListingPage() {
   // 6) 폼 검증 & 전송
   // ──────────────────────────────────────────────────────────
   function validateForm() {
-    if (!termsAgreed) return "약관에 동의해주셔야 신청이 가능합니다!";
 
-    
     if (!selectedRegionId) return "지역을 선택해주세요.";
     if (!companyName.trim()) return "업체명은 필수입니다.";
     if (!phoneNumber.trim()) return "전화번호 필수입니다.";
@@ -457,9 +451,7 @@ export default function NewListingPage() {
       parkingSelectVal === "직접입력" ? parkingDirect : parkingSelectVal;
     if (!finalParkingType.trim()) return "주차방법을 입력(혹은 선택)해주세요.";
 
-    if (!shopType) return "샵형태를 선택해주세요.";
 
-    // holiday (원래 closed_day)
     // 이번 코드는 holiday가 optional이라 필수 체크는 안 함
 
     if (!is24Hours && (!startTime || !endTime)) {
@@ -474,7 +466,6 @@ export default function NewListingPage() {
     if (!greeting.trim()) return "업체 소개를 입력해주세요.";
     if (!eventInfo.trim()) return "업체 이벤트 내용을 입력해주세요.";
     if (!postTitle.trim()) return "글 제목을 입력해주세요.";
-    if (!managerDesc.trim()) return "관리사 정보를 입력해주세요.";
     if (selectedThemeIds.length === 0) return "테마를 최소 1개 이상 선택해주세요.";
 
     return null;
@@ -520,8 +511,6 @@ export default function NewListingPage() {
       phone_number: phoneNumber,
       manager_contact: managerContact,
       parking_type: finalParkingType,
-      shop_type: shopType,
-      sponsor: hashtagSponsor,
       contact_method: contactMethod,
       greeting,
       event_info: eventInfo,
@@ -535,7 +524,6 @@ export default function NewListingPage() {
       near_building: nearBuilding,
       program_info: programInfo,
       post_title: postTitle,
-      manager_desc: managerDesc,
       themes: selectedThemeIds,
       lat: markerPosition.lat,
       lng: markerPosition.lng,
@@ -585,25 +573,9 @@ export default function NewListingPage() {
 
   return (
     <div className="max-w-4xl mx-auto p-4">
-      <div className="border border-gray-300 rounded p-4 mb-8 bg-gray-50 text-sm">
-        <ul className="list-none space-y-1">
-          <li>• 신청서 남겨주시면 제휴 안내 드리겠습니다.</li>
-          <li>• 평일 17:00까지 남겨주시면 당일 광고 가능 합니다.</li>
-          <li>• 관리자가 확인한 후에는 수정이 불가 합니다.</li>
-          <li className="flex items-center">
-            <span className="text-red-500 text-xl mr-1">*</span> 표시는 필수 입력 항목입니다.
-          </li>
-        </ul>
-      </div>
-
-      <SubmitList
-        mySubmits={mySubmits}
-        router={router}
-        handleEditClick={handleEditClick}
-      />
+     
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <h1 className="text-2xl font-bold mb-4">업체 등록 (Kakao 지도)</h1>
 
         <SubmitForm
           editId={editId}
@@ -635,11 +607,7 @@ export default function NewListingPage() {
           setParkingSelectVal={setParkingSelectVal}
           parkingDirect={parkingDirect}
           setParkingDirect={setParkingDirect}
-          // 샵형태/후원/예약방법
-          shopType={shopType}
-          setShopType={setShopType}
-          hashtagSponsor={hashtagSponsor}
-          setHashtagSponsor={setHashtagSponsor}
+
           contactMethod={contactMethod}
           setContactMethod={setContactMethod}
           greeting={greeting}
@@ -668,8 +636,7 @@ export default function NewListingPage() {
           setProgramInfo={setProgramInfo}
           postTitle={postTitle}
           setPostTitle={setPostTitle}
-          managerDesc={managerDesc}
-          setManagerDesc={setManagerDesc}
+
           // 지도
           mapRef={mapRef}
           handleAddressSearch={handleAddressSearch}
@@ -677,12 +644,13 @@ export default function NewListingPage() {
           markerPosition={markerPosition}
         />
 
-        <TermsAgreement
-          termsAgreed={termsAgreed}
-          setTermsAgreed={setTermsAgreed}
+   
+      <ImageUpload
+          editId={editId}
+          editIsAdmitted={editIsAdmitted}
+          imageUploadSectionRef={imageUploadSectionRef}
         />
-
-        <div className="flex justify-center">
+             <div className="flex justify-center">
           <button
             type="submit"
             className="px-4 py-2 rounded bg-blue-600 text-white font-semibold hover:bg-blue-700"
@@ -692,13 +660,6 @@ export default function NewListingPage() {
         </div>
       </form>
 
-      {editId && editIsAdmitted && (
-        <ImageUpload
-          editId={editId}
-          editIsAdmitted={editIsAdmitted}
-          imageUploadSectionRef={imageUploadSectionRef}
-        />
-      )}
     </div>
   );
 }

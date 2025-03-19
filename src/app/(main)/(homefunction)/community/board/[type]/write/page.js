@@ -108,7 +108,7 @@ export default function WritePage() {
         return;
       }
 
-      // 3) posts 테이블에 데이터 삽입 (theme_id에 선택한 theme 값 저장)
+      // 3) posts 테이블에 데이터 삽입
       const { data, error } = await supabase.from('posts').insert({
         board_id: boardTitle.id,
         user_id: userId,
@@ -123,7 +123,9 @@ export default function WritePage() {
         return;
       }
 
-      alert('글이 성공적으로 저장되었습니다!');
+      // 작성 후 팝업창 → "게시 완료! 관리자 승인 후에 노출됩니다"
+      alert('게시 완료! 관리자 승인 후에 노출됩니다');
+
       router.push('/community');
     } catch (err) {
       console.error('에러 발생:', err);
@@ -159,7 +161,7 @@ export default function WritePage() {
               />
             </td>
           </tr>
-          {/* 테마 선택 */}
+          {/* 테마 선택 (방문후기 게시판일 때만 표시) */}
           {boardTitle.name === '방문후기' && (
             <tr className="border-b border-gray-300">
               <td className="w-24 p-2 bg-gray-100 align-middle">테마</td>

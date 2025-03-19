@@ -1,78 +1,71 @@
 "use client";
-import React, { useEffect, useState, Suspense } from "react";
+
+import React, { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseF";
-import { PaperAirplaneIcon } from "@heroicons/react/24/outline";
-import { CheckCircleIcon } from "@heroicons/react/24/solid";
-import Image from "next/image"; // Import Image from next/image
-const directory = "partnershipsubmit";
+import Image from "next/image";
 
-/** 
- * Supabase 스토리지 public URL 빌더 
- * (버킷명: gunma, PROJECT_URL 은 본인 프로젝트 주소로 교체)
- */
-export const dynamic = "force-dynamic";
+/** Supabase 스토리지 경로 → 풀 URL */
 const PROJECT_URL = process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL;
-console.log("너의 정체는" + PROJECT_URL);
-
 function buildPublicImageUrl(path) {
   return `${PROJECT_URL}/${path}`;
 }
 
-/** 
- * 작성일(생성일) 로컬 시간 표시 
- */
+/** 날짜/시간 포맷 */
 function formatLocalTime(isoString) {
   if (!isoString) return "(작성일 없음)";
-  const utcDate = new Date(isoString);
-  const localDate = new Date(utcDate.getTime());
-  return localDate.toLocaleString(); // 브라우저 로케일에 따른 로컬 시간 포맷
+  const date = new Date(isoString);
+  return date.toLocaleString();
 }
 
-/** 
- * 팝업 상세 페이지
- * URL 파라미터 id에 해당하는 partnershipsubmit 행과 관련 조인 데이터(region, profiles)를 출력합니다.
- */
+export default function PartnershipPopupPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <div className="w-screen h-screen">
+        <PartnershipPopupPageContent />
+      </div>
+    </Suspense>
+  );
+}
+
 function PartnershipPopupPageContent() {
   const searchParams = useSearchParams();
   const rowId = searchParams.get("id");
 
+  // 로딩상태
   const [loading, setLoading] = useState(true);
   const [row, setRow] = useState(null);
 
-  // 쪽지 전송 관련
-  const [showTextarea, setShowTextarea] = useState(false);
-  const [message, setMessage] = useState("");
-  const [sessionUserId, setSessionUserId] = useState(null);
+  // 섹션/코스
+  const [sections, setSections] = useState([]);
+  const [loadingSections, setLoadingSections] = useState(true);
 
-  // 추가 이미지(1:N)
+  // 이미지
   const [images, setImages] = useState([]);
 
-  // 프로필 표시 여부 (버튼 한 번 누르면 열림)
-  const [profileVisible, setProfileVisible] = useState(false);
+  // 펼침 여부 (true면 추가필드+접기, false면 기본필드+더보기)
+  const [expanded, setExpanded] = useState(false);
 
-  // -------------------------------------------
-  // 1) 세션 및 rowId로 DB 조회
-  // -------------------------------------------
+  // ------------------------------------------------
+  // 1) 세션 체크 + partnershipsubmit 조회
+  // ------------------------------------------------
   useEffect(() => {
     if (!rowId) return;
     supabase.auth.getSession().then(({ data, error }) => {
       if (error) {
-        console.error("세션 체크 에러:", error);
+        console.error("세션 체크 오류:", error);
         window.close();
         return;
       }
       if (!data.session) {
-        alert("로그인 정보가 없습니다. 팝업을 닫습니다.");
+        alert("로그인 정보가 없습니다. 팝업 닫습니다.");
         window.close();
       } else {
-        setSessionUserId(data.session.user.id);
         fetchOneRow(rowId);
       }
     });
   }, [rowId]);
 
-  /** partnershipsubmit과 관련 조인(지역, 세부지역, 프로필) 데이터를 가져옴 */
   async function fetchOneRow(id) {
     setLoading(true);
     try {
@@ -104,163 +97,200 @@ function PartnershipPopupPageContent() {
           is_admitted,
           final_admitted,
           region:region_id(name),
-          subregion:sub_region_id(name),
-          profiles:user_id(name, nickname, phone, created_at)
+          subregion:sub_region_id(name)
         `)
         .eq("id", id)
         .single();
 
       if (error || !data) {
-        console.error("팝업 DB조회 오류:", error);
+        console.error("DB 조회 오류:", error);
         window.close();
         return;
       }
       setRow(data);
     } catch (err) {
-      console.error("API 오류:", err);
+      console.error("조회 오류:", err);
     } finally {
       setLoading(false);
     }
   }
 
-  // -------------------------------------------
-  // 1-2) is_admitted가 true이면 추가 이미지 목록 조회
-  // -------------------------------------------
+  // ------------------------------------------------
+  // 2) 섹션/코스 조회
+  // ------------------------------------------------
   useEffect(() => {
-    if (row && row.is_admitted) {
+    if (!row) return;
+    fetchSections(row.id);
+  }, [row]);
+
+  async function fetchSections(postId) {
+    setLoadingSections(true);
+    try {
+      const { data, error } = await supabase
+        .from("sections")
+        .select(`
+          id,
+          section_title,
+          section_description,
+          display_order,
+          courses:courses (
+            id,
+            course_name,
+            duration,
+            display_order
+          )
+        `)
+        .eq("post_id", postId)
+        .order("display_order", { ascending: true })
+        .order("display_order", { foreignTable: "courses", ascending: true });
+      if (error) {
+        console.error("섹션 조회 오류:", error);
+        setSections([]);
+        setLoadingSections(false);
+        return;
+      }
+      setSections(data || []);
+    } catch (err) {
+      console.error("섹션 fetch 오류:", err);
+      setSections([]);
+    } finally {
+      setLoadingSections(false);
+    }
+  }
+
+  // ------------------------------------------------
+  // 3) 이미지 (승인상태면)
+  // ------------------------------------------------
+  useEffect(() => {
+    if (row?.is_admitted) {
       fetchImages(row.id);
     }
   }, [row]);
 
-  async function fetchImages(submitId) {
+  async function fetchImages(id) {
     try {
       const { data, error } = await supabase
         .from("partnershipsubmit_images")
         .select("image_url")
-        .eq("submit_id", submitId);
+        .eq("submit_id", id);
       if (error) {
-        console.error("이미지 목록 조회 에러:", error);
+        console.error("이미지 조회 오류:", error);
         return;
       }
       setImages(data || []);
     } catch (err) {
-      console.error("이미지 목록 fetch 오류:", err);
+      console.error("이미지 fetch 오류:", err);
     }
   }
 
-  // -------------------------------------------
-  // 2) 쪽지 전송
-  // -------------------------------------------
-  async function handleSendMsg() {
-    if (!row || !row.user_id) {
-      alert("row.user_id가 없습니다!");
-      return;
-    }
-    if (!message.trim()) {
-      alert("쪽지 내용을 입력하세요!");
-      return;
-    }
-    if (!sessionUserId) {
-      alert("로그인 정보가 없습니다!");
-      return;
-    }
-
-    try {
-      const res = await fetch("/api/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sender_id: sessionUserId,
-          receiver_id: row.user_id,
-          content: message,
-        }),
-      });
-      if (!res.ok) {
-        const { error } = await res.json();
-        alert(`쪽지 전송 실패: ${error || "알 수 없는 에러"}`);
-        return;
-      }
-      alert(
-        `쪽지 전송 완료!\n보낸사람: ${sessionUserId}\n받는사람: ${row.user_id}\n내용: ${message}`
-      );
-      setMessage("");
-      setShowTextarea(false);
-    } catch (err) {
-      console.error("쪽지 전송 중 오류:", err);
-      alert("쪽지 전송 오류");
-    }
-  }
-
-  // -------------------------------------------
-  // 3) 전화걸기
-  // -------------------------------------------
-  function handleCall() {
-    if (!row || !row.phone_number) {
-      alert("전화번호가 없습니다.");
-      return;
-    }
-    window.location.href = `tel:${row.phone_number}`;
-  }
-
-  // -------------------------------------------
-  // 4) 팝업 닫기
-  // -------------------------------------------
+  // ------------------------------------------------
+  // 버튼 핸들러
+  // ------------------------------------------------
   function handleCloseWindow() {
     window.close();
   }
 
-  // -------------------------------------------
-  // 5) 승인 / 최종승인 버튼 처리
-  // -------------------------------------------
+  async function handleDeleteSubmit() {
+    if (!row) return;
+    if (!confirm("정말 삭제하시겠습니까?")) return;
+    try {
+      const { error } = await supabase
+        .from("partnershipsubmit")
+        .delete()
+        .eq("id", row.id);
+      if (error) {
+        alert("삭제 실패: " + error.message);
+        return;
+      }
+      alert("삭제 완료");
+      window.close();
+    } catch (err) {
+      console.error("삭제 오류:", err);
+      alert("삭제 중 오류");
+    }
+  }
+
   async function handleApproval() {
     if (!row) return;
     if (!row.is_admitted) {
-      // 승인 처리: is_admitted를 true로 업데이트
-      if (!confirm("해당 항목을 승인하시겠습니까?")) return;
+      if (!confirm("승인?")) return;
       const { error } = await supabase
         .from("partnershipsubmit")
         .update({ is_admitted: true })
         .eq("id", row.id);
       if (error) {
-        alert("승인 실패: " + error.message);
+        alert("승인 실패:" + error.message);
         return;
       }
-      alert("승인 완료되었습니다.");
+      alert("승인 완료");
       fetchOneRow(row.id);
     } else {
-      // 최종승인 처리: final_admitted를 true로 업데이트
-      if (
-        !confirm(
-          "최종 승인 진행하시겠습니까? 최종 승인 후에는 모든 일반 사용자들에게 노출됩니다."
-        )
-      )
-        return;
+      if (!confirm("최종 승인?")) return;
       const { error } = await supabase
         .from("partnershipsubmit")
         .update({ final_admitted: true })
         .eq("id", row.id);
       if (error) {
-        alert("최종 승인 실패: " + error.message);
+        alert("최종 승인 실패:" + error.message);
         return;
       }
-      alert("최종 승인 완료되었습니다.");
+      alert("최종 승인 완료");
       fetchOneRow(row.id);
     }
   }
 
-  // -------------------------------------------
-  // 6) 이미지 클릭 시 크게 보기 (새 탭)
-  // -------------------------------------------
-  function handleImageClick(imgUrl) {
-    const fullUrl = buildPublicImageUrl(imgUrl);
+  function handleImageClick(url) {
+    const fullUrl = buildPublicImageUrl(url);
     window.open(fullUrl, "_blank");
   }
 
-  // -------------------------------------------
-  // 렌더링
-  // -------------------------------------------
+  function handleCall() {
+    if (!row?.phone_number) {
+      alert("전화번호 없음");
+      return;
+    }
+    window.location.href = `tel:${row.phone_number}`;
+  }
+
+  function handleSendMsgPopup() {
+    if (!row?.user_id) {
+      alert("수신자 정보 없음!");
+      return;
+    }
+    const w = 800,
+      h = 1000;
+    const top = window.screenY + 100;
+    const left = window.screenX + 100;
+    window.open(
+      `/master/sendMessage?otherId=${row.user_id}`,
+      `sendMessagePopup-${row.user_id}`,
+      `width=${w},height=${h},top=${top},left=${left},resizable=yes,scrollbars=yes`
+    );
+  }
+
+  function handleUserCommentsPopup() {
+    if (!row?.user_id) {
+      alert("유저 ID 없음!");
+      return;
+    }
+    const w = 800,
+      h = 1000;
+    const top = window.screenY + 50;
+    const left = window.screenX + 50;
+    window.open(
+      `/master/userComments?user_id=${row.user_id}`,
+      `userComments-${row.user_id}`,
+      `width=${w},height=${h},top=${top},left=${left},resizable=yes,scrollbars=yes`
+    );
+  }
+
+  // ------------------------------------------------
+  // 즉시 열고 즉시 닫기 (조건부 렌더링) + NO transition
+  // ------------------------------------------------
+
+  // 로딩/에러
   if (!rowId) {
-    return <div className="p-4">잘못된 접근(아이디 없음)</div>;
+    return <div className="p-4">잘못된 접근 (id 없음)</div>;
   }
   if (loading) {
     return <div className="p-4">로딩 중...</div>;
@@ -269,181 +299,256 @@ function PartnershipPopupPageContent() {
     return <div className="p-4">데이터를 찾을 수 없습니다.</div>;
   }
 
-  // region 및 subregion 이름, 프로필 객체
-  const regionName = row.region?.name || "";
-  const subRegionName = row.subregion?.name || "";
-  const profileObj = row.profiles || null;
+  // 기본필드
+  const basicFields = [
+    { label: "광고유형", value: row.ad_type },
+    { label: "지역", value: row.region?.name },
+    { label: "세부지역", value: row.subregion?.name },
+    { label: "업체명", value: row.company_name },
+    { label: "전화번호", value: row.phone_number },
+    { label: "담당자 연락처", value: row.manager_contact },
+  ];
+
+  // 추가필드
+  const extraFields = [
+    { label: "주차방법", value: row.parking_type },
+    { label: "샵형태", value: row.shop_type },
+    { label: "후원", value: row.sponsor },
+    { label: "연락방법", value: row.contact_method },
+    { label: "인사말", value: row.greeting },
+    { label: "이벤트", value: row.event_info },
+    { label: "주소", value: row.address },
+    { label: "인근 건물", value: row.near_building },
+    { label: "영업시간", value: row.open_hours },
+    { label: "프로그램", value: row.program_info },
+    { label: "글제목", value: row.post_title },
+    { label: "관리사", value: row.manager_desc },
+    { label: "작성일", value: formatLocalTime(row.created_at) },
+  ];
 
   return (
-    <div className="p-4" style={{ minWidth: "800px", minHeight: "800px" }}>
-      <h1 className="text-xl font-bold mb-2">팝업 상세 페이지</h1>
+    <div className="flex flex-col w-full h-full bg-white overflow-hidden">
+    
 
-      {/* partnershipsubmit 모든 컬럼 표시 */}
-      <div className="border border-gray-200 p-2 space-y-2 text-sm">
-        <DetailItem label="광고유형 (ad_type)" value={row.ad_type} />
-        <DetailItem label="지역" value={regionName} />
-        <DetailItem label="세부지역" value={subRegionName} />
-        <DetailItem label="업체명" value={row.company_name} />
-        <DetailItem label="전화번호" value={row.phone_number} />
-        <DetailItem label="담당자 연락처" value={row.manager_contact} />
-        <DetailItem label="주차방법" value={row.parking_type} />
-        <DetailItem label="샵형태" value={row.shop_type} />
-        <DetailItem label="후원" value={row.sponsor} />
-        <DetailItem label="연락방법" value={row.contact_method} />
-        <DetailItem label="인사말" value={row.greeting} />
-        <DetailItem label="이벤트" value={row.event_info} />
-        <DetailItem label="주소" value={row.address} />
-        <DetailItem label="인근 건물" value={row.near_building} />
-        <DetailItem label="영업시간" value={row.open_hours} />
-        <DetailItem label="프로그램" value={row.program_info} />
-        <DetailItem label="글제목" value={row.post_title} />
-        <DetailItem label="관리사" value={row.manager_desc} />
-        <DetailItem label="작성일" value={formatLocalTime(row.created_at)} />
+      {/* 메인 영역 */}
+      <div className="flex-1 overflow-auto p-4 space-y-4">
+        {/* 작성자 프로필 */}
+        <div className="border border-slate-200 rounded-md p-3 flex items-center justify-between">
+          <h2 className="font-semibold text-base">작성자 프로필</h2>
+          <button
+            onClick={handleUserCommentsPopup}
+            className="bg-zinc-700 px-3 py-1 rounded border text-white hover:bg-zinc-400 text-sm"
+          >
+            프로필 보기
+          </button>
+        </div>
+
+        {/* 파트너십 정보 */}
+        <div className="border border-slate-200 rounded-md p-3">
+          <h2 className="font-semibold text-base mb-2">파트너십 정보</h2>
+          <table className="w-full border border-slate-100 rounded-md overflow-hidden text-sm">
+            <tbody>
+              {/* (1) 기본필드 */}
+              {basicFields.map((bf) => (
+                <DetailRow key={bf.label} label={bf.label} value={bf.value} />
+              ))}
+
+              {/* (2) 만약 expanded=false면 "더보기" 버튼만 표시 */}
+              {!expanded && (
+                <tr>
+                  <td colSpan={2} className="text-center py-2">
+                    <button
+                      onClick={() => setExpanded(true)}
+                      className="bg-zinc-700 px-3 py-1 rounded border text-white hover:bg-zinc-400 text-sm flex items-center justify-center mx-auto"
+                    >
+                      더보기
+                      <span className="text-[10px] leading-none ml-1">▼</span>
+                    </button>
+                  </td>
+                </tr>
+              )}
+
+              {/* (3) expanded=true면 추가필드 + "접기" 버튼 즉시 표시 */}
+              {expanded && (
+                <>
+                  {extraFields.map((ef) => (
+                    <DetailRow key={ef.label} label={ef.label} value={ef.value} />
+                  ))}
+                  {/* 접기 버튼 */}
+                  <tr>
+                    <td colSpan={2} className="text-center py-2">
+                      <button
+                        onClick={() => setExpanded(false)}
+                        className="bg-zinc-700 px-3 py-1 rounded border text-white hover:bg-zinc-400 text-sm flex items-center justify-center mx-auto"
+                      >
+                        접기
+                        <span className="text-[10px] leading-none ml-1">▲</span>
+                      </button>
+                    </td>
+                  </tr>
+                </>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* 이미지 미리보기 */}
+        {row.is_admitted && (
+          <div className="border border-slate-200 rounded-md p-3">
+            <h2 className="text-base font-semibold mb-2">이미지 미리보기</h2>
+            <div className="mb-3">
+              <strong>썸네일:</strong>{" "}
+              {row.thumbnail_url ? (
+                <Image
+                  src={buildPublicImageUrl(row.thumbnail_url)}
+                  alt="썸네일"
+                  width={128}
+                  height={128}
+                  className="w-32 h-auto border cursor-pointer"
+                  onClick={() => handleImageClick(row.thumbnail_url)}
+                />
+              ) : (
+                <span className="text-slate-500 ml-2">없음</span>
+              )}
+            </div>
+            <div>
+              <strong>추가 이미지들:</strong>
+              {images.length > 0 ? (
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {images.map((img, idx) => (
+                    <Image
+                      key={idx}
+                      src={buildPublicImageUrl(img.image_url)}
+                      alt={`img-${idx}`}
+                      width={96}
+                      height={96}
+                      className="w-24 h-24 object-cover border cursor-pointer"
+                      onClick={() => handleImageClick(img.image_url)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <span className="text-slate-500 ml-2">없음</span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* 섹션/코스 */}
+        <SectionCourseBlock sections={sections} loadingSections={loadingSections} />
       </div>
 
-      {/* 작성자 프로필 */}
-      <div className="mt-4 border border-gray-200 p-2">
-        <div className="flex items-center gap-2">
-          <span className="font-bold text-sm">작성자 프로필</span>
-          {!profileVisible && (
+      {/* 하단 버튼바 */}
+      <div className="border-t border-slate-200 p-3 bg-white flex items-center justify-between">
+        {/* 왼쪽: final_admitted=true → "삭제" 버튼 */}
+        <div>
+          {row.final_admitted && (
             <button
-              onClick={() => setProfileVisible(true)}
-              className="text-blue-600 text-sm underline"
+              onClick={handleDeleteSubmit}
+              className="px-4 py-2 rounded-md border border-red-600 text-red-600 hover:bg-red-400 hover:text-white hover:border-transparent text-sm"
             >
-              프로필 보기
+              삭제
             </button>
           )}
         </div>
-        {profileVisible && profileObj && (
-          <div className="mt-2 space-y-2 text-sm">
-            <DetailItem label="이름" value={profileObj.name} />
-            <DetailItem label="닉네임" value={profileObj.nickname} />
-            <DetailItem label="전화번호" value={profileObj.phone} />
-            <DetailItem
-              label="가입일"
-              value={formatLocalTime(profileObj.created_at)}
-            />
-          </div>
-        )}
-      </div>
 
-      {/* is_admitted=true → 이미지 미리보기 */}
-      {row.is_admitted && (
-        <div className="mt-4 p-2 border border-gray-200">
-          <h2 className="text-lg font-bold mb-2">이미지 미리보기</h2>
-          {/* 썸네일 */}
-          <div className="mb-4">
-            <strong>썸네일: </strong>
-            {row.thumbnail_url ? (
-              <Image
-                src={buildPublicImageUrl(row.thumbnail_url)}
-                alt="썸네일"
-                width={128}
-                height={128}
-                className="w-32 h-auto border cursor-pointer mt-1"
-                onClick={() => handleImageClick(row.thumbnail_url)}
-              />
-            ) : (
-              <div className="text-gray-500 mt-1">
-                이미지가 등록되지 않았습니다.
-              </div>
-            )}
-          </div>
-          {/* 추가 이미지들 */}
-          <div>
-            <strong>추가 이미지들:</strong>
-            {images.length > 0 ? (
-              <div className="flex gap-2 flex-wrap mt-1">
-                {images.map((img, idx) => (
-                  <Image
-                    key={idx}
-                    src={buildPublicImageUrl(img.image_url)}
-                    alt={`추가이미지-${idx}`}
-                    width={96}
-                    height={96}
-                    className="w-24 h-24 object-cover border cursor-pointer"
-                    onClick={() => handleImageClick(img.image_url)}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="text-gray-500 mt-1">
-                이미지 아직 업로드 되지않음
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* 하단 버튼들 */}
-      <div className="mt-4 flex items-center gap-2">
-        <button
-          className="px-3 py-1 bg-green-500 text-white rounded"
-          onClick={handleCall}
-        >
-          연락하기
-        </button>
-        <button
-          className="px-3 py-1 bg-orange-500 text-white rounded disabled:opacity-50"
-          onClick={handleApproval}
-          disabled={row.is_admitted && !row.thumbnail_url}
-          title={
-            row.is_admitted && !row.thumbnail_url
-              ? "이용자가 이미지를 업로드 한 후에 가능합니다"
-              : ""
-          }
-        >
-          {row.is_admitted ? "최종승인" : "승인"}
-        </button>
-        <button
-          className="px-3 py-1 bg-gray-300 text-black rounded"
-          onClick={() => setShowTextarea((prev) => !prev)}
-        >
-          {showTextarea ? "쪽지 닫기" : "쪽지 열기"}
-        </button>
-        <button
-          className="px-3 py-1 bg-blue-500 text-white rounded"
-          onClick={handleCloseWindow}
-        >
-          닫기
-        </button>
-      </div>
-
-      {/* 쪽지 영역 */}
-      {showTextarea && (
-        <div className="mt-3 border border-gray-200 p-2 relative">
-          <textarea
-            className="w-full h-20 border border-gray-300 p-2 pr-12 text-sm resize-none"
-            placeholder="쪽지를 작성하세요..."
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-          />
+        {/* 오른쪽: 연락하기 / 승인 / 쪽지 */}
+        <div className="flex items-center gap-2">
           <button
-            onClick={handleSendMsg}
-            style={{ backgroundColor: "#229ED9" }}
-            className="absolute top-2 right-2 h-8 w-8 rounded-full flex items-center justify-center"
+            onClick={handleCall}
+            className="px-4 py-2 rounded-md border border-green-500 
+                       text-green-600 hover:bg-green-500 hover:text-white hover:border-transparent text-sm"
           >
-            <PaperAirplaneIcon className="h-4 w-4 text-white" />
+            연락하기
+          </button>
+          {!row.final_admitted && (
+            <button
+              onClick={handleApproval}
+              disabled={row.is_admitted && !row.thumbnail_url}
+              title={
+                row.is_admitted && !row.thumbnail_url
+                  ? "이미지 업로드 후 가능"
+                  : ""
+              }
+              className="px-4 py-2 rounded-md border border-slate-300 
+                         text-slate-600 hover:bg-slate-100 text-sm"
+            >
+              {row.is_admitted ? "최종승인" : "승인"}
+            </button>
+          )}
+          <button
+            onClick={handleSendMsgPopup}
+            className="px-4 py-2 rounded-md border border-blue-400 text-blue-600 hover:bg-blue-600 hover:text-white hover:border-transparent text-sm"
+          >
+            쪽지 보내기
           </button>
         </div>
-      )}
+      </div>
     </div>
   );
 }
 
-export default function PartnershipPopupPage() {
+/** (수평) 테이블 행 */
+function DetailRow({ label, value }) {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <PartnershipPopupPageContent />
-    </Suspense>
+    <tr>
+      <th className="p-2 border border-slate-100 bg-slate-50 text-gray-600 w-28 text-left align-middle">
+        {label}
+      </th>
+      <td className="p-2 border border-slate-100 text-sm text-slate-700 align-middle text-left">
+        {value || "(값 없음)"}
+      </td>
+    </tr>
   );
 }
 
-/** 단순 정보 표시용 컴포넌트 */
-function DetailItem({ label, value }) {
+/** 섹션/코스 */
+function SectionCourseBlock({ sections, loadingSections }) {
+  if (loadingSections) {
+    return (
+      <div className="border border-slate-200 rounded-md p-3">
+        <h2 className="text-base font-semibold mb-2">섹션/코스 목록</h2>
+        <div className="text-sm text-gray-500">불러오는 중...</div>
+      </div>
+    );
+  }
+  if (!sections || sections.length === 0) {
+    return (
+      <div className="border border-slate-200 rounded-md p-3">
+        <h2 className="text-base font-semibold mb-2">섹션/코스 목록</h2>
+        <div className="text-sm text-gray-500">섹션이 없습니다.</div>
+      </div>
+    );
+  }
   return (
-    <div>
-      <strong>{label}:</strong> {value}
+    <div className="border border-slate-200 rounded-md p-3">
+      <h2 className="text-base font-semibold mb-2">섹션/코스 목록</h2>
+      {sections.map((sec) => (
+        <div key={sec.id} className="border-b last:border-none pb-2 mb-2">
+          <div className="mb-1">
+            <div className="font-semibold">
+              {sec.section_title || "(섹션명 없음)"}
+            </div>
+            {sec.section_description && (
+              <div className="text-sm text-gray-600">
+                {sec.section_description}
+              </div>
+            )}
+          </div>
+          {sec.courses && sec.courses.length > 0 ? (
+            <div className="pl-4">
+              {sec.courses.map((course) => (
+                <div key={course.id} className="text-sm text-slate-700">
+                  {course.course_name || "(코스이름없음)"} (
+                  {course.duration || "?"}시간)
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="pl-4 text-sm text-gray-400">코스가 없습니다.</div>
+          )}
+        </div>
+      ))}
     </div>
   );
 }

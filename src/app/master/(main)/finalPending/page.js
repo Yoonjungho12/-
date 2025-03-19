@@ -4,7 +4,7 @@ import PartnershipList from '../partnershipList'
 export default function page() {
   return (
     <div>
-      <PartnershipList listType="finalPending" />;
+      <PartnershipList listType="finalPending" />
     </div>
   )
 }

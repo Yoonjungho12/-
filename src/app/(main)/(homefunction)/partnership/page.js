@@ -1,3 +1,4 @@
+//src/app/%28main%29/%28homefunction%29/partnership/page.js
 "use client";
 import React, { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
