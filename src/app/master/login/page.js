@@ -43,7 +43,7 @@ export default function AdminLoginPage() {
     }
 
     // 특정 UUID와 일치하면 통과 → 관리자 페이지로 이동
-    router.push("/master/dashboard");
+    router.push("/master");
   };
 
   return (

@@ -3,15 +3,18 @@ import React, { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseF";
 import SubmitForm from "@/(main)/(homefunction)/partnership/components/SubmitForm";
+import TermsAgreement from "@/(main)/(homefunction)/partnership/components/TermsAgreement";
 import ImageUpload from "@/(main)/(homefunction)/partnership/components/ImageUpload";
 
 export default function NewListingPage() {
   const router = useRouter();
 
-  // isMaster 값 (true이면 자동 승인/최종승인 처리)
-  const isMaster = true; // 마스터 모드 활성화
+  // isMaster 값: true이면 자동 승인/최종승인 처리 (마스터 모드)
+  const isMaster = true;
 
+  // ─────────────────────────────────────────────
   // 로그인 세션 및 내 신청서 리스트
+  // ─────────────────────────────────────────────
   const [session, setSession] = useState(null);
   const [mySubmits, setMySubmits] = useState([]);
 
@@ -27,7 +30,9 @@ export default function NewListingPage() {
   const [thumbnailImage, setThumbnailImage] = useState(null);
   const [multiImages, setMultiImages] = useState([]);
 
+  // ─────────────────────────────────────────────
   // 폼 상태
+  // ─────────────────────────────────────────────
   const [adType, setAdType] = useState("");
   const [regions, setRegions] = useState([]);
   const [selectedRegionId, setSelectedRegionId] = useState(null);
@@ -60,6 +65,7 @@ export default function NewListingPage() {
 
   const [programInfo, setProgramInfo] = useState("");
   const [postTitle, setPostTitle] = useState("");
+  const [managerDesc, setManagerDesc] = useState("");
 
   const [themes, setThemes] = useState([]);
   const [selectedThemeIds, setSelectedThemeIds] = useState([]);
@@ -72,7 +78,11 @@ export default function NewListingPage() {
   const mapObjectRef = useRef(null);
   const markerRef = useRef(null);
 
-  // 로그인 및 세션 체크
+  const [termsAgreed, setTermsAgreed] = useState(false);
+
+  // ─────────────────────────────────────────────
+  // Session Check
+  // ─────────────────────────────────────────────
   useEffect(() => {
     async function checkSession() {
       const { data } = await supabase.auth.getSession();
@@ -105,16 +115,18 @@ export default function NewListingPage() {
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
       if (error) {
-        console.error("내 신청서 조회 에러:", error);
+        console.error("Error loading submissions:", error);
         return;
       }
       setMySubmits(data || []);
     } catch (err) {
-      console.error("loadMySubmits 오류:", err);
+      console.error("loadMySubmits error:", err);
     }
   }
 
-  // 수정 버튼 클릭 핸들러
+  // ─────────────────────────────────────────────
+  // Handle Edit Click
+  // ─────────────────────────────────────────────
   async function handleEditClick(submitId, isAdmitted) {
     setEditId(submitId);
     setEditIsAdmitted(isAdmitted);
@@ -126,7 +138,7 @@ export default function NewListingPage() {
         .eq("id", submitId)
         .single();
       if (error || !row) {
-        alert("신청서 불러오기 오류");
+        alert("Error loading submission");
         return;
       }
       setAdType(row.ad_type || "");
@@ -134,6 +146,8 @@ export default function NewListingPage() {
       setPendingSubRegionId(row.sub_region_id || null);
       setCompanyName(row.company_name || "");
       setPhoneNumber(row.phone_number || "");
+      setManagerContact(row.manager_contact || "");
+
       const knownParkingValues = ["주차 가능(문의)", "건물 내 주차(문의)"];
       if (knownParkingValues.includes(row.parking_type)) {
         setParkingSelectVal(row.parking_type);
@@ -142,9 +156,11 @@ export default function NewListingPage() {
         setParkingSelectVal("직접입력");
         setParkingDirect(row.parking_type || "");
       }
+
       setContactMethod(row.contact_method || "");
       setGreeting(row.greeting || "");
       setEventInfo(row.event_info || "");
+
       const knownHolidays = [
         "연중무휴",
         "월요일 휴무",
@@ -167,6 +183,7 @@ export default function NewListingPage() {
           setHolidayDirect("");
         }
       }
+
       if (row.open_hours === "24시간") {
         setIs24Hours(true);
         setStartTime("");
@@ -182,11 +199,13 @@ export default function NewListingPage() {
           setEndTime("");
         }
       }
+
       setAddressInput(row.address || "");
       setAddressStreet(row.address_street || "");
       setNearBuilding(row.near_building || "");
       setProgramInfo(row.program_info || "");
       setPostTitle(row.post_title || "");
+
       const { data: themeRows } = await supabase
         .from("partnershipsubmit_themes")
         .select("theme_id")
@@ -195,16 +214,94 @@ export default function NewListingPage() {
         const themeIds = themeRows.map((t) => t.theme_id);
         setSelectedThemeIds(themeIds);
       }
+
       if (row.lat && row.lng) {
         setMarkerPosition({ lat: row.lat, lng: row.lng });
       }
-      // 필요시 이미지 정보(썸네일, 멀티이미지)도 설정 가능
     } catch (err) {
-      console.error("handleEditClick 오류:", err);
+      console.error("handleEditClick error:", err);
     }
   }
 
-  // 지도 로직
+  // ─────────────────────────────────────────────
+  // Fetch Regions & Themes from DB
+  // ─────────────────────────────────────────────
+  useEffect(() => {
+    async function fetchRegions() {
+      const { data, error } = await supabase
+        .from("regions")
+        .select("*")
+        .is("parent_id", null) // Adjust this condition if your DB structure differs
+        .order("sort_order", { ascending: true });
+      if (error) {
+        console.error("Error fetching regions:", error);
+      } else {
+        setRegions(data || []);
+      }
+    }
+    fetchRegions();
+
+    async function fetchThemes() {
+      const { data, error } = await supabase
+        .from("themes")
+        .select("id, name")
+        .order("id", { ascending: true });
+      if (error) {
+        console.error("Error fetching themes:", error);
+      } else {
+        setThemes(data || []);
+      }
+    }
+    fetchThemes();
+  }, []);
+
+  // Fetch Child Regions when selectedRegionId changes
+  useEffect(() => {
+    async function fetchChildRegions() {
+      if (selectedRegionId) {
+        const { data, error } = await supabase
+          .from("regions")
+          .select("*")
+          .eq("parent_id", selectedRegionId)
+          .order("sort_order", { ascending: true });
+        if (error) {
+          console.error("Error fetching child regions:", error);
+          setChildRegions([]);
+        } else {
+          setChildRegions(data || []);
+        }
+        if (pendingSubRegionId) {
+          setSelectedSubRegionId(pendingSubRegionId);
+          setPendingSubRegionId(null);
+        } else {
+          setSelectedSubRegionId(null);
+        }
+      } else {
+        setChildRegions([]);
+        setSelectedSubRegionId(null);
+      }
+    }
+    fetchChildRegions();
+  }, [selectedRegionId]);
+
+  // ─────────────────────────────────────────────
+  // 30-minute intervals for timeOptions
+  // ─────────────────────────────────────────────
+  useEffect(() => {
+    const temp = [];
+    for (let h = 0; h < 24; h++) {
+      for (let m = 0; m < 60; m += 30) {
+        const hh = String(h).padStart(2, "0");
+        const mm = String(m).padStart(2, "0");
+        temp.push(`${hh}:${mm}`);
+      }
+    }
+    setTimeOptions(temp);
+  }, []);
+
+  // ─────────────────────────────────────────────
+  // Map Logic
+  // ─────────────────────────────────────────────
   useEffect(() => {
     if (!window.kakao) {
       const script = document.createElement("script");
@@ -316,20 +413,8 @@ export default function NewListingPage() {
     }
   }
 
-  // 30분 간격 설정
-  useEffect(() => {
-    const temp = [];
-    for (let h = 0; h < 24; h++) {
-      for (let m = 0; m < 60; m += 30) {
-        const hh = String(h).padStart(2, "0");
-        const mm = String(m).padStart(2, "0");
-        temp.push(`${hh}:${mm}`);
-      }
-    }
-    setTimeOptions(temp);
-  }, []);
-
   function validateForm() {
+    if (!termsAgreed) return "약관에 동의해주셔야 신청이 가능합니다!";
     if (!selectedRegionId) return "지역을 선택해주세요.";
     if (!companyName.trim()) return "업체명은 필수입니다.";
     if (!phoneNumber.trim()) return "전화번호 필수입니다.";
@@ -399,14 +484,13 @@ export default function NewListingPage() {
       themes: selectedThemeIds,
       lat: markerPosition.lat,
       lng: markerPosition.lng,
-      // 이미지 데이터 포함: 썸네일과 멀티이미지
       thumbnail_image: thumbnailImage,
       multi_images: multiImages,
     };
 
-    // 마스터 모드일 경우 자동 승인 처리
+    // 마스터 모드이면 자동 승인/최종승인 처리
     if (isMaster) {
-      payload.isMaster = true;
+      isMaster=true;
     }
 
     const { data: sessionData } = await supabase.auth.getSession();
@@ -453,7 +537,11 @@ export default function NewListingPage() {
 
   return (
     <div className="max-w-4xl mx-auto p-4">
+   
+
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <h1 className="text-2xl font-bold mb-4">업체 등록</h1>
+
         <SubmitForm
           editId={editId}
           isMaster={isMaster}
@@ -507,18 +595,19 @@ export default function NewListingPage() {
           setProgramInfo={setProgramInfo}
           postTitle={postTitle}
           setPostTitle={setPostTitle}
+          managerDesc={managerDesc}
+          setManagerDesc={setManagerDesc}
           mapRef={mapRef}
           handleAddressSearch={handleAddressSearch}
           handleKeyDown={handleKeyDown}
           markerPosition={markerPosition}
         />
-        <ImageUpload
-          editId={editId}
-          editIsAdmitted={editIsAdmitted}
-          imageUploadSectionRef={imageUploadSectionRef}
-          setThumbnailImage={setThumbnailImage}
-          setMultiImages={setMultiImages}
+
+        <TermsAgreement
+          termsAgreed={termsAgreed}
+          setTermsAgreed={setTermsAgreed}
         />
+
         <div className="flex justify-center">
           <button
             type="submit"
@@ -528,6 +617,16 @@ export default function NewListingPage() {
           </button>
         </div>
       </form>
+
+      {editId && editIsAdmitted && (
+        <ImageUpload
+          editId={editId}
+          editIsAdmitted={editIsAdmitted}
+          imageUploadSectionRef={imageUploadSectionRef}
+          setThumbnailImage={setThumbnailImage}
+          setMultiImages={setMultiImages}
+        />
+      )}
     </div>
   );
 }
