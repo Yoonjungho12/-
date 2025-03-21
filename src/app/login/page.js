@@ -1,17 +1,16 @@
 "use client";
-
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { supabase } from "../lib/supabaseF";
+import { supabase } from "@/lib/supabaseF"; // 클라이언트용 supabase 객체
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
   const [errorMessage, setErrorMessage] = useState("");
   const router = useRouter();
 
+  // (A) 일반 이메일+비번 로그인
   const handleLogin = async () => {
     setErrorMessage("");
     try {
@@ -23,54 +22,105 @@ export default function LoginPage() {
         setErrorMessage(error.message);
         return;
       }
-      // 로그인 성공 → 홈 이동 (예시)
+      // 로그인 성공 → 홈으로 이동
       router.push("/");
     } catch (err) {
       setErrorMessage(err.message || "로그인 중 오류가 발생했습니다.");
     }
   };
 
-  // 폼 제출 시 엔터키 입력 방지하고 handleLogin 실행
+  // 폼 제출(Enter) 시 처리
   const handleFormSubmit = (e) => {
-    e.preventDefault(); // 폼 기본동작 막기
+    e.preventDefault();
     handleLogin();
+  };
+
+  // (B) 구글 로그인
+async function signInWithGoogle() {
+  // NODE_ENV 값이 development이면 로컬 주소, 아니라면 환경 변수의 주소를 사용하게끔 분기 처리했어요.
+  const callbackBaseUrl =
+    process.env.NODE_ENV === 'development'
+      ? 'http://localhost:3000'
+      : process.env.CALL_BACK_URL
+
+  // Supabase OAuth 로그인 로직
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      // 로컬이면 localhost:3000, 로컬이 아니면 env.process.CALL_BACK_URL
+      // 뒤에 /auth/callback?provider=google 붙이기
+      redirectTo: callbackBaseUrl + '/auth/callback?provider=google',
+    },
+  })
+
+  // 에러 처리
+  if (error) {
+    console.error('구글 로그인 중 오류가 발생했어요:', error)
+    return
+  }
+
+  // 정상적으로 data를 받아온 경우
+  console.log('구글 로그인 성공!', data)
+}
+const handleKakaoLogin = async () => {
+    setErrorMessage("");
+    try {
+      // 로컬 환경이면 http://localhost:3000, 아니면 process.env.CALL_BACK_URL 사용
+      const callbackBaseUrl =
+        process.env.NODE_ENV === "development"
+          ? "http://localhost:3000"
+          : process.env.CALL_BACK_URL;
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "kakao",
+        options: {
+          redirectTo: callbackBaseUrl + "/auth/callback?provider=kakao",
+        },
+      });
+
+      if (error) {
+        setErrorMessage(error.message);
+        return;
+      }
+      // 인증 후 돌아옴
+      console.log("카카오 로그인 성공:", data);
+    } catch (err) {
+      setErrorMessage(err.message || "카카오 로그인 중 오류가 발생했습니다.");
+    }
   };
 
   return (
     <div className="h-screen w-full bg-gray-100 flex items-center justify-center px-4">
-      {/* 흰색 박스 */}
       <div className="w-full max-w-md rounded-md bg-white p-6 shadow text-base">
         {/* 로고 영역 */}
         <div className="mb-6 text-center">
           <h1 className="text-2xl font-bold text-red-500">
             VIP info
-            <span className="ml-1 text-xl font-normal text-green-600">
-              VIP 건마
-            </span>
+            <span className="ml-1 text-xl font-normal text-green-600">VIP 건마</span>
           </h1>
         </div>
 
-        {/* 입력 폼 (폼 전체를 감싸서 엔터 제출 가능하도록) */}
+        {/* 입력 폼 */}
         <form onSubmit={handleFormSubmit} className="space-y-5">
-          {/* 아이디(이메일) 입력 */}
           <input
             type="text"
-            placeholder="아이디"
-            className="w-full rounded border border-gray-300 px-3 py-3 text-base focus:outline-none focus:ring-2 focus:ring-red-400"
+            placeholder="아이디(이메일)"
+            className="w-full rounded border border-gray-300 px-3 py-3 text-base
+                       focus:outline-none focus:ring-2 focus:ring-red-400"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
 
-          {/* 비밀번호 입력 */}
           <input
             type="password"
             placeholder="비밀번호"
-            className="w-full rounded border border-gray-300 px-3 py-3 text-base focus:outline-none focus:ring-2 focus:ring-red-400"
+            className="w-full rounded border border-gray-300 px-3 py-3 text-base
+                       focus:outline-none focus:ring-2 focus:ring-red-400"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
 
-          {/* 계정 오류 정보 (빨간색 문구) */}
+          {/* 에러 메시지 표시 */}
           {errorMessage && (
             <div className="flex items-center text-sm text-red-500">
               <svg
@@ -111,24 +161,29 @@ export default function LoginPage() {
             로그인
           </button>
 
-          {/* 소셜 로그인 (네이버 / 카카오) */}
+          {/* 소셜 로그인 버튼들 */}
           <div className="flex items-center justify-center space-x-3">
+            {/* (1) 구글 로그인 버튼 (네이버 → 구글로 변경) */}
             <button
               type="button"
-              className="flex items-center space-x-1 rounded bg-green-600 px-4 py-3 text-base font-medium text-white hover:bg-green-700"
+              onClick={handleGoogleLogin}
+              className="flex items-center space-x-1 rounded bg-blue-500 px-4 py-3
+                         text-base font-medium text-white hover:bg-blue-600"
             >
-              {/* 네이버 아이콘 (예시) */}
-              <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M0 0h24v24H0z" fill="none" />
-                <path d="M3 3h18v18H3V3z" />
+              {/* 간단한 구글 아이콘 (혹은 FontAwesome 등 사용 가능) */}
+              <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 512 512">
+                <path d="M256 8C119.1 8 8 119.1 8 256c0 123.4 90.98 225.9 209 245.2v-173h-63v-72h63v-55.1c0-62.2 37.3-96.3 93.8-96.3 27.4 0 56 4.9 56 4.9v61h-31.5c-31 0-40.7 19.3-40.7 39.2v46.3h69.2l-11 72h-58.2v173C413 481.9 504 379.4 504 256 504 119.1 392.9 8 256 8z" />
               </svg>
-              <span>네이버 로그인</span>
+              <span>구글 로그인</span>
             </button>
+
+            {/* (2) 카카오 로그인 버튼 */}
             <button
               type="button"
-              className="flex items-center space-x-1 rounded bg-yellow-300 px-4 py-3 text-base font-medium text-gray-800 hover:bg-yellow-400"
+              onClick={handleKakaoLogin}
+              className="flex items-center space-x-1 rounded bg-yellow-300 px-4 py-3
+                         text-base font-medium text-gray-800 hover:bg-yellow-400"
             >
-              {/* 카카오 아이콘 (예시) */}
               <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M0 0h24v24H0z" fill="none" />
                 <path d="M3 3h18v18H3V3z" />

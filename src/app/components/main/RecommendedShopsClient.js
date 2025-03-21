@@ -88,7 +88,7 @@ export default function RecommendedShopsClient({ initialTag, initialShops }) {
           left-1/2 
           -translate-x-1/2 
           w-screen 
-          bg-gray-100 
+          bg-gray-50 
           py-10 
           flex 
           flex-col 
@@ -126,8 +126,8 @@ export default function RecommendedShopsClient({ initialTag, initialShops }) {
                   onClick={() => handleClickTag(tag)}
                   className={
                     isSelected
-                      ? "rounded-full bg-red-500 px-2 py-2 md:py-3 md:px-3 text-white hover:bg-red-600 text-sm md:text-base"
-                      : "rounded-full border border-gray-300 px-2 py-2 md:py-0 md:px-3 text-gray-600 hover:bg-gray-100 text-sm md:text-base"
+                      ? "rounded-full bg-orange-500 px-2 py-2 md:py-3 md:px-3 text-white hover:bg-orange-600 text-sm md:text-base"
+                      : "rounded-full border border-orange-500 px-2 py-2 md:py-0 md:px-3 bg-orange-50 text-orange-500 hover:bg-orange-100 text-sm md:text-base"
                   }
                 >
                   {tag}

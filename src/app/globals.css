@@ -116,7 +116,8 @@ body {
           background-color: #fafafa; /* 살짝 밝게 */
         }
         .region-cell.selected {
-          background-color: #f9665e;
+          /* background-color: #f9665e; */
+          background-color: #f58700;
           color: #fff;
         }
 

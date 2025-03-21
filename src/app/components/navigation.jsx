@@ -19,7 +19,7 @@ export default function NavBar() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [myNickname, setMyNickname] = useState("(닉네임 없음)");
 
-  // 메가메뉴 열고 닫기
+  // 메가메뉴 열리고 닫히는 상태
   const [showMegaMenu, setShowMegaMenu] = useState(false);
 
   // 로그인 여부
@@ -28,9 +28,7 @@ export default function NavBar() {
   // 수평 스크롤용 Ref
   const menuRef = useRef(null);
 
-  // ─────────────────────────────────────────────────────
   // 세션 & 프로필 로드
-  // ─────────────────────────────────────────────────────
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
@@ -87,26 +85,18 @@ export default function NavBar() {
     }
   }
 
-  // ─────────────────────────────────────────────────────
-  // (A) 로그아웃 시 localStorage 키 제거
-  // ─────────────────────────────────────────────────────
+  // 로그아웃
   const handleLogout = async () => {
     try {
-      // 1) supabase 로그아웃 (세션 제거)
       await supabase.auth.signOut();
-
-      // 2) localStorage에서 특정 키(remove)
-      //    예: "anon_user_id"나 "user_id" 등의 key가 있으면 제거
       localStorage.removeItem("user_id");
-
-      // 3) router push
       router.push("/");
     } catch (err) {
       console.error("로그아웃 실패:", err);
     }
   };
 
-  // 메시지 아이콘
+  // 1:1 쪽지 아이콘
   const handleMessageIconClick = () => {
     if (!session?.user?.id) {
       alert("로그인 필요");
@@ -121,16 +111,15 @@ export default function NavBar() {
       alert("로그인을 해주세요");
       return;
     }
-    // 로그인되어 있다면 /mypage 로
     router.push("/mypage");
   };
 
-  // 메가메뉴
+  // 전체 카테고리 버튼 클릭 → MegaMenu 열고 닫기
   const toggleMegaMenu = () => {
     setShowMegaMenu((prev) => !prev);
   };
 
-  // 검색 창 → Enter 시 /search?q=... 로 라우팅
+  // 검색 창 → Enter 시 /search?q=...로 이동
   const handleSearchKeyDown = (e) => {
     if (e.key === "Enter") {
       const query = e.target.value.trim();
@@ -142,42 +131,33 @@ export default function NavBar() {
   // 모바일 메뉴 화살표 스크롤
   const scrollLeft = () => {
     if (menuRef.current) {
-      menuRef.current.scrollBy({
-        left: -200,
-        behavior: "smooth",
-      });
+      menuRef.current.scrollBy({ left: -200, behavior: "smooth" });
     }
   };
-
   const scrollRight = () => {
     if (menuRef.current) {
-      menuRef.current.scrollBy({
-        left: 200,
-        behavior: "smooth",
-      });
+      menuRef.current.scrollBy({ left: 200, behavior: "smooth" });
     }
   };
 
-  // ─────────────────────────────────────────────────────
-  // Render
-  // ─────────────────────────────────────────────────────
   return (
-    <header className="w-full border-b border-gray-200 bg-white">
+    <header className="w-full bg-white">
       {/* (A) 모바일 전용 상단바 */}
       <div className="flex items-center px-4 py-3 md:hidden space-x-3">
         {/* 로고 */}
         <Link href="/">
-          <div className="flex items-center space-x-1 mr-10 ml-3 text-xl font-bold text-red-500">
-            <span>여기닷</span>
+          <div className="flex items-center space-x-1 mr-10 ml-3 text-xl font-bold">
+            <span className="text-orange-500">여기닷</span>
           </div>
         </Link>
-        {/* 검색창 */}
+
+        {/* 검색창 (모바일) */}
         <div className="relative flex-1">
           <input
             type="text"
             placeholder="검색"
-            className="w-full rounded-full border border-red-300 py-3 pl-4 pr-9 text-base
-                       focus:outline-none focus:ring-2 focus:ring-red-400"
+            className="w-full rounded-full border border-orange-500 py-3 pl-4 pr-9 text-base
+                       focus:outline-none focus:ring-1 focus:ring-red-400"
             onKeyDown={handleSearchKeyDown}
           />
           <svg
@@ -194,374 +174,134 @@ export default function NavBar() {
       </div>
 
       {/* (B) PC 해상도 상단바 */}
-      <div className="mx-auto hidden max-w-7xl items-center justify-between px-6 py-3 md:flex">
-        {/* 로고 영역 */}
-        <Link href="/">
-          <div className="flex items-center space-x-2 text-2xl font-bold text-red-500">
-            <span>여기닷</span>
+      <div className="mx-auto hidden w-full max-w-7xl px-6 py-3 md:flex">
+        <div className="grid w-full grid-cols-3 items-center">
+          {/* 왼쪽: 로고 */}
+          <div className="flex justify-start">
+            <Link href="/">
+              <div className="flex items-center space-x-2 text-2xl font-bold text-orange-500">
+                <span>여기닷</span>
+              </div>
+            </Link>
           </div>
-        </Link>
 
-        {/* 검색창 */}
-        <div className="relative w-full max-w-md">
-          <input
-            type="text"
-            placeholder="지역, 업종, 상호명을 검색하세요"
-            className="w-full rounded-full border border-red-300 py-3 pl-6 pr-14 text-base
-                       focus:outline-none focus:ring-2 focus:ring-red-400"
-            onKeyDown={handleSearchKeyDown}
-          />
-          <svg
-            className="absolute right-4 top-1/2 h-6 w-6 -translate-y-1/2 text-red-400"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            viewBox="0 0 24 24"
-          >
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-        </div>
-
-        {/* 오른쪽 아이콘들 */}
-        <div className="flex items-center space-x-7">
-          {isLoggedIn ? (
-            <>
-              {/* 로그아웃 아이콘 */}
-              <div
-                className="flex cursor-pointer flex-col items-center text-gray-600 hover:text-red-500"
-                onClick={handleLogout}
+          {/* 가운데: 검색창 (PC) */}
+          <div className="flex justify-center">
+            <div className="relative w-full max-w-md">
+              <input
+                type="text"
+                placeholder="지역, 업종, 상호명을 검색하세요"
+                className="w-full rounded-full border border-orange-500
+                           py-3 pl-6 pr-14 text-base focus:outline-none
+                           focus:ring-2 focus:ring-red-400"
+                onKeyDown={handleSearchKeyDown}
+              />
+              <svg
+                className="absolute right-4 top-1/2 h-6 w-6 -translate-y-1/2 text-red-400"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
               >
-                <svg
-                  className="mb-1.5 h-7 w-7"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M15.75 9V5.25A2.25
-                       2.25 0
-                       0013.5 3h-7.5A2.25
-                       2.25 0
-                       003.75 5.25v13.5A2.25
-                       2.25 0
-                       006
-                       21h7.5a2.25
-                       2.25 0
-                       002.25-2.25V15"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M9 9l6
-                       3-6
-                       3V9z"
-                  />
-                </svg>
-                <span className="text-sm">로그아웃</span>
-              </div>
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+            </div>
+          </div>
 
-              {/* 나의활동 */}
-              <div
-                className="flex cursor-pointer flex-col items-center text-gray-600 hover:text-red-500"
-                onClick={handleMyActivityClick}
-              >
-                <svg
-                  className="mb-1.5 h-7 w-7"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
+          {/* 오른쪽 아이콘들 */}
+          <div className="flex justify-end items-center space-x-7">
+            {isLoggedIn ? (
+              <>
+                {/* 로그아웃 */}
+                <div
+                  className="flex cursor-pointer flex-col items-center text-gray-600 hover:text-orange-500"
+                  onClick={handleLogout}
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 8c1.657 0
-                       3 .843
-                       3 1.882v4.235c0
-                       1.04-1.343
-                       1.883-3
-                       1.883s-3
-                       -.843-3
-                       -1.883v-4.235
-                       C9
-                       8.843
-                       10.343
-                       8 12
-                       8z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M17.293
-                       9.293a1 1
-                       0 011.414
-                       1.414L16.414
-                       13l2.293
-                       2.293a1 1
-                       0 01-1.414
-                       1.414l-2.293
-                       -2.293-2.293
-                       2.293a1 1
-                       0 01-1.414
-                       -1.414
-                       L13
-                       13l-2.293
-                       -2.293a1 1
-                       0 011.414
-                       -1.414
-                       L14
-                       11.586l2.293
-                       -2.293z"
-                  />
-                </svg>
-                <span className="text-sm">나의활동</span>
-              </div>
+                 <img src="/icons/logout.svg" width={30}alt="로그인 아이콘" />
+                  <span className="text-sm mt-">로그아웃</span>
+                </div>
 
-              {/* 1:1 쪽지 아이콘 */}
-              <div className="relative flex cursor-pointer flex-col items-center text-gray-600 hover:text-red-500">
-                <svg
-                  onClick={handleMessageIconClick}
-                  className="mb-1.5 h-7 w-7"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
+                {/* 나의활동 */}
+                <div
+                  className="flex cursor-pointer flex-col items-center text-gray-600 hover:text-orange-500"
+                  onClick={handleMyActivityClick}
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M3 8l7.89
-                       5.26a3 3
-                       0 003.22
-                       0L22 8m-9
-                       13H7a2
-                       2 0
-                       01-2-2V5
-                       a2 2 0
-                       012-2h10a2
-                       2 0
-                       012
-                       2v14a2
-                       2 0
-                       01-2
-                       2h-2"
-                  />
-                </svg>
-                <span className="text-sm">1:1 쪽지</span>
-                {unreadCount > 0 && (
-                  <div
-                    className="absolute -top-2 -right-2 flex
-                               h-5 w-5 items-center justify-center
-                               rounded-full bg-red-600 text-[10px]
-                               font-bold text-white"
-                  >
-                    {unreadCount}
-                  </div>
-                )}
-                {showMsgPopup && (
-                  <MessagePopupLazy
-                    onClose={() => setShowMsgPopup(false)}
-                    myId={session.user.id}
-                    myNickname={myNickname}
-                    unreadCount={unreadCount}
-                    setUnreadCount={setUnreadCount}
-                  />
-                )}
-              </div>
+                        <img src="/icons/history.svg" width={30}alt="로그인 아이콘" />
+                  <span className="text-sm mt-">나의활동</span>
+                </div>
 
-              {/* 제휴문의 */}
-              <div className="flex cursor-pointer flex-col items-center text-gray-600 hover:text-red-500">
-                <Link href="/partnership" className="flex flex-col items-center">
-                  <svg
-                    className="mb-1.5 h-7 w-7"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M3
-                         8l7.89
-                         5.26a3
-                         3 0
-                         003.22
-                         0L22
-                         8m-9
-                         13H7a2
-                         2 0
-                         01-2
-                         -2V5a2
-                         2 0
-                         012
-                         -2h10a2
-                         2 0
-                         012
-                         2v14a2
-                         2 0
-                         01-2
-                         2h-2"
+                {/* 1:1 쪽지 */}
+                <div className="relative flex cursor-pointer flex-col items-center text-gray-600 hover:text-orange-500">
+                       <img src="/icons/chat.svg" width={30}alt="로그인 아이콘" />
+                  <span className="text-sm mt-">1:1 쪽지</span>
+                  {unreadCount > 0 && (
+                    <div
+                      className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center
+                                 rounded-full bg-red-600 text-[10px] font-bold text-white"
+                    >
+                      {unreadCount}
+                    </div>
+                  )}
+                  {showMsgPopup && (
+                    <MessagePopupLazy
+                      onClose={() => setShowMsgPopup(false)}
+                      myId={session.user.id}
+                      myNickname={myNickname}
+                      unreadCount={unreadCount}
+                      setUnreadCount={setUnreadCount}
                     />
-                  </svg>
-                  <span className="text-sm">제휴문의</span>
-                </Link>
-              </div>
-            </>
-          ) : (
-            <>
-              {/* 비로그인 */}
-              <Link
-                href="/login"
-                className="flex cursor-pointer flex-col items-center text-gray-600 hover:text-red-500"
-              >
-                <svg
-                  className="mb-1.5 h-7 w-7"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M15.75
-                       9V5.25A2.25
-                       2.25 0
-                       0013.5
-                       3h-7.5A2.25
-                       2.25 0
-                       003.75
-                       5.25v13.5A2.25
-                       2.25 0
-                       006
-                       21h7.5a2.25
-                       2.25 0
-                       002.25
-                       -2.25V15"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M9
-                       9l6 3-6 3V9z"
-                  />
-                </svg>
-                <span className="text-sm">로그인</span>
-              </Link>
+                  )}
+                </div>
 
-              <div
-                className="flex cursor-pointer flex-col items-center text-gray-600 hover:text-red-500"
-                onClick={handleMyActivityClick}
-              >
-                <svg
-                  className="mb-1.5 h-7 w-7"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
+                {/* 제휴문의 */}
+                <div className="flex cursor-pointer flex-col items-center text-gray-600 hover:text-orange-500">
+                  <Link href="/partnership" className="flex flex-col items-center">
+                      <img src="/icons/paper.svg" width={30}alt="로그인 아이콘" />
+                    <span className="text-sm mt-">제휴문의</span>
+                  </Link>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* 비로그인 */}
+                <Link
+                  href="/login"
+                  className="flex cursor-pointer flex-col items-center text-gray-600 hover:text-orange-500"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12
-                       8c1.657
-                       0 3 .843
-                       3 1.882v4.235
-                       c0 1.04-1.343
-                       1.883-3
-                       1.883s-3
-                       -.843-3
-                       -1.883v-4.235
-                       C9
-                       8.843
-                       10.343
-                       8 12
-                       8z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M17.293
-                       9.293a1 1
-                       0 011.414
-                       1.414L16.414
-                       13l2.293
-                       2.293a1 1
-                       0 01-1.414
-                       1.414l-2.293
-                       -2.293-2.293
-                       2.293a1 1
-                       0 01-1.414
-                       -1.414L13
-                       13l-2.293
-                       -2.293a1 1
-                       0 011.414
-                       -1.414
-                       L14
-                       11.586l2.293
-                       -2.293z"
-                  />
-                </svg>
-                <span className="text-sm">나의활동</span>
-              </div>
-
-              <div className="flex cursor-pointer flex-col items-center text-gray-600 hover:text-red-500">
-                <Link href="/partnership" className="flex flex-col items-center">
-                  <svg
-                    className="mb-1.5 h-7 w-7"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M3
-                         8l7.89
-                         5.26a3
-                         3 0
-                         003.22
-                         0L22
-                         8m-9
-                         13H7a2
-                         2 0
-                         01-2
-                         -2V5a2
-                         2 0
-                         012
-                         -2h10a2
-                         2 0
-                         012
-                         2v14a2
-                         2 0
-                         01-2
-                         2h-2"
-                    />
-                  </svg>
-                  <span className="text-sm">제휴문의</span>
+                 <img src="/icons/log-in.svg" alt="로그인 아이콘" width={30}/>
+                  <span className="text-sm mt-">로그인</span>
                 </Link>
-              </div>
-            </>
-          )}
+
+                <div
+                  className="flex cursor-pointer flex-col items-center text-gray-600 hover:text-orange-500"
+                  onClick={handleMyActivityClick}
+                >
+                 <img src="/icons/history.svg" width={30}alt="로그인 아이콘" />
+                  <span className="text-sm mt-">나의활동</span>
+                </div>
+
+                <div className="flex cursor-pointer flex-col items-center text-gray-600 hover:text-orange-500">
+                  <Link href="/partnership" className="flex flex-col items-center">
+                     <img src="/icons/paper.svg" width={30}alt="로그인 아이콘" className="text-gray-600" />
+                    <span className="text-sm mt-">제휴문의</span>
+                  </Link>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
       {/* (C) 하단 바 (카테고리 메뉴) */}
-      <div className="border-t border-gray-200 bg-white">
-        {/* 새로운 래퍼: max-w-7xl px-6 내부에서 화살표 위치를 좀 더 안쪽으로 조정 */}
-        <div className="relative mx-auto max-w-7xl px-6">
-          {/* (C-0) 모바일 전용 화살표 (양쪽) */}
+      {/* 부모 컨테이너에 relative 추가! */}
+      <div className="rounded-t-xl border-target border-t border-b border-gray-200 relative">
+        <div className="relative mx-auto max-w-7xl px-6 text-zinc-700">
+          {/* (C-0) 모바일 화살표 */}
           <button
-            className="absolute left-[0px] top-1/2 -translate-y-1/2
-                       md:hidden z-10"
+            className="absolute left-[0px] top-1/2 -translate-y-1/2 md:hidden z-10"
             onClick={scrollLeft}
-            aria-label="스크롤 왼쪽으로"
+            aria-label="스크롤 왼쪽"
           >
             <svg
               className="h-6 w-6 text-gray-600"
@@ -570,18 +310,13 @@ export default function NavBar() {
               strokeWidth="2"
               viewBox="0 0 24 24"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15 19l-7-7 7-7"
-              />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
           </button>
           <button
-            className="absolute right-[0px] top-1/2 -translate-y-1/2
-                       md:hidden z-10"
+            className="absolute right-[0px] top-1/2 -translate-y-1/2 md:hidden z-10"
             onClick={scrollRight}
-            aria-label="스크롤 오른쪽으로"
+            aria-label="스크롤 오른쪽"
           >
             <svg
               className="h-6 w-6 text-gray-600"
@@ -590,25 +325,20 @@ export default function NavBar() {
               strokeWidth="2"
               viewBox="0 0 24 24"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M9 5l7 7-7 7"
-              />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
             </svg>
           </button>
 
-          {/* (C-1) 메뉴 래퍼: 수평 스크롤용 */}
+          {/* (C-1) 수평 스크롤 메뉴 */}
           <div
             ref={menuRef}
             className="overflow-x-auto whitespace-nowrap flex items-center space-x-4 py-2 hide-scrollbar"
           >
-            {/* 전체 카테고리 버튼 (모바일에선 숨김, md 이상에서만 표시) */}
             <button
-              className="hidden md:flex items-center space-x-1 text-gray-700 hover:text-red-500"
+              className="hidden md:flex items-center space-x-1 hover:text-orange-500"
               onClick={toggleMegaMenu}
             >
-              <span className="font-medium">전체 카테고리</span>
+              <span className="font-sm">전체 카테고리</span>
               <svg
                 className={`h-4 w-4 transition-transform ${
                   showMegaMenu ? "rotate-180" : ""
@@ -618,228 +348,247 @@ export default function NavBar() {
                 strokeWidth="2"
                 viewBox="0 0 24 24"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M19 9l-7 7-7-7"
-                />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
               </svg>
             </button>
 
-            {/* 링크들: inline-block md:mx-5으로 해서 수평 스크롤 시 나열 */}
-            <Link
-              href="/board/전체/전체/전체"
-              className="text-gray-700 hover:text-red-500 inline-block md:mx-5"
-            >
+            <Link href="/board/전체/전체/전체" className="hover:text-orange-500 inline-block md:mx-5">
               지역별 검색
             </Link>
-            <Link
-              href="/today/전체/전체/전체"
-              className="text-gray-700 hover:text-red-500 inline-block md:mx-5"
-            >
+            <Link href="/today/전체/전체/전체" className="hover:text-orange-500 inline-block md:mx-5">
               실시간 인기 업체
             </Link>
-            <Link
-              href="/near-me"
-              className="text-gray-700 hover:text-red-500 inline-block md:mx-5"
-            >
+            <Link href="/near-me" className="hover:text-orange-500 inline-block md:mx-5">
               내 주변 업체 찾기
             </Link>
-            <Link
-              href="/club/전체/전체/전체"
-              className="text-gray-700 hover:text-red-500 inline-block md:mx-5"
-            >
+            <Link href="/club/전체/전체/전체" className="hover:text-orange-500 inline-block md:mx-5">
               나이트/클럽
             </Link>
-            <Link
-              href="/community"
-              className="text-gray-700 hover:text-red-500 inline-block md:mx-5"
-            >
+            <Link href="/community" className="hover:text-orange-500 inline-block md:mx-5">
               커뮤니티
             </Link>
-            {/* 
-              필요하다면 메뉴가 더 있다면 계속 아래와 같이 
-              <Link ...>...</Link> 추가
-            */}
           </div>
 
-          {/* MegaMenu (PC용) */}
-          {showMegaMenu && (
-            <div
-              className="absolute left-0 top-full z-50 mt-2 w-full border
-                         border-gray-200 bg-white shadow-lg"
-            >
-              <div className="mx-auto grid max-w-7xl grid-cols-4 gap-4 px-6 py-4">
-                {/* 예: 지역별 샵 */}
-                <div>
-                  <h2 className="mb-2 font-semibold text-red-500">지역별 샵</h2>
-                  <ul className="space-y-1 text-sm text-gray-700 ">
-                    <li>
-                      <Link
-                        href="/board/강남-서초-송파/전체"
-                        onClick={() => setShowMegaMenu(false)}
-                      >
-                        강남/서초/송파
-                      </Link>
-                    </li>
-                    <li>
-                      <Link
-                        href="/board/서울/전체"
-                        onClick={() => setShowMegaMenu(false)}
-                      >
-                        서울
-                      </Link>
-                    </li>
-                    <li>
-                      <Link
-                        href="/board/수원-동탄-용인-화성-평택-오산/전체"
-                        onClick={() => setShowMegaMenu(false)}
-                      >
-                        수원/동탄/용인/화성/평택/오산
-                      </Link>
-                    </li>
-                    <li>
-                      <Link
-                        href="/board/분당-성남-위례-경기광주-하남/전체"
-                        onClick={() => setShowMegaMenu(false)}
-                      >
-                        분당/성남/위례/경기광주/하남
-                      </Link>
-                    </li>
-                    <li>
-                      <Link
-                        href="/board/안양-군포-시흥-의왕/전체"
-                        onClick={() => setShowMegaMenu(false)}
-                      >
-                        안양/광명/안산/군포/시흥/의왕
-                      </Link>
-                    </li>
-                    <li>
-                      <Link
-                        href="/board/인천-부천-부평/전체"
-                        onClick={() => setShowMegaMenu(false)}
-                      >
-                        인천/부천/부평
-                      </Link>
-                    </li>
-                    <li>
-                      <Link
-                        href="/board/일산-김포-파주-고양/전체"
-                        onClick={() => setShowMegaMenu(false)}
-                      >
-                        고양/일산/김포/파주
-                      </Link>
-                    </li>
-                    <li>
-                      <Link
-                        href="/board/의정부-구리-남양주-포천-동두천/전체"
-                        onClick={() => setShowMegaMenu(false)}
-                      >
-                        의정부/구리/남양주/포천/동두천
-                      </Link>
-                    </li>
-                    <li>
-                      <Link
-                        href="/board/대전-천안-세종-충청-강원/전체"
-                        onClick={() => setShowMegaMenu(false)}
-                      >
-                        대전/천안/세종/충청/강원
-                      </Link>
-                    </li>
-                    <li>
-                      <Link
-                        href="/board/부산-대구-울산-경상도-전라도-광주/전체"
-                        onClick={() => setShowMegaMenu(false)}
-                      >
-                        부산/대구/울산/경상도/전라도/광주
-                      </Link>
-                    </li>
-                    <li>
-                      <Link
-                        href="/board/제주도/전체"
-                        onClick={() => setShowMegaMenu(false)}
-                      >
-                        제주도
-                      </Link>
-                    </li>
-                    <li>
-                      <Link
-                        href="/board/홈케어-방문관리/전체"
-                        onClick={() => setShowMegaMenu(false)}
-                      >
-                        홈케어/방문관리
-                      </Link>
-                    </li>
-                  </ul>
-                </div>
+          {/* MegaMenu (PC) */}
+          <div
+            className={`
+              absolute left-0 top-full z-50 w-full border border-gray-200 bg-white shadow-xl rounded-b-xl
+              transform transition-all duration-300 ease-in-out origin-top
+              ${
+                showMegaMenu
+                  ? "opacity-100 scale-100 pointer-events-auto translate-y-0"
+                  : "opacity-0 scale-95 pointer-events-none -translate-y-2"
+              }
+            `}
+          >
+            <div className="mx-auto grid max-w-7xl grid-cols-4 gap-4 px-6 py-4">
+              {/* (1) 테마 선택 */}
+              <div>
+                <h2 className="mb-2 font-semibold text-orange-500">테마 선택</h2>
+                <ul className="space-y-1 text-sm text-gray-700">
+                  <li>
+                    <Link
+                      href="/board/전체/전체/바"
+                      onClick={() => setShowMegaMenu(false)}
+                    >
+                      바
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/board/전체/전체/클럽"
+                      onClick={() => setShowMegaMenu(false)}
+                    >
+                      클럽
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/board/전체/전체/라운지바"
+                      onClick={() => setShowMegaMenu(false)}
+                    >
+                      라운지바
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/board/전체/전체/헌팅포차"
+                      onClick={() => setShowMegaMenu(false)}
+                    >
+                      헌팅포차
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/board/전체/전체/감성주점"
+                      onClick={() => setShowMegaMenu(false)}
+                    >
+                      감성주점
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/board/전체/전체/나이트클럽"
+                      onClick={() => setShowMegaMenu(false)}
+                    >
+                      나이트클럽
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/board/전체/전체/성인용품"
+                      onClick={() => setShowMegaMenu(false)}
+                    >
+                      성인용품
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/board/전체/전체/룸카페"
+                      onClick={() => setShowMegaMenu(false)}
+                    >
+                      룸카페
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/board/전체/전체/눈썹문신"
+                      onClick={() => setShowMegaMenu(false)}
+                    >
+                      눈썹문신
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/board/전체/전체/네일샵"
+                      onClick={() => setShowMegaMenu(false)}
+                    >
+                      네일샵
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/board/전체/전체/태닝샵"
+                      onClick={() => setShowMegaMenu(false)}
+                    >
+                      태닝샵
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/board/전체/전체/왁싱샵"
+                      onClick={() => setShowMegaMenu(false)}
+                    >
+                      왁싱샵
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/board/전체/전체/사주"
+                      onClick={() => setShowMegaMenu(false)}
+                    >
+                      사주
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/board/전체/전체/타로"
+                      onClick={() => setShowMegaMenu(false)}
+                    >
+                      타로
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/board/전체/전체/애견펜션"
+                      onClick={() => setShowMegaMenu(false)}
+                    >
+                      애견펜션
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/board/전체/전체/애견미용"
+                      onClick={() => setShowMegaMenu(false)}
+                    >
+                      애견미용
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/board/전체/전체/아이폰-스냅"
+                      onClick={() => setShowMegaMenu(false)}
+                    >
+                      아이폰-스냅
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/board/전체/전체/웨딩플래너"
+                      onClick={() => setShowMegaMenu(false)}
+                    >
+                      웨딩플래너
+                    </Link>
+                  </li>
+                </ul>
+              </div>
 
-                {/* 출근부 */}
-                <div>
-                  <h2 className="mb-2 font-semibold text-red-500">출근부</h2>
-                  <ul className="space-y-1 text-sm text-gray-700">
-                    <li>
-                      <Link
-                        href="/today"
-                        onClick={() => setShowMegaMenu(false)}
-                      >
-                        전체
-                      </Link>
-                    </li>
-                    <li>경기</li>
-                    <li>서울</li>
-                    <li>강원</li>
-                    <li>인천</li>
-                    <li>충북</li>
-                    <li>대전</li>
-                    <li>충남</li>
-                    <li>세종</li>
-                    <li>전북</li>
-                    <li>광주</li>
-                    <li>전남</li>
-                    <li>대구</li>
-                    <li>경북</li>
-                    <li>울산</li>
-                    <li>경남</li>
-                    <li>부산</li>
-                    <li>제주</li>
-                  </ul>
-                </div>
+              {/* (2) 지역 */}
+              <div>
+                <h2 className="mb-2 font-semibold text-orange-500">지역</h2>
+                <ul className="space-y-1 text-sm text-gray-700">
+                  <li><Link href="/today" onClick={() => setShowMegaMenu(false)}>전체</Link></li>
+                  <li>경기</li>
+                  <li>서울</li>
+                  <li>강원</li>
+                  <li>인천</li>
+                  <li>충북</li>
+                  <li>대전</li>
+                  <li>충남</li>
+                  <li>세종</li>
+                  <li>전북</li>
+                  <li>광주</li>
+                  <li>전남</li>
+                  <li>대구</li>
+                  <li>경북</li>
+                  <li>울산</li>
+                  <li>경남</li>
+                  <li>부산</li>
+                  <li>제주</li>
+                </ul>
+              </div>
 
-                {/* 내주변 */}
-                <div>
-                  <h2 className="mb-2 font-semibold text-red-500">내주변</h2>
-                  <ul className="space-y-1 text-sm text-gray-700">
-                    <li>
-                      <Link
-                        href="/near-me"
-                        onClick={() => setShowMegaMenu(false)}
-                      >
-                        내주변
-                      </Link>
-                    </li>
-                  </ul>
-                </div>
+              {/* (3) 내주변 */}
+              <div>
+                <h2 className="mb-2 font-semibold text-orange-500">내 주변 업체 찾기</h2>
+                <ul className="space-y-1 text-sm text-gray-700">
+                  <li>
+                    <Link href="/near-me" onClick={() => setShowMegaMenu(false)}>
+                      내 주변 업체 찾기
+                    </Link>
+                  </li>
+                </ul>
+              </div>
 
-                {/* 커뮤니티 */}
-                <div>
-                  <h2 className="mb-2 font-semibold text-red-500">커뮤니티</h2>
-                  <ul className="space-y-1 text-sm text-gray-700">
-                    <li>공지사항</li>
-                    <li>이벤트</li>
-                    <li>SNS</li>
-                    <li>아쉬워요</li>
-                    <li>매니저찾기</li>
-                    <li>익명게시판</li>
-                    <li>중고거래</li>
-                    <li>임대/매매</li>
-                    <li>예약/콜대행</li>
-                    <li>오류/건의</li>
-                    <li>마사지정보</li>
-                  </ul>
-                </div>
+              {/* (4) 커뮤니티 */}
+              <div>
+                <h2 className="mb-2 font-semibold text-orange-500">커뮤니티</h2>
+                <ul className="space-y-1 text-sm text-gray-700">
+                  <li><Link href="/community/board/공지사항" onClick={() => setShowMegaMenu(false)}>공지사항</Link></li>
+                  <li><Link href="/community/board/가입인사" onClick={() => setShowMegaMenu(false)}>가입인사</Link></li>
+                  <li><Link href="/community/board/방문후기" onClick={() => setShowMegaMenu(false)}>방문후기</Link></li>
+                  <li><Link href="/community/board/유머게시판" onClick={() => setShowMegaMenu(false)}>유머게시판</Link></li>
+                  <li><Link href="/community/board/자유게시판" onClick={() => setShowMegaMenu(false)}>자유게시판</Link></li>
+                  <li><Link href="/community/board/질문답변" onClick={() => setShowMegaMenu(false)}>질문답변</Link></li>
+                  <li><Link href="/community/board/제휴업체 SNS 홍보" onClick={() => setShowMegaMenu(false)}>제휴업체 SNS 홍보</Link></li>
+                  <li><Link href="/community/board/맛집-핫플-데이트 코스 공유" onClick={() => setShowMegaMenu(false)}>맛집/핫플/데이트 코스 공유</Link></li>
+                  <li><Link href="/community/board/패션 꿀팁" onClick={() => setShowMegaMenu(false)}>패션 꿀팁</Link></li>
+                  <li><Link href="/community/board/여성 조각 모임 (나이트&클럽&라운지)" onClick={() => setShowMegaMenu(false)}>여성 조각 모임 (나이트&클럽&라운지)</Link></li>
+                  <li><Link href="/community/board/남성 조각 모임 (나이트&클럽&라운지)" onClick={() => setShowMegaMenu(false)}>남성 조각 모임 (나이트&클럽&라운지)</Link></li>
+                </ul>
               </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
     </header>

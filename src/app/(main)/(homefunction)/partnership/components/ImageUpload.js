@@ -1,3 +1,4 @@
+//src/app/%28main%29/%28homefunction%29/partnership/components/ImageUpload.js
 import React, { useState, useRef } from "react";
 import { supabase } from "@/lib/supabaseF";
 const directory ='partnershipsubmit'

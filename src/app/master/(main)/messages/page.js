@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseF";
+import { useRouter } from "next/navigation";  // Next.js 13+에서 사용
 
 /** 날짜/시간 포맷 (오늘/어제/N일 전/그 외) */
 function formatLocalTime(isoString) {
@@ -27,9 +28,14 @@ function formatLocalTime(isoString) {
 }
 
 export default function MessagesPage() {
+  const router = useRouter();
+
   const [myUid, setMyUid] = useState(""); // 내 user_id
   const [rows, setRows] = useState([]);   // 대화 상대별 최신 메시지 목록
   const [loading, setLoading] = useState(true);
+
+  // 관리자인지 아닌지 판별할 state
+  const [isMaster, setIsMaster] = useState(null);
 
   // 검색어 (미구현)
   const [searchTerm, setSearchTerm] = useState("");
@@ -42,32 +48,72 @@ export default function MessagesPage() {
 
   // ------------------------------------------
   // 1) 세션에서 내 user_id 가져오기
+  //    + 내 계정(profiles) 정보를 불러와서 is_master 확인
   // ------------------------------------------
   useEffect(() => {
-    supabase.auth.getSession().then(({ data, error }) => {
-      if (error) {
-        console.error("세션 로딩 오류:", error);
-        return;
-      }
-      const uid = data.session?.user?.id;
-      if (!uid) {
-        console.warn("로그인이 필요합니다!");
-      } else {
+    async function loadSessionAndCheckMaster() {
+      try {
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) {
+          console.error("세션 로딩 오류:", sessionError);
+          return;
+        }
+        const uid = sessionData.session?.user?.id;
+        if (!uid) {
+          console.warn("로그인이 필요합니다!");
+          return;
+        }
+
+        // 내 user_id 상태 업데이트
         setMyUid(uid);
+
+        // 이제 profiles 테이블에서 is_master인지 확인
+        const { data: profileData, error: profileError } = await supabase
+          .from("profiles")
+          .select("is_master")
+          .eq("user_id", uid)
+          .single();
+
+        if (profileError) {
+          console.error("프로필 조회 오류:", profileError);
+          return;
+        }
+
+        // is_master가 false면? -> 404 페이지로 리다이렉트
+        if (!profileData?.is_master) {
+          console.error("관리자 계정이 아니므로 차단합니다. 삐빅!");
+          setIsMaster(false);
+        } else {
+          setIsMaster(true);
+        }
+      } catch (err) {
+        console.error("세션 및 프로필 로딩 중 오류:", err);
       }
-    });
+    }
+
+    loadSessionAndCheckMaster();
   }, []);
 
   // ------------------------------------------
-  // 2) 목록 로딩 + unreadCount 로딩
-  //    조건: 내 uid가 sender 또는 receiver인 모든 메시지 중, 상대가 관리자가 아닌 경우
+  // 2) 만약 is_master가 false로 판명나면 404 페이지로 이동
+  //    (useRouter().replace("/404") 사용)
   // ------------------------------------------
   useEffect(() => {
-    if (myUid) {
+    if (isMaster === false) {
+      // 404 페이지로 보내기
+      router.replace("/404");
+    }
+  }, [isMaster, router]);
+
+  // ------------------------------------------
+  // 3) is_master가 true로 확인된 후 메시지 불러오기
+  // ------------------------------------------
+  useEffect(() => {
+    if (myUid && isMaster === true) {
       fetchMessages(myUid);
       fetchUnreadCount(myUid);
     }
-  }, [myUid]);
+  }, [myUid, isMaster]);
 
   async function fetchMessages(uid) {
     setLoading(true);
@@ -87,6 +133,7 @@ export default function MessagesPage() {
         `)
         .or(`sender_id.eq.${uid},receiver_id.eq.${uid}`)
         .order("created_at", { ascending: false });
+
       if (error) {
         console.error("쪽지 조회 오류:", error);
         setRows([]);
@@ -95,7 +142,6 @@ export default function MessagesPage() {
       }
 
       // 각 대화(상대방)별로 가장 최근 메시지 1건씩만 선택
-      // 내가 sender이면, 상대는 receiver; 내가 receiver이면, 상대는 sender
       const convMap = new Map(); // key: 상대방 user_id, value: 메시지 객체
       for (const msg of data) {
         const otherUserId = msg.sender_id === uid ? msg.receiver_id : msg.sender_id;
@@ -117,6 +163,7 @@ export default function MessagesPage() {
           });
         }
       }
+
       const result = Array.from(convMap.values());
       setRows(result);
     } catch (err) {
@@ -156,6 +203,7 @@ export default function MessagesPage() {
       return prev.filter((id) => id !== msgId);
     });
   }
+
   function handleSelectAllChange(e) {
     if (e.target.checked) {
       const allIds = rows.map((r) => r.id);
@@ -179,6 +227,7 @@ export default function MessagesPage() {
         .from("messages")
         .delete()
         .in("id", selectedIds);
+
       if (error) {
         console.error("메시지 삭제 오류:", error);
         alert("삭제 실패!");
@@ -215,6 +264,18 @@ export default function MessagesPage() {
     console.log("검색:", searchTerm);
   }
 
+  // 만약 아직 isMaster가 null이라면(판별 중이라면) 로딩 상태로 봐주기
+  if (isMaster === null) {
+    return <div className="p-4 text-sm text-gray-500">검증 중... 잠시만 기다려주세요...</div>;
+  }
+
+  // 혹시 isMaster가 false면? useEffect로 404 리다이렉트 중이긴 하지만,
+  // 혹시나 해서 간단 안내 뿌려놓기(순간이라도 표시될 수 있도록)
+  if (isMaster === false) {
+    return <div className="p-4 text-red-500">관리자 계정이 아닙니다. 404 페이지로 갑니다!</div>;
+  }
+
+  // 이제 정상적으로 페이지 표시
   if (loading) {
     return <div className="p-4 text-sm text-gray-500">쪽지 목록 로딩중...</div>;
   }

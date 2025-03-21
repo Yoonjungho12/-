@@ -88,7 +88,7 @@ const titleCellStyle = {
   textOverflow: "ellipsis",
   whiteSpace: "nowrap",
 };
-const vipTrStyle = { backgroundColor: "#fff5f0" };
+const vipTrStyle = { backgroundColor: (0.954, 0.038,75.164) };
 const baseTrStyle = { backgroundColor: "#ffffff" };
 const vipBadgeStyle = {
   display: "inline-block",

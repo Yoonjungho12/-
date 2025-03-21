@@ -126,7 +126,7 @@ export default function ClientUI({ city, district, theme }) {
         <div className="mx-auto mt-6 flex max-w-5xl items-center justify-center gap-3">
           <button
             onClick={() => alert("지역검색 버튼 클릭!")}
-            className="rounded-md bg-red-500 px-4 py-2 text-white hover:bg-red-600"
+            className="rounded-md bg-orange-500 px-4 py-2 text-white hover:bg-orange-600"
           >
             지역검색
           </button>
@@ -178,8 +178,8 @@ export default function ClientUI({ city, district, theme }) {
                     <div
                       key={cityItem}
                       onClick={() => handleSelectCity(cityItem)}
-                      className={`cursor-pointer px-4 py-2 hover:bg-red-50 ${
-                        city === cityItem ? "bg-red-100" : ""
+                      className={`cursor-pointer px-4 py-2 hover:bg-orange-50 ${
+                        city === cityItem ? "bg-orange-100" : ""
                       }`}
                     >
                       {cityItem}
@@ -195,8 +195,8 @@ export default function ClientUI({ city, district, theme }) {
                     <div
                       key={dist}
                       onClick={() => handleSelectDistrict(dist)}
-                      className={`cursor-pointer py-1 px-2 hover:bg-red-50 ${
-                        district === dist ? "bg-red-100" : ""
+                      className={`cursor-pointer py-1 px-2 hover:bg-orange-50 ${
+                        district === dist ? "bg-orange-100" : ""
                       }`}
                     >
                       {dist}
@@ -214,8 +214,8 @@ export default function ClientUI({ city, district, theme }) {
                   <div
                     key={th}
                     onClick={() => handleSelectTheme(th)}
-                    className={`cursor-pointer rounded-full border px-4 py-1 hover:bg-red-50 ${
-                      theme === th ? "bg-red-100 border-red-400" : ""
+                    className={`cursor-pointer rounded-full border px-4 py-1 hover:bg-orange-50 ${
+                      theme === th ? "bg-orange-100 border-orange-400" : ""
                     }`}
                   >
                     {th}

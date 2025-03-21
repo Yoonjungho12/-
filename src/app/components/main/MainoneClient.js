@@ -105,11 +105,11 @@ export default function MainoneClient({ initialRegion, initialData }) {
         <div className="mx-auto max-w-5xl px-4 pt-8">
           <h2 className="text-center text-xl font-bold">
             여기닷 제휴업체 실시간 인기순위
-            <span className="ml-2 text-red-600" aria-hidden="true">
+            <span className="ml-2 text-orange-500" aria-hidden="true">
               ❤️
             </span>
           </h2>
-          <p className="mt-2 text-center text-gray-700">
+          <p className="mt-2 text-center text-red-100">
             실시간 많은 회원들이 보고 있어요!
           </p>
         </div>
@@ -151,7 +151,7 @@ export default function MainoneClient({ initialRegion, initialData }) {
         <h2 className="text-center text-xl md:text-2xl font-bold">
           여기닷 제휴업체 실시간 인기순위
         </h2>
-        <p className="mt-2 text-center text-gray-700">
+        <p className="mt-2 text-center text-gray-500">
           실시간 많은 회원들이 보고 있어요!
         </p>
       </div>
@@ -168,7 +168,7 @@ export default function MainoneClient({ initialRegion, initialData }) {
               w-6 h-6 md:w-9 md:h-9
               rounded-full border border-gray-300 bg-white text-gray-700
               flex items-center justify-center
-              hover:bg-red-100
+              hover:bg-orange-400 hover:border-transparent hover:text-white
             "
             aria-label="이전 지역"
           >
@@ -203,11 +203,11 @@ export default function MainoneClient({ initialRegion, initialData }) {
                 <li key={idx} className="flex-none">
                   <button
                     onClick={() => handleClickRegion(region)}
-                    className={
-                      isSelected
-                        ? " px-4 py-2 bg-red-600 text-white md:w-40 text-sm md:text-base"
-                        : "border-gray-200 px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 md:w-40 text-sm md:text-base"
-                    }
+                    className={`shadow-sm ${
+  isSelected
+    ? "px-4 py-2 bg-orange-600 text-white md:w-40 text-sm md:text-base"
+    : "border-gray-200 px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 md:w-40 text-sm md:text-base"
+}`}
                     aria-label={`${region} 지역 선택`}
                   >
                     {region}
@@ -226,7 +226,7 @@ export default function MainoneClient({ initialRegion, initialData }) {
               w-6 h-6 md:w-9 md:h-9
               rounded-full border border-gray-300 bg-white text-gray-700
               flex items-center justify-center
-              hover:bg-red-100
+              hover:bg-orange-400 hover:border-transparent hover:text-white
             "
             aria-label="다음 지역"
           >
@@ -254,6 +254,7 @@ export default function MainoneClient({ initialRegion, initialData }) {
               gap-8
               snap-x snap-mandatory
               hide-scrollbar
+              
             "
             style={{ scrollBehavior: "smooth" }}
           >
@@ -292,7 +293,7 @@ export default function MainoneClient({ initialRegion, initialData }) {
                     rounded-xl
                     border border-gray-200
                     bg-white
-                    shadow-sm
+                    shadow-xl
                     focus-within:ring-2 focus-within:ring-blue-500
                   "
                 >
@@ -333,7 +334,7 @@ export default function MainoneClient({ initialRegion, initialData }) {
                       (최저가 영역) 
                       lowestPrice 변수를 출력 
                     */}
-                    <div className="mt-2 text-red-600 text-sm font-semibold">
+                    <div className="mt-2 text-sm font-semibold">
                       {lowestPrice !== null
                         ? formatPrice(lowestPrice)
                         : "가격 정보 없음"}
@@ -381,7 +382,7 @@ export default function MainoneClient({ initialRegion, initialData }) {
                   rounded-xl
                   border border-gray-200
                   bg-white
-                  shadow-sm
+                  shadow-xl
                   focus-within:ring-2 focus-within:ring-blue-500
                    w-[290px]
                 "
@@ -406,9 +407,7 @@ export default function MainoneClient({ initialRegion, initialData }) {
                   <h3 className="mb-1 text-base font-semibold text-gray-900">
                     {item.company_name || item.post_title}
                   </h3>
-                  <p className="text-sm text-gray-600">
-                    {item.address} {item.address_street}
-                  </p>
+                  
                   <p className="mt-0.5 text-xs text-gray-500">
                     {item.comment
                       ? typeof item.comment === "string"
@@ -419,7 +418,7 @@ export default function MainoneClient({ initialRegion, initialData }) {
                   </p>
 
                   {/* (최저가 영역) */}
-                  <div className="mt-2 text-red-600 text-sm font-semibold">
+                  <div className="mt-2 text-sm font-semibold">
                     {lowestPrice !== null
                       ? formatPrice(lowestPrice)
                       : "가격 정보 없음"}
@@ -434,7 +433,7 @@ export default function MainoneClient({ initialRegion, initialData }) {
 
           <Link
         href={"/today/전체/전체/전체"}
-        className="md:mt-15 rounded border-[0.5px] border-gray-500 px-5 py-2 text-gray-500"
+        className="mt-15 rounded border-[0.5px] border-gray-500 px-5 py-2 text-gray-500"
       >
         더보기 +
       </Link>

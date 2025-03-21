@@ -87,7 +87,7 @@ export default async function NewArrivalsSectionServer() {
                     rounded-xl
                     border border-gray-200
                     bg-white
-                    shadow
+                    shadow-xl
                     
                   "
                 >
@@ -130,7 +130,7 @@ export default async function NewArrivalsSectionServer() {
                   rounded-xl
                   border border-gray-200
                   bg-white
-                  shadow-sm
+                  shadow-xl
                   focus-within:ring-2 focus-within:ring-blue-500
                     w-[290px]
                 "
