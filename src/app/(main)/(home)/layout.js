@@ -4,9 +4,10 @@ import MobileTopBar from "@/components/MobileBack";
 export default function Home({ children }) {
   return (
     <>  
-        <NavBar />
+ <NavBar />
+       
         
-      <div className="container mx-auto">
+      <div className="container mx-auto mt-27">
         {children}
       </div>
 

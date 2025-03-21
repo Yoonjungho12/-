@@ -141,7 +141,7 @@ export default function MessagesPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 pt-6 pb-16">
+    <div className="max-w-3xl mx-auto px-4 pt-10 md:pt-40 pb-16">
       {/* 헤더 */}
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-semibold">채팅</h1>

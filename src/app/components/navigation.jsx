@@ -119,7 +119,7 @@ export default function NavBar() {
   };
 
   return (
-    <header className="w-full bg-white">
+    <header className="w-full bg-white fixed">
       {/* (A) 모바일 전용 상단바 */}
       <div className="flex items-center px-4 py-3 md:hidden space-x-3">
         {/* 로고 */}

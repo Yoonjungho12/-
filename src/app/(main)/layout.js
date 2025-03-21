@@ -8,11 +8,11 @@ export default function Home({ children, h=false }) {
     <>
 
 
-      <div className="container mx-auto">
+      
         {children}
         
-      </div>
-      {!h && <Footer/>}
+      
+
   
          
 

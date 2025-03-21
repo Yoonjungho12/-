@@ -1,3 +1,4 @@
+//src/app/(chat)/messages/[senderId]/page.js
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
@@ -248,7 +249,7 @@ export default function ChatPage() {
 
   // 6) UI (ChatPopupB와 유사한 레이아웃으로 구성)
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
+    <div className="flex flex-col h-screen bg-gray-50 pt-29">
       {/* 상단바 */}
       <div className="flex-none border-b border-gray-200 p-4 flex items-center justify-between bg-white">
         <button
