@@ -41,13 +41,13 @@ async function handleGoogleLogin() {
   const callbackBaseUrl =
     process.env.NODE_ENV === 'development'
       ? 'http://localhost:3000'
-      : process.env.CALL_BACK_URL
+      : process.env.NEXT_PUBLIC_CALL_BACK_URL
 
   // Supabase OAuth 로그인 로직
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      // 로컬이면 localhost:3000, 로컬이 아니면 env.process.CALL_BACK_URL
+      // 로컬이면 localhost:3000, 로컬이 아니면 env.process.NEXT_PUBLIC_CALL_BACK_URL
       // 뒤에 /auth/callback?provider=google 붙이기
       redirectTo: callbackBaseUrl + '/auth/callback?provider=google',
     },
@@ -69,7 +69,7 @@ const handleKakaoLogin = async () => {
       const callbackBaseUrl =
         process.env.NODE_ENV === "development"
           ? "http://localhost:3000"
-          : process.env.CALL_BACK_URL;
+          : process.env.NEXT_PUBLIC_CALL_BACK_URL;
 
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "kakao",
