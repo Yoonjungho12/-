@@ -36,7 +36,7 @@ export default function LoginPage() {
   };
 
   // (B) 구글 로그인
-async function signInWithGoogle() {
+async function handleGoogleLogin() {
   // NODE_ENV 값이 development이면 로컬 주소, 아니라면 환경 변수의 주소를 사용하게끔 분기 처리했어요.
   const callbackBaseUrl =
     process.env.NODE_ENV === 'development'
