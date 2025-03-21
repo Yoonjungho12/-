@@ -1,7 +1,6 @@
 // src/app/layout.js
 import "./globals.css";
-import MobileBottomNav from "./components/MobileNavigation";
-import Footer from "@/components/Footer";
+
 import { Geist } from "next/font/google";
 
 export const metadata = {

@@ -9,8 +9,10 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const router = useRouter();
+
   console.log("NODE_ENV is:", process.env.NODE_ENV);
-console.log("NEXT_PUBLIC_CALL_BACK_URL is:", process.env.NEXT_PUBLIC_CALL_BACK_URL);
+  console.log("NEXT_PUBLIC_CALL_BACK_URL is:", process.env.NEXT_PUBLIC_CALL_BACK_URL);
+
   // (A) 일반 이메일+비번 로그인
   const handleLogin = async () => {
     setErrorMessage("");
@@ -36,56 +38,47 @@ console.log("NEXT_PUBLIC_CALL_BACK_URL is:", process.env.NEXT_PUBLIC_CALL_BACK_U
     handleLogin();
   };
 
-  // (B) 구글 로그인
-async function handleGoogleLogin() {
-  // NODE_ENV 값이 development이면 로컬 주소, 아니라면 환경 변수의 주소를 사용하게끔 분기 처리했어요.
-  const callbackBaseUrl =
-    process.env.NODE_ENV === 'development'
-      ? 'http://localhost:3000'
-      : process.env.NEXT_PUBLIC_CALL_BACK_URL
-
-  // Supabase OAuth 로그인 로직
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      // 로컬이면 localhost:3000, 로컬이 아니면 env.process.NEXT_PUBLIC_CALL_BACK_URL
-      // 뒤에 /auth/callback?provider=google 붙이기
-      redirectTo: callbackBaseUrl + '/auth/callback?provider=google',
-    },
-  })
-
-  // 에러 처리
-  if (error) {
-    console.error('구글 로그인 중 오류가 발생했어요:', error)
-    return
-  }
-
-  // 정상적으로 data를 받아온 경우
-  console.log('구글 로그인 성공!', data)
-}
-const handleKakaoLogin = async () => {
+  // (B) 구글 로그인 (서버 경유)
+  async function handleGoogleLogin() {
     setErrorMessage("");
     try {
-      // 로컬 환경이면 http://localhost:3000, 아니면 process.env.CALL_BACK_URL 사용
-      const callbackBaseUrl =
-        process.env.NODE_ENV === "development"
-          ? "http://localhost:3000"
-          : process.env.NEXT_PUBLIC_CALL_BACK_URL;
+      // 클라이언트 → 서버 라우트로 요청
+      // /api/social-login?provider=google → 서버에서 signInWithOAuth + data.url 반환
+      const res = await fetch(`/api/social-login?provider=google`);
+      const { url, error } = await res.json();
 
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: "kakao",
-        options: {
-          redirectTo: callbackBaseUrl + "/auth/callback?provider=kakao",
-        },
-      });
-
-      if (error) {
-        setErrorMessage(error.message);
+      if (error || !url) {
+        console.error("소셜 로그인 URL 발급 실패:", error);
+        setErrorMessage(error || "URL 발급 실패");
         return;
       }
-      // 인증 후 돌아옴
-      console.log("카카오 로그인 성공:", data);
+
+      // 서버가 준 OAuth 인증 URL로 이동
+      window.location.href = url;
     } catch (err) {
+      console.error("구글 로그인 중 오류가 발생했어요:", err);
+      setErrorMessage(err.message || "구글 로그인 중 오류가 발생했습니다.");
+    }
+  }
+
+  // (C) 카카오 로그인 (서버 경유)
+  const handleKakaoLogin = async () => {
+    setErrorMessage("");
+    try {
+      // 마찬가지로 /api/social-login?provider=kakao 호출
+      const res = await fetch(`/api/social-login?provider=kakao`);
+      const { url, error } = await res.json();
+
+      if (error || !url) {
+        console.error("소셜 로그인 URL 발급 실패:", error);
+        setErrorMessage(error || "URL 발급 실패");
+        return;
+      }
+
+      // 서버에서 받은 URL로 이동
+      window.location.href = url;
+    } catch (err) {
+      console.error("카카오 로그인 중 오류가 발생했습니다:", err);
       setErrorMessage(err.message || "카카오 로그인 중 오류가 발생했습니다.");
     }
   };
@@ -164,14 +157,13 @@ const handleKakaoLogin = async () => {
 
           {/* 소셜 로그인 버튼들 */}
           <div className="flex items-center justify-center space-x-3">
-            {/* (1) 구글 로그인 버튼 (네이버 → 구글로 변경) */}
+            {/* (1) 구글 로그인 버튼 */}
             <button
               type="button"
               onClick={handleGoogleLogin}
               className="flex items-center space-x-1 rounded bg-blue-500 px-4 py-3
                          text-base font-medium text-white hover:bg-blue-600"
             >
-              {/* 간단한 구글 아이콘 (혹은 FontAwesome 등 사용 가능) */}
               <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 512 512">
                 <path d="M256 8C119.1 8 8 119.1 8 256c0 123.4 90.98 225.9 209 245.2v-173h-63v-72h63v-55.1c0-62.2 37.3-96.3 93.8-96.3 27.4 0 56 4.9 56 4.9v61h-31.5c-31 0-40.7 19.3-40.7 39.2v46.3h69.2l-11 72h-58.2v173C413 481.9 504 379.4 504 256 504 119.1 392.9 8 256 8z" />
               </svg>

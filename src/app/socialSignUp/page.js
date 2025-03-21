@@ -10,9 +10,11 @@ export default function SocialSignUpPage() {
   const [nickname, setNickname] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [errorMsg, setErrorMsg] = useState("");
 
-  // 세션에서 가져온 user_id (없으면 null)
+  // ★ 사용자에게 안 보이지만, 내부에서 저장만 하는 이메일
+  const [email, setEmail] = useState("");
+
+  const [errorMsg, setErrorMsg] = useState("");
   const [userId, setUserId] = useState(null);
 
   useEffect(() => {
@@ -23,6 +25,7 @@ export default function SocialSignUpPage() {
         setErrorMsg("로그인이 필요합니다!");
         return;
       }
+
       const user = data?.session?.user;
       if (!user) {
         // 세션이 없으면 로그인 페이지로
@@ -31,49 +34,54 @@ export default function SocialSignUpPage() {
         return;
       }
 
+      // 세션으로부터 userId 설정
       const uid = user.id;
       setUserId(uid);
 
-      // ─────────────────────────────────────────────────
-      // 우선 user_metadata에서 nickname이 있으면 초기값으로 세팅
-      // (예: 카카오 "nickname", 구글 "name" 등이 들어올 수 있음)
-      // ※ 실제로는 user_metadata 구조를 console.log로 확인 후 맞춰주세요.
-      // ─────────────────────────────────────────────────
-      const metaNickname = user.user_metadata?.nickname
-        || user.user_metadata?.name
-        || ""; 
-      // 일단 nickname state를 user_metadata 값으로 설정
+      // (A) 세션에서 이메일 가져와 저장 (UI에는 노출 안 함)
+      const userEmail = user.email || user.user_metadata?.email || "";
+
+      // 닉네임 후보값 (카카오: nickname, 구글: name 등)
+      const metaNickname =
+        user.user_metadata?.nickname ||
+        user.user_metadata?.name ||
+        "";
+
+      setEmail(userEmail);       // ★ 사용자 눈에는 안 보이지만 state에 넣음
       setNickname(metaNickname);
 
-      // 2) 그 뒤 profiles에서 기존 nickname, name, phone 값 가져오기
-      fetchProfile(uid, metaNickname);
+      // (B) DB에서 기존 프로필 값 로딩
+      fetchProfile(uid, userEmail, metaNickname);
     });
   }, [router]);
 
   // ─────────────────────────────────────────────────────────
-  // profiles 조회
-  // 만약 profiles에 nickname이 이미 있다면 → 그것으로 최종 덮어씀
+  // DB에서 profiles 조회 → 있으면 기존 값 덮어쓰기
   // ─────────────────────────────────────────────────────────
-  async function fetchProfile(uid, metaNickname) {
+  async function fetchProfile(uid, userEmail, userNickname) {
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("nickname, name, phone")
+        .select("nickname, name, phone, email")
         .eq("user_id", uid)
         .single();
 
       if (error) {
-        // 만약 "row가 없음" 에러라면 (error.details: "Results contain 0 rows"),
-        // 그냥 기존 metaNickname(소셜에서 온 값) 쓰면 됨
-        console.log("profiles 조회 에러(없음):", error);
+        // "row가 없음" 에러는 그냥 새로 작성
+        if (error.details?.includes("0 rows")) {
+          console.log("profiles 테이블에 기록 없음:", error);
+          return;
+        }
+        console.error("profiles 조회 에러:", error);
         return;
       }
 
-      // 이미 profiles row가 있으면 덮어씀
+      // 이미 profiles row가 있으면 → 기존 값으로 덮어씁니다
       if (data) {
-        setNickname(data.nickname || metaNickname || "");
+        setNickname(data.nickname || userNickname || "");
         setName(data.name || "");
         setPhone(data.phone || "");
+        setEmail(data.email || userEmail || "");
       }
     } catch (err) {
       console.error("profiles 조회 중 오류:", err);
@@ -82,7 +90,7 @@ export default function SocialSignUpPage() {
   }
 
   // ─────────────────────────────────────────────────────────
-  // 저장(회원가입 완료) 버튼
+  // [저장] 버튼 → profiles 업서트
   // ─────────────────────────────────────────────────────────
   async function handleSubmit(e) {
     e.preventDefault();
@@ -97,9 +105,10 @@ export default function SocialSignUpPage() {
     }
 
     try {
-      // profiles에 upsert
+      // profiles에 upsert (email은 화면에는 없지만, 내부적으로 저장)
       const { error } = await supabase.from("profiles").upsert({
         user_id: userId,
+        email: email.trim(),        // ★ UI에 안 보이지만 db에 저장
         nickname: nickname.trim(),
         name: name.trim(),
         phone: phone.trim(),
@@ -128,6 +137,8 @@ export default function SocialSignUpPage() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* (이메일 필드 없음) */}
+
         {/* 이름(실명) */}
         <div>
           <label className="block mb-1 font-semibold">이름(실명)</label>
@@ -162,6 +173,7 @@ export default function SocialSignUpPage() {
             placeholder="예) 010-1234-5678"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
+            required
           />
         </div>
 

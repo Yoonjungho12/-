@@ -12,6 +12,11 @@ export default function MyMobileUI() {
   const [session, setSession] = useState(null);
   const [nickname, setNickname] = useState("...");
 
+  // “정보수정” 모드인지 여부
+  const [isEditingNickname, setIsEditingNickname] = useState(false);
+  // 수정용 인풋 값
+  const [editNicknameInput, setEditNicknameInput] = useState("");
+
   // "가고싶다" 목록 (DB에서 가져온 데이터)
   const [wishList, setWishList] = useState([]);
 
@@ -87,7 +92,9 @@ export default function MyMobileUI() {
       }
     }
 
-    fetchWishList();
+    if (session?.user?.id) {
+      fetchWishList();
+    }
   }, [isLoggedIn, session]);
 
   // 로그아웃
@@ -126,6 +133,58 @@ export default function MyMobileUI() {
     }
   }
 
+  // ─────────────────────────────────────────────
+  // [정보수정] 버튼 → 수정모드로 전환
+  // ─────────────────────────────────────────────
+  function handleEditNickname() {
+    // 기존 nickname을 수정용 인풋에 세팅
+    setEditNicknameInput(nickname);
+    setIsEditingNickname(true);
+  }
+
+  // ─────────────────────────────────────────────
+  // [변경하기] 버튼 → DB에 닉네임 업데이트
+  // ─────────────────────────────────────────────
+  async function handleUpdateNickname() {
+    if (!session?.user?.id) {
+      alert("로그인이 필요합니다.");
+      return;
+    }
+    const newNick = editNicknameInput.trim();
+    if (!newNick) {
+      alert("닉네임은 비어있을 수 없습니다.");
+      return;
+    }
+
+    // DB 업데이트
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .update({ nickname: newNick })
+        .eq("user_id", session.user.id);
+
+      if (error) {
+        console.error("Nickname Update Error:", error);
+        alert("닉네임 변경 실패!");
+        return;
+      }
+
+      // state에 반영
+      setNickname(newNick);
+      setIsEditingNickname(false);
+      alert("닉네임이 변경되었습니다!");
+    } catch (err) {
+      console.error("Unknown Error:", err);
+      alert("오류가 발생했습니다.");
+    }
+  }
+
+  // [취소하기] 버튼 → 수정모드 취소
+  function handleCancelEdit() {
+    setIsEditingNickname(false);
+    setEditNicknameInput("");
+  }
+
   return (
     <div
       style={{
@@ -159,7 +218,9 @@ export default function MyMobileUI() {
                 marginRight: "12px",
               }}
             />
-            <div style={{ fontSize: "1rem", fontWeight: "bold" }}>{nickname}</div>
+            <div style={{ fontSize: "1rem", fontWeight: "bold" }}>
+              {nickname}
+            </div>
           </div>
         ) : (
           <div style={{ fontSize: "1rem", fontWeight: "bold", color: "#666" }}>
@@ -178,7 +239,7 @@ export default function MyMobileUI() {
                 fontSize: "0.9rem",
                 cursor: "pointer",
               }}
-              onClick={() => alert("정보수정 버튼 클릭! (예시)")}
+              onClick={handleEditNickname}
             >
               정보수정
             </button>
@@ -227,6 +288,48 @@ export default function MyMobileUI() {
         )}
       </div>
 
+      {/* 닉네임 수정모드일 때 인풋 표시 */}
+      {isEditingNickname && (
+        <div style={{ marginBottom: "1rem" }}>
+          <input
+            type="text"
+            value={editNicknameInput}
+            onChange={(e) => setEditNicknameInput(e.target.value)}
+            style={{
+              width: "150px",
+              marginRight: "8px",
+              border: "1px solid #ccc",
+              padding: "4px 6px",
+            }}
+          />
+          <button
+            onClick={handleUpdateNickname}
+            style={{
+              marginRight: "5px",
+              backgroundColor: "#4CAF50",
+              border: "none",
+              color: "#fff",
+              padding: "4px 8px",
+              cursor: "pointer",
+            }}
+          >
+            변경
+          </button>
+          <button
+            onClick={handleCancelEdit}
+            style={{
+              backgroundColor: "#ccc",
+              border: "none",
+              color: "#333",
+              padding: "4px 8px",
+              cursor: "pointer",
+            }}
+          >
+            취소
+          </button>
+        </div>
+      )}
+
       {/* 구분선 */}
       <hr style={{ border: "none", borderTop: "1px solid #eee" }} />
 
@@ -239,7 +342,7 @@ export default function MyMobileUI() {
           marginTop: "1rem",
         }}
       >
-        <button style={menuButtonStyle}>내 쪽지함 &gt;</button>
+        <Link href='/messages' style={menuButtonStyle}>내 쪽지함 &gt;</Link>
         <button style={menuButtonStyle}>제휴신청 &gt;</button>
         <button style={menuButtonStyle}>내 글 관리 &gt;</button>
         <button style={menuButtonStyle}>가고싶다 &gt;</button>

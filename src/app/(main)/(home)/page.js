@@ -1,7 +1,6 @@
 import Image from "next/image";
 import RecommendedShopsServer from "@/components/main/RecommendedShopsServer";
 import NewArrivalsSection from "@/components/main/newbie";
-import Footer from "@/components/Footer";
 import MainoneServer from "@/components/main/MainoneServer";
 // import RecommendedShops from "../components/main/recommendedShop";
 
