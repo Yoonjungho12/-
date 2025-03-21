@@ -9,7 +9,8 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const router = useRouter();
-
+  console.log("NODE_ENV is:", process.env.NODE_ENV);
+console.log("NEXT_PUBLIC_CALL_BACK_URL is:", process.env.NEXT_PUBLIC_CALL_BACK_URL);
   // (A) 일반 이메일+비번 로그인
   const handleLogin = async () => {
     setErrorMessage("");
