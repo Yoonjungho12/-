@@ -16,6 +16,7 @@ import { supabase } from "@/lib/supabaseF";
  *   /community* => "커뮤니티"
  *   /messages => "1:1 채팅"
  *   /messages/[senderId] => 해당 user_id의 닉네임
+ *   (이때, Supabase로 프로필 닉네임 조회)
  *   나머지는 title 미표시
  */
 export default function MobileTopBar({ title = "" }) {
@@ -23,14 +24,17 @@ export default function MobileTopBar({ title = "" }) {
   const pathname = usePathname();
 
   // ─────────────────────────────────────────
-  // 1) 훅은 항상 같은 순서로 호출 (useState)
+  // 1) Hooks (최상위 호출, 문제 없음)
   // ─────────────────────────────────────────
   const [showSearch, setShowSearch] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [isComposing, setIsComposing] = useState(false);
 
+  // (A) /messages/[senderId] 전용 닉네임 상태
+  const [senderNickname, setSenderNickname] = useState("");
+
   // ─────────────────────────────────────────
-  // 2) 루트 경로면 렌더링 안 함
+  // 2) pathname === "/"이면 컴포넌트 자체 렌더링 안 함
   // ─────────────────────────────────────────
   if (pathname === "/") {
     return null;
@@ -39,14 +43,9 @@ export default function MobileTopBar({ title = "" }) {
   // ─────────────────────────────────────────
   // 3) 경로 기반 타이틀 매핑
   // ─────────────────────────────────────────
-  // 예) /board/서울/테마 => segments = ["board","서울","테마"]
   const segments = pathname.split("/").filter(Boolean); // "" 제거
   let dynamicTitle = "";
 
-  // (A) /messages/[senderId] 전용 닉네임 상태
-  const [senderNickname, setSenderNickname] = useState("");
-
-  // (B) segments[0]에 따라 분기
   if (segments[0] === "board") {
     dynamicTitle = "지역별 업체 선택";
   } else if (segments[0] === "today") {
@@ -58,13 +57,12 @@ export default function MobileTopBar({ title = "" }) {
   } else if (segments[0] === "community") {
     dynamicTitle = "커뮤니티";
   } else if (segments[0] === "messages") {
-    // 여기서 2번째 세그먼트가 존재하면 => senderId로 프로필 닉네임 로딩
+    // /messages/[senderId]
     if (segments.length === 1) {
-      // /messages까지
+      // /messages
       dynamicTitle = "1:1 채팅";
     } else {
       // /messages/[senderId]
-      // 아래 useEffect에서 senderNickname을 fetch
       dynamicTitle = senderNickname || "상대방";
     }
   } else if (segments[0] === "mypage") {
@@ -74,10 +72,9 @@ export default function MobileTopBar({ title = "" }) {
   }
 
   // ─────────────────────────────────────────
-  // 4) /messages/[senderId]이면, Supabase에서 프로필 닉네임 로딩
+  // 4) /messages/[senderId] → Supabase에서 프로필 닉네임 로딩
   // ─────────────────────────────────────────
   useEffect(() => {
-    // segments[0] === "messages" 이고, 2번째 세그먼트가 존재하면 => senderId
     if (segments[0] === "messages" && segments[1]) {
       const fetchSenderNickname = async () => {
         try {
@@ -86,6 +83,7 @@ export default function MobileTopBar({ title = "" }) {
             .select("nickname")
             .eq("user_id", segments[1])
             .single();
+
           if (!error && data?.nickname) {
             setSenderNickname(data.nickname);
           } else {
@@ -112,6 +110,7 @@ export default function MobileTopBar({ title = "" }) {
   // ─────────────────────────────────────────
   const handleSearchToggle = () => {
     if (showSearch) {
+      // 이미 열려 있다면(닫는 시점) => 상태 초기화
       setSearchTerm("");
       setIsComposing(false);
     }
@@ -151,7 +150,7 @@ export default function MobileTopBar({ title = "" }) {
   };
 
   // ─────────────────────────────────────────
-  // 7) 렌더링
+  // 7) 최종 렌더링
   // ─────────────────────────────────────────
   return (
     <div
@@ -164,7 +163,7 @@ export default function MobileTopBar({ title = "" }) {
       "
       style={{ height: "56px" }}
     >
-      {/* 왼쪽 아이콘 (뒤로가기) */}
+      {/* (a) 왼쪽 아이콘 (뒤로가기) */}
       <button onClick={handleBack} aria-label="뒤로가기" className="p-1 mr-2">
         <svg
           width="24"
@@ -180,9 +179,9 @@ export default function MobileTopBar({ title = "" }) {
         </svg>
       </button>
 
-      {/* 중앙 영역: 타이틀 + 검색창 겹치기 */}
+      {/* (b) 중앙 영역: 타이틀 + 검색창 겹치기 */}
       <div className="relative flex-1 h-8 mx-2 overflow-hidden">
-        {/* (a) 타이틀 */}
+        {/* (i) 타이틀 */}
         <h1
           className="
             absolute top-0 left-0 w-full h-full
@@ -191,14 +190,14 @@ export default function MobileTopBar({ title = "" }) {
             transition-transform duration-300
           "
           style={{
-            // 검색창 열릴 때 왼쪽(-100%) 이동
+            // 검색창 열릴 때 타이틀 왼쪽(-100%)으로 이동
             transform: showSearch ? "translateX(-100%)" : "translateX(0)",
           }}
         >
           {dynamicTitle}
         </h1>
 
-        {/* (b) 검색창 */}
+        {/* (ii) 검색창 */}
         <input
           type="text"
           value={searchTerm}
@@ -225,7 +224,7 @@ export default function MobileTopBar({ title = "" }) {
         />
       </div>
 
-      {/* 오른쪽 아이콘 (검색 or 검색확정) */}
+      {/* (c) 오른쪽 아이콘 (검색 열기 / 검색 확정) */}
       {showSearch ? (
         <button
           onClick={handleSearchConfirm}
