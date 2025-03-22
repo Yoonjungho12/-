@@ -15,8 +15,9 @@ import { supabase } from "@/lib/supabaseF";
  *   /club/* => "나이트/클럽"
  *   /community* => "커뮤니티"
  *   /messages => "1:1 채팅"
- *   /messages/[senderId] => 해당 user_id의 닉네임
- *   (이때, Supabase로 프로필 닉네임 조회)
+ *   /messages/[senderId] => 해당 user_id의 닉네임 (Supabase로 조회)
+ *   /mypage => "마이페이지"
+ *   /all => "전체 카테고리"
  *   나머지는 title 미표시
  */
 export default function MobileTopBar({ title = "" }) {
@@ -24,17 +25,17 @@ export default function MobileTopBar({ title = "" }) {
   const pathname = usePathname();
 
   // ─────────────────────────────────────────
-  // 1) Hooks (최상위 호출, 문제 없음)
+  // 1) 최상위 Hooks
   // ─────────────────────────────────────────
   const [showSearch, setShowSearch] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [isComposing, setIsComposing] = useState(false);
 
-  // (A) /messages/[senderId] 전용 닉네임 상태
+  // (A) /messages/[senderId] 닉네임 상태
   const [senderNickname, setSenderNickname] = useState("");
 
   // ─────────────────────────────────────────
-  // 2) pathname === "/"이면 컴포넌트 자체 렌더링 안 함
+  // 2) "/" 경로면 아예 렌더링 X
   // ─────────────────────────────────────────
   if (pathname === "/") {
     return null;
@@ -57,9 +58,9 @@ export default function MobileTopBar({ title = "" }) {
   } else if (segments[0] === "community") {
     dynamicTitle = "커뮤니티";
   } else if (segments[0] === "messages") {
-    // /messages/[senderId]
+    // /messages/[senderId]?
     if (segments.length === 1) {
-      // /messages
+      // 그냥 /messages
       dynamicTitle = "1:1 채팅";
     } else {
       // /messages/[senderId]
@@ -72,7 +73,7 @@ export default function MobileTopBar({ title = "" }) {
   }
 
   // ─────────────────────────────────────────
-  // 4) /messages/[senderId] → Supabase에서 프로필 닉네임 로딩
+  // 4) /messages/[senderId] => Supabase에서 프로필 닉네임 로딩
   // ─────────────────────────────────────────
   useEffect(() => {
     if (segments[0] === "messages" && segments[1]) {
@@ -110,7 +111,7 @@ export default function MobileTopBar({ title = "" }) {
   // ─────────────────────────────────────────
   const handleSearchToggle = () => {
     if (showSearch) {
-      // 이미 열려 있다면(닫는 시점) => 상태 초기화
+      // 이미 열려 있다면 → 닫으면서 상태 초기화
       setSearchTerm("");
       setIsComposing(false);
     }
@@ -190,7 +191,7 @@ export default function MobileTopBar({ title = "" }) {
             transition-transform duration-300
           "
           style={{
-            // 검색창 열릴 때 타이틀 왼쪽(-100%)으로 이동
+            // 검색창 열릴 때: 타이틀을 왼쪽(-100%)으로 밀어 숨김
             transform: showSearch ? "translateX(-100%)" : "translateX(0)",
           }}
         >
@@ -218,7 +219,7 @@ export default function MobileTopBar({ title = "" }) {
             transition-transform duration-300
           "
           style={{
-            // 검색창 열릴 때 0%, 닫힐 때 100%
+            // 검색창 열릴 때 → 0%, 닫힐 때 → 100%
             transform: showSearch ? "translateX(0)" : "translateX(100%)",
           }}
         />
