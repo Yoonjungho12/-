@@ -271,7 +271,7 @@ export default function ChatPage() {
     bg-gray-50
 
     mt-[30px]
-    h-[calc(100dvh - 60px)] 
+    h-[calc(100dvh-60px)] 
     
     md:mt-[28px]
     md:h-[calc(100dvh-116px)]
