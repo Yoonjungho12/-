@@ -120,7 +120,7 @@ export default function RegionSelectorSSR({
 
       {/* (B) 상위 지역 */}
       {regionSlug === "전체" && (
-        <div className="region-grid-container mb-2">
+        <div className="region-grid-container mb-2 ">
           {mainRegionItems.map((item) => {
             const isSelected = item.id === selectedParentId;
             const href = `/board/${item.region_slug}/전체/${themeName || "전체"}`;
@@ -164,7 +164,7 @@ export default function RegionSelectorSSR({
               <Link key={th.id} href={href}>
                 <div
                   className={`text-xs md:text-sm region-cell ${
-                    isSelected ? "selected" : ""
+                    isSelected ? "selected " : ""
                   }`}
                 >
                   {th.name}

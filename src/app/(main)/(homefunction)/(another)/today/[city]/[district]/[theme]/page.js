@@ -21,7 +21,7 @@ export default async function TodayPage({ params: paramsPromise }) {
       <ShopList city={city} district={district} theme={theme} />
       {/* 서버에서 렌더링하는 추가 내용 (예시) */}
       <div className="mx-auto max-w-5xl py-8 px-4">
-        <h2 className="text-xl font-semibold">SSR 예시: 검색어 없음</h2>
+        <h2 className="text-xl font-semibold">검색어 없음</h2>
         <p className="mt-2 text-gray-600">
           이 영역은 서버 컴포넌트에서 렌더링된 부분입니다.
         </p>

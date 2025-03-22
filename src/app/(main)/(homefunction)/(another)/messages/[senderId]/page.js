@@ -1,4 +1,4 @@
-//src/app/(chat)/messages/[senderId]/page.js
+// src/app/(chat)/messages/[senderId]/page.js
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
@@ -52,7 +52,9 @@ export default function ChatPage() {
   // 스크롤 컨테이너 참조
   const scrollContainerRef = useRef(null);
 
+  // ------------------------------------------------
   // 1) 세션 로드
+  // ------------------------------------------------
   useEffect(() => {
     supabase.auth.getSession().then(({ data, error }) => {
       if (error) {
@@ -64,12 +66,14 @@ export default function ChatPage() {
     });
   }, []);
 
+  // ------------------------------------------------
   // 2) 채팅 로드
+  // ------------------------------------------------
   async function fetchChat(myId, otherId) {
     try {
       console.log("fetchChat() 호출. myId:", myId, "otherId:", otherId);
 
-      // (1) 내가 받은 (상대→나) 메시지 => read_at= now
+      // (1) 내가 받은 (상대→나) 메시지 → read_at= now
       const updateRes = await supabase
         .from("messages")
         .update({ read_at: new Date().toISOString() })
@@ -105,28 +109,30 @@ export default function ChatPage() {
       } else {
         console.log("채팅 로딩 성공 data:", JSON.stringify(data, null, 2));
         setChatMessages(data);
+      }
 
-        // 닉네임 추출
-        let foundNickname = "상대방";
-        for (const m of data) {
-          if (m.sender_id === otherId) {
-            foundNickname = m.sender_profiles?.nickname || "상대방";
-            break;
-          } else if (m.receiver_id === otherId) {
-            foundNickname = m.receiver_profiles?.nickname || "상대방";
-            break;
-          }
-        }
-        setOtherNickname(foundNickname);
+      // (3) senderId가 곧 profiles.user_id이므로, 직접 프로필에서 nickname 불러오기
+      const { data: profData, error: profError } = await supabase
+        .from("profiles")
+        .select("nickname")
+        .eq("user_id", otherId)
+        .single();
 
-        console.log("추출된 상대방 닉네임:", foundNickname);
+      if (!profError && profData?.nickname) {
+        setOtherNickname(profData.nickname);
+        console.log("profiles 조회로 찾은 닉네임:", profData.nickname);
+      } else {
+        setOtherNickname("상대방");
+        console.log("닉네임을 찾지 못했어요. 상대방으로 표시합니다.");
       }
     } catch (err) {
       console.error("채팅 로딩 오류 (catch):", err);
     }
   }
 
+  // ------------------------------------------------
   // 3) useEffect → fetch + 실시간
+  // ------------------------------------------------
   useEffect(() => {
     if (!session?.user?.id || !senderId) return;
     const myId = session.user.id;
@@ -156,7 +162,7 @@ export default function ChatPage() {
         if (eventType === "INSERT") {
           console.log("리얼타임 INSERT:", newRow);
           let finalRow = newRow;
-          // 상대→나 메시지면 => read_at= now
+          // 상대→나 메시지면 → read_at= now
           if (newRow.sender_id === senderId && newRow.receiver_id === myId) {
             const { data: updated, error } = await supabase
               .from("messages")
@@ -179,7 +185,6 @@ export default function ChatPage() {
             return updated;
           });
         } else if (eventType === "UPDATE") {
-          // read_at 등 업데이트
           console.log("리얼타임 UPDATE:", newRow);
           setChatMessages((prev) => {
             const list = [...prev];
@@ -199,7 +204,9 @@ export default function ChatPage() {
     };
   }, [session, senderId]);
 
+  // ------------------------------------------------
   // 4) 스크롤 맨 아래
+  // ------------------------------------------------
   useEffect(() => {
     console.log("chatMessages changed:", chatMessages);
     if (scrollContainerRef.current) {
@@ -208,7 +215,9 @@ export default function ChatPage() {
     }
   }, [chatMessages]);
 
+  // ------------------------------------------------
   // 5) 메시지 전송
+  // ------------------------------------------------
   async function handleSendMessage(e) {
     e.preventDefault();
     if (!newContent.trim()) return;
@@ -242,27 +251,48 @@ export default function ChatPage() {
     }
   }
 
+  // ------------------------------------------------
   // 뒤로가기
+  // ------------------------------------------------
   function handleGoBack() {
     router.push("/messages");
   }
 
-  // 6) UI (ChatPopupB와 유사한 레이아웃으로 구성)
+  // ------------------------------------------------
+  // 6) UI (최종)
+  // ------------------------------------------------
   return (
-    <div className="flex flex-col h-screen bg-gray-50 pt-29">
-      {/* 상단바 */}
-      <div className="flex-none border-b border-gray-200 p-4 flex items-center justify-between bg-white">
+    // 여기서 NavBar가 fixed로 상단 50px 차지한다고 가정.
+    // Tailwind로 flex-col 레이아웃, style로 marginTop + height: calc(100vh - XXpx).
+   <div
+  className="
+    flex 
+    flex-col 
+    bg-gray-50
+
+    mt-[30px]
+    h-[calc(100vh-60px)] 
+    
+    md:mt-[28px]
+    md:h-[calc(100vh-116px)]
+  "
+>
+
+      {/* (B) 채팅 헤더 */}
+      <div className="flex-none border-b border-gray-200 p-4 flex items-center justify-between bg-white md:flex hidden">
         <button
           onClick={handleGoBack}
           className="text-gray-600 hover:text-orange-500 mr-2"
         >
           &larr;
         </button>
-        <div className="text-lg font-semibold text-gray-800">{otherNickname}</div>
+        <div className="text-lg font-semibold text-gray-800 ">
+          {otherNickname}
+        </div>
         <div />
       </div>
 
-      {/* 채팅 영역 */}
+      {/* (C) 채팅 목록 (스크롤) */}
       <div ref={scrollContainerRef} className="flex-1 p-3 overflow-y-auto">
         {chatMessages.length === 0 && (
           <div className="text-sm text-gray-500">대화가 없습니다.</div>
@@ -291,7 +321,6 @@ export default function ChatPage() {
                 <div className="mt-1 text-xs opacity-80 text-right">
                   {formatChatTime(msg.created_at)}
 
-                  {/* 내 버블(read_at)일 때는 흰색으로, 아니면 기존 로직 유지 */}
                   {isMine ? (
                     msg.read_at ? (
                       <span className="ml-1 text-white">읽음</span>
@@ -308,7 +337,7 @@ export default function ChatPage() {
         })}
       </div>
 
-      {/* 입력 영역 */}
+      {/* (D) 입력 영역 (하단) */}
       <form
         onSubmit={handleSendMessage}
         className="flex-none border-t border-gray-200 p-3 bg-white"

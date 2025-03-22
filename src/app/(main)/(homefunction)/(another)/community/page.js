@@ -57,7 +57,7 @@ export default async function MainPage() {
               <h2 className="text-lg font-bold">{boardItem.name}</h2>
               <Link
                 href={`/community/board/${encodeURIComponent(boardItem.name)}`}
-                className="text-sm text-red-600"
+                className="text-sm text-orange-600"
               >
                 더보기 &gt;
               </Link>
@@ -70,7 +70,7 @@ export default async function MainPage() {
             {boardItem.posts.length === 0 ? (
               <p className="text-sm text-gray-500">게시글이 없습니다.</p>
             ) : (
-              <ul className="list-disc marker:text-red-500 ml-4 text-sm space-y-1">
+              <ul className="list-disc marker:text-orange-500 ml-4 text-sm space-y-1">
                 {boardItem.posts.map((post) => {
                   const commentCount = post.post_comments
                     ? post.post_comments.length

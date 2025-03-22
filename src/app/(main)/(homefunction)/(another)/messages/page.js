@@ -9,11 +9,11 @@ export default function MessagesPage() {
 
   const [session, setSession] = useState(null);
 
-  // ★ 보여줄 목록 (최신 메시지만)
+  // ★ 최신 메시지 목록 (내가 sender든 receiver든 상관없이)
   const [messages, setMessages] = useState([]);
 
   // 탭, 검색 관련 상태 그대로
-  const [selectedTab, setSelectedTab] = useState("전체"); 
+  const [selectedTab, setSelectedTab] = useState("전체");
   const [searchKeyword, setSearchKeyword] = useState("");
 
   // 예시: 운영자(관리자) 계정 user_id (실제로는 DB나 설정값에서 가져와야 함)
@@ -30,25 +30,29 @@ export default function MessagesPage() {
     });
   }, []);
 
-  // 2) messages 불러오기 + “발신자별” 최신 메시지 하나만 표시
+  // 2) messages 불러오기 + “상대방별” 최신 메시지 하나씩만 표시
   useEffect(() => {
     if (!session?.user?.id) return;
 
     async function fetchMessages() {
       try {
+        // 2-1) 쿼리 기본: "내가 sender" OR "내가 receiver"인 메시지 전부 (최신순)
         let query = supabase
           .from("messages")
           .select(
             `
               id,
               sender_id,
+              receiver_id,
               content,
               created_at,
-              sender_profiles:profiles!fk_sender (nickname)
+              read_at,
+              sender_profiles:profiles!fk_sender ( nickname ),
+              receiver_profiles:profiles!fk_receiver ( nickname )
             `
           )
-          .eq("receiver_id", session.user.id)
-          .order("created_at", { ascending: false }); // 최신 메시지가 먼저
+          .or(`receiver_id.eq.${session.user.id},sender_id.eq.${session.user.id}`)
+          .order("created_at", { ascending: false }); // 최신 메시지 먼저
 
         // (A) "안읽음" 탭이면 read_at이 null인 것만
         if (selectedTab === "안읽음") {
@@ -62,27 +66,33 @@ export default function MessagesPage() {
           return;
         }
 
-        // 전체 결과 (최신 먼저)
+        // 전체 결과
         let allData = data || [];
 
-        // (B) 검색어 필터 (발신자 닉네임 or content)
+        // (B) 검색어 필터 (상대방 닉네임 or content)
         if (searchKeyword.trim()) {
           const kwd = searchKeyword.trim().toLowerCase();
           allData = allData.filter((msg) => {
-            const nickname = msg.sender_profiles?.nickname?.toLowerCase() || "";
+            // "내가 sender" → 상대방은 receiver_profiles, "내가 receiver" → 상대방은 sender_profiles
+            const isMeSender = msg.sender_id === session.user.id;
+            const theirNickname = isMeSender
+              ? msg.receiver_profiles?.nickname?.toLowerCase() || ""
+              : msg.sender_profiles?.nickname?.toLowerCase() || "";
+
             const content = msg.content?.toLowerCase() || "";
-            return nickname.includes(kwd) || content.includes(kwd);
+            return theirNickname.includes(kwd) || content.includes(kwd);
           });
         }
 
-        // (C) “한 사람이 보낸 여러 메시지 중 최신 하나만” 골라내기
-        //     ascending=false → allData[0]가 가장 최신.
-        //     conversationMap에 "sender_id"가 없을 때만 set
+        // (C) “상대방 ID” 기준으로 최신 메시지 1개씩만 추출
+        //     ex: otherId = (msg.sender_id === 내아이디) ? msg.receiver_id : msg.sender_id
         const conversationMap = {};
         for (const msg of allData) {
-          if (!conversationMap[msg.sender_id]) {
-            // 아직 없다면 이 메시지가 "그 사람의 최신메시지"
-            conversationMap[msg.sender_id] = msg;
+          const isMeSender = msg.sender_id === session.user.id;
+          const otherId = isMeSender ? msg.receiver_id : msg.sender_id;
+          // 아직 otherId가 없다면 => 이 메시지가 그 상대방과의 "최신 메시지"(내림차순)
+          if (!conversationMap[otherId]) {
+            conversationMap[otherId] = msg;
           }
         }
 
@@ -130,18 +140,20 @@ export default function MessagesPage() {
       }
       alert("운영자에게 쪽지를 보냈습니다!");
     } catch (err) {
-      console.error("Unknown error sending message to admin:", err);
+      console.error("오류:", err);
       alert("오류가 발생했습니다.");
     }
   }
 
   // 메시지 카드 클릭 → 상대방 ID로 이동
-  function handleClickMessage(senderId) {
-    router.push(`/messages/${senderId}`);
+  function handleClickMessage(msg) {
+    const isMeSender = msg.sender_id === session.user.id;
+    const otherId = isMeSender ? msg.receiver_id : msg.sender_id;
+    router.push(`/messages/${otherId}`);
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 pt-10 md:pt-40 pb-16">
+    <div className="max-w-3xl mx-auto px-4 pt-8 pb-16">
       {/* 헤더 */}
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-semibold">채팅</h1>
@@ -186,27 +198,36 @@ export default function MessagesPage() {
 
       {/* 메시지 목록 */}
       <div className="space-y-4">
-        {messages.map((msg) => (
-          <div
-            key={msg.id}
-            onClick={() => handleClickMessage(msg.sender_id)}
-            className="flex items-center justify-between border-b border-gray-100 pb-2 cursor-pointer hover:bg-gray-50"
-          >
-            {/* 왼쪽: 발신자 닉네임 + 내용 일부 */}
-            <div>
-              <div className="text-base font-semibold text-gray-800">
-                {msg.sender_profiles?.nickname || "알 수 없는 발신자"}
+        {messages.map((msg) => {
+          // 상대방 닉네임
+          const isMeSender = msg.sender_id === session?.user?.id;
+          const otherNickname = isMeSender
+            ? msg.receiver_profiles?.nickname || "???"
+            : msg.sender_profiles?.nickname || "???";
+
+          return (
+            <div
+              key={msg.id}
+              onClick={() => handleClickMessage(msg)}
+              className="flex items-center justify-between border p-2 rounded shadow-sm border-gray-100 pb-2 cursor-pointer hover:bg-gray-50"
+            >
+              {/* 왼쪽: "상대방 닉네임" + 메시지 일부 */}
+              <div>
+                <div className="text-base font-semibold text-gray-800">
+                  {otherNickname}
+                </div>
+                <div className="text-sm text-gray-500">
+                  {msg.content?.slice(0, 30) +
+                    (msg.content?.length > 30 ? "..." : "")}
+                </div>
               </div>
-              <div className="text-sm text-gray-500">
-                {msg.content?.slice(0, 30) + (msg.content?.length > 30 ? "..." : "")}
+              {/* 오른쪽: 시간 */}
+              <div className="text-xs text-gray-400">
+                {timeAgoFormat(msg.created_at)}
               </div>
             </div>
-            {/* 오른쪽: 시간 */}
-            <div className="text-xs text-gray-400">
-              {timeAgoFormat(msg.created_at)}
-            </div>
-          </div>
-        ))}
+          );
+        })}
 
         {messages.length === 0 && (
           <div className="text-gray-500 text-sm mt-6">
@@ -218,7 +239,7 @@ export default function MessagesPage() {
   );
 }
 
-// 간단 timeAgo 함수 (원하는대로 바꿔 쓰세요)
+// 기존 timeAgo 함수 그대로
 function timeAgoFormat(dateString) {
   if (!dateString) return "";
   const diffMs = new Date().getTime() - new Date(dateString).getTime();

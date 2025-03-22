@@ -3,9 +3,9 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseF";
-import SubmitForm from "@/(main)/(homefunction)/partnership/components/SubmitForm";
-import ImageUpload from "@/(main)/(homefunction)/partnership/components/ImageUpload";
-import SubmitList from "@/(main)/(homefunction)/partnership/components/SubmitList";
+import SubmitForm from "@/(main)/(homefunction)/(another)/partnership/components/SubmitForm";
+import ImageUpload from "@/(main)/(homefunction)/(another)/partnership/components/ImageUpload";
+import SubmitList from "@/(main)/(homefunction)/(another)/partnership/components/SubmitList";
 export default function NewListingPage() {
   const router = useRouter();
 

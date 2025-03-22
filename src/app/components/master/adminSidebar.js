@@ -12,7 +12,7 @@ import {
   EnvelopeIcon,
   CheckBadgeIcon,
   ChatBubbleOvalLeftEllipsisIcon,
-  BriefcaseIcon
+  BriefcaseIcon,
 } from "@heroicons/react/24/outline";
 import { supabase } from "../../lib/supabaseF";
 
@@ -34,7 +34,7 @@ export default function AdminSidebar() {
   const [unreadCount, setUnreadCount] = useState(0);
 
   // --------------------------
-  // 1) 로그인된 유저 정보 (user_id, 닉네임) 가져오기
+  // (1) 로그인된 유저 정보 (user_id, 닉네임) 가져오기
   // --------------------------
   useEffect(() => {
     async function fetchUserInfo() {
@@ -73,7 +73,7 @@ export default function AdminSidebar() {
   }, []);
 
   // --------------------------
-  // 2) 제휴, 댓글, 쪽지 건수 로딩
+  // (2) 제휴, 댓글, 쪽지 건수 로딩
   // --------------------------
   useEffect(() => {
     loadPartnershipCounts();
@@ -81,7 +81,7 @@ export default function AdminSidebar() {
 
   async function loadPartnershipCounts() {
     try {
-      // 제휴 신청: is_admitted=false
+      // (A) 제휴 신청: is_admitted=false
       const { count: admittedFalseCount, error: admittedFalseError } =
         await supabase
           .from("partnershipsubmit")
@@ -94,7 +94,7 @@ export default function AdminSidebar() {
         setPartnershipCount(admittedFalseCount);
       }
 
-      // 최종 승인 대기: is_admitted=true & final_admitted=false
+      // (B) 최종 승인 대기: is_admitted=true & final_admitted=false
       const { count: finalFalseCount, error: finalFalseError } = await supabase
         .from("partnershipsubmit")
         .select("id", { count: "exact", head: true })
@@ -110,7 +110,7 @@ export default function AdminSidebar() {
         setFinalPendingCount(finalFalseCount);
       }
 
-      // 댓글 미승인: comments.is_admitted=false
+      // (C) 댓글 미승인: comments.is_admitted=false
       const { count: cCount, error: cErr } = await supabase
         .from("comments")
         .select("id", { count: "exact", head: true })
@@ -126,11 +126,14 @@ export default function AdminSidebar() {
   }
 
   // --------------------------
-  // 3) 내 계정으로 온 쪽지 중, 읽지 않은 쪽지 개수 로딩
+  // (3) 내 계정으로 온 쪽지 중, 읽지 않은 쪽지 개수 로딩 + 실시간 구독
   // --------------------------
   useEffect(() => {
     if (myUid) {
       fetchUnreadCount(myUid);
+      subscribeMessages();   // 메시지 테이블 구독
+      subscribePartnership(); // partnershipsubmit 테이블 구독
+      subscribeComments();    // comments 테이블 구독
     }
   }, [myUid]);
 
@@ -151,6 +154,59 @@ export default function AdminSidebar() {
       console.error("unreadCount 로딩 오류:", err);
       setUnreadCount(0);
     }
+  }
+
+  // --------------------------
+  // (A) messages 테이블 실시간 구독 (이미 있음)
+  // --------------------------
+  function subscribeMessages() {
+    const channel = supabase.channel("admin-sidebar-messages-realtime");
+    channel.on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "messages" },
+      (payload) => {
+        console.log("AdminSidebar Realtime - messages:", payload);
+        // 새 메시지 or read_at 업데이트 등 → 다시 unreadCount 가져오기
+        if (myUid) {
+          fetchUnreadCount(myUid);
+        }
+      }
+    );
+    channel.subscribe();
+  }
+
+  // --------------------------
+  // (B) partnershipsubmit 테이블 실시간 구독
+  // --------------------------
+  function subscribePartnership() {
+    const channel = supabase.channel("admin-sidebar-partnershipsubmit-realtime");
+    channel.on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "partnershipsubmit" },
+      (payload) => {
+        console.log("AdminSidebar Realtime - partnershipsubmit:", payload);
+        // 제휴 신청, 최종 승인 대기에 영향 → 다시 loadPartnershipCounts()
+        loadPartnershipCounts();
+      }
+    );
+    channel.subscribe();
+  }
+
+  // --------------------------
+  // (C) comments 테이블 실시간 구독
+  // --------------------------
+  function subscribeComments() {
+    const channel = supabase.channel("admin-sidebar-comments-realtime");
+    channel.on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "comments" },
+      (payload) => {
+        console.log("AdminSidebar Realtime - comments:", payload);
+        // 댓글 승인 여부에 영향 → 다시 loadPartnershipCounts()
+        loadPartnershipCounts();
+      }
+    );
+    channel.subscribe();
   }
 
   return (
@@ -190,7 +246,7 @@ export default function AdminSidebar() {
 
         {/* 메뉴 그룹 */}
         <nav className="mt-4 flex-1 space-y-4 px-2">
-          {/* 대시보드를 맨 위로 */}
+          {/* 대시보드 */}
           <NavItem
             href="/master/dashboard"
             icon={<HomeIcon className="h-5 w-5" />}

@@ -156,7 +156,7 @@ export default async function BoardPage({ params, searchParams }) {
           </select>
           <button
             type="submit"
-            className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
+            className="px-3 py-1 bg-orange-500 text-white rounded text-sm hover:bg-orange-600"
           >
             필터 적용
           </button>
@@ -171,7 +171,7 @@ export default async function BoardPage({ params, searchParams }) {
         ) : (
           <Link
             href={`/community/board/${decodedType}/write`}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+            className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 text-sm"
           >
             글쓰기
           </Link>

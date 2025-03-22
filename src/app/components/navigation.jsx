@@ -1,12 +1,14 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
+import { usePathname, useRouter } from "next/navigation"; // ★ usePathname 추가
 import Link from "next/link";
 import { supabase } from "../lib/supabaseF";
-import { useRouter } from "next/navigation";
 
 export default function NavBar() {
   const router = useRouter();
+  const pathname = usePathname(); // ★ 현재 경로 확인
+
   const [session, setSession] = useState(null);
 
   // 내 닉네임
@@ -21,7 +23,12 @@ export default function NavBar() {
   // 스크롤 참조
   const menuRef = useRef(null);
 
-  // 세션 & 프로필 로드
+  // ======= 읽지 않은 메시지 수 =======
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // --------------------------------------
+  // (1) 세션 & 프로필 로드
+  // --------------------------------------
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
@@ -33,11 +40,9 @@ export default function NavBar() {
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (_event, newSession) => {
         setSession(newSession);
-
         if (newSession?.user?.id) {
           fetchMyProfile(newSession.user.id);
         } else {
-          // 세션이 사라졌을 때(로그아웃 등)
           setMyNickname("");
         }
       }
@@ -48,7 +53,6 @@ export default function NavBar() {
     };
   }, []);
 
-  // 프로필 로드 (nickname만 가져옴)
   async function fetchMyProfile(userId) {
     try {
       const { data } = await supabase
@@ -56,6 +60,7 @@ export default function NavBar() {
         .select("nickname")
         .eq("user_id", userId)
         .single();
+
       setMyNickname(data?.nickname || "(닉네임 없음)");
     } catch (err) {
       console.error("프로필 오류:", err);
@@ -63,7 +68,9 @@ export default function NavBar() {
     }
   }
 
-  // 로그아웃
+  // --------------------------------------
+  // (2) 로그아웃
+  // --------------------------------------
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
@@ -74,7 +81,7 @@ export default function NavBar() {
     }
   };
 
-  // “나의활동” 클릭 시
+  // “나의활동” 클릭
   const handleMyActivityClick = () => {
     if (!isLoggedIn) {
       alert("로그인을 해주세요");
@@ -83,7 +90,7 @@ export default function NavBar() {
     router.push("/mypage");
   };
 
-  // 검색 창 → Enter 시 /search?q=...로 이동
+  // 검색 창 → Enter 시 이동
   const handleSearchKeyDown = (e) => {
     if (e.key === "Enter") {
       const query = e.target.value.trim();
@@ -92,7 +99,7 @@ export default function NavBar() {
     }
   };
 
-  // 모바일 메뉴 화살표 스크롤
+  // 모바일 메뉴 스크롤 화살표
   const scrollLeft = () => {
     if (menuRef.current) {
       menuRef.current.scrollBy({ left: -200, behavior: "smooth" });
@@ -104,12 +111,12 @@ export default function NavBar() {
     }
   };
 
-  // 전체 카테고리 버튼 클릭 → MegaMenu 열고 닫기
+  // 전체 카테고리 버튼
   const toggleMegaMenu = () => {
     setShowMegaMenu((prev) => !prev);
   };
 
-  // 1:1 쪽지 아이콘 클릭 → /messages 페이지로 이동
+  // 1:1 쪽지 아이콘
   const handleMessagesClick = () => {
     if (!isLoggedIn) {
       alert("로그인이 필요합니다.");
@@ -118,38 +125,93 @@ export default function NavBar() {
     router.push("/messages");
   };
 
-  return (
-    <header className="w-full bg-white fixed">
-      {/* (A) 모바일 전용 상단바 */}
-      <div className="flex items-center px-4 py-3 md:hidden space-x-3">
-        {/* 로고 */}
-        <Link href="/">
-          <div className="flex items-center space-x-1 mr-10 ml-3 text-xl font-bold">
-            <span className="text-orange-500">여기닷</span>
-          </div>
-        </Link>
+  // --------------------------------------
+  // (3) 읽지 않은 메시지 수 + Realtime 구독
+  // --------------------------------------
+  useEffect(() => {
+    if (session?.user?.id) {
+      fetchUnreadCount(session.user.id);
+      subscribeMessages();
+    } else {
+      setUnreadCount(0);
+    }
+  }, [session?.user?.id]);
 
-        {/* 검색창 (모바일) */}
-        <div className="relative flex-1">
-          <input
-            type="text"
-            placeholder="검색"
-            className="w-full rounded-full border border-orange-500 py-3 pl-4 pr-9 text-base
-                       focus:outline-none focus:ring-1 focus:ring-red-400"
-            onKeyDown={handleSearchKeyDown}
-          />
-          <svg
-            className="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-red-400"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            viewBox="0 0 24 24"
-          >
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
+  async function fetchUnreadCount(userId) {
+    try {
+      const { count, error } = await supabase
+        .from("messages")
+        .select("*", { count: "exact", head: true })
+        .eq("receiver_id", userId)
+        .is("read_at", null);
+
+      if (error) {
+        console.error("읽지 않은 메시지 조회 오류:", error);
+        return;
+      }
+      setUnreadCount(count || 0);
+    } catch (err) {
+      console.error("fetchUnreadCount() 에러:", err);
+    }
+  }
+
+  function subscribeMessages() {
+    const channel = supabase.channel("messages-nav-realtime");
+    channel.on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "messages" },
+      (payload) => {
+        console.log("NavBar Realtime 수신:", payload);
+        if (session?.user?.id) {
+          fetchUnreadCount(session.user.id);
+        }
+      }
+    );
+    channel.subscribe();
+    // 언마운트 시 해제하려면:
+    // return () => supabase.removeChannel(channel);
+  }
+
+  // --------------------------------------
+  // (4) UI: 모바일은 "/" 경로일 때만 상단바 표시
+  // --------------------------------------
+  return (
+    <header className="w-full bg-white fixed mt-0 z-50">
+      {/* (A) 모바일 전용 상단바:
+          pathname === "/" 이면 렌더링,
+          아니면 null → 마운트 안 함
+       */}
+      {pathname === "/" ? (
+        <div className="flex items-center px-4 py-3 md:hidden space-x-3">
+          {/* 로고 */}
+          <Link href="/">
+            <div className="flex items-center space-x-1 mr-10 ml-3 text-xl font-bold">
+              <span className="text-orange-500">여기닷</span>
+            </div>
+          </Link>
+
+          {/* 검색창 (모바일) */}
+          <div className="relative flex-1">
+            <input
+              type="text"
+              placeholder="검색"
+              className="w-full rounded-full border border-orange-500 py-3 pl-4 pr-9 text-base
+                         focus:outline-none focus:ring-1 focus:ring-red-400"
+              onKeyDown={handleSearchKeyDown}
+            />
+            <svg
+              className="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-red-400"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+          </div>
         </div>
-      </div>
+      ) : null}
 
       {/* (B) PC 해상도 상단바 */}
       <div className="mx-auto hidden w-full max-w-7xl px-6 py-3 md:flex">
@@ -209,12 +271,20 @@ export default function NavBar() {
                   <span className="text-sm mt-">나의활동</span>
                 </div>
 
-                {/* 1:1 쪽지 → /messages 로 이동 */}
+                {/* 1:1 쪽지 */}
                 <div
-                  className="flex cursor-pointer flex-col items-center text-gray-600 hover:text-orange-500"
+                  className="relative flex cursor-pointer flex-col items-center text-gray-600 hover:text-orange-500"
                   onClick={handleMessagesClick}
                 >
                   <img src="/icons/chat.svg" width={30} alt="쪽지함 아이콘" />
+                  {unreadCount > 0 && (
+                    <span
+                      className="absolute -top-1 -right-2 bg-red-500 text-white 
+                                 text-xs rounded-full w-5 h-5 flex items-center justify-center"
+                    >
+                      {unreadCount}
+                    </span>
+                  )}
                   <span className="text-sm mt-">1:1 쪽지</span>
                 </div>
 
@@ -313,10 +383,16 @@ export default function NavBar() {
               </svg>
             </button>
 
-            <Link href="/board/전체/전체/전체" className="inline-block hover:text-orange-500 md:mx-5">
+            <Link
+              href="/board/전체/전체/전체"
+              className="inline-block hover:text-orange-500 md:mx-5"
+            >
               지역별 검색
             </Link>
-            <Link href="/today/전체/전체/전체" className="inline-block hover:text-orange-500 md:mx-5">
+            <Link
+              href="/today/전체/전체/전체"
+              className="inline-block hover:text-orange-500 md:mx-5"
+            >
               실시간 인기 업체
             </Link>
             <Link href="/near-me" className="inline-block hover:text-orange-500 md:mx-5">
@@ -428,7 +504,10 @@ export default function NavBar() {
                     </Link>
                   </li>
                   <li>
-                    <Link href="/board/전체/전체/아이폰-스냅" onClick={() => setShowMegaMenu(false)}>
+                    <Link
+                      href="/board/전체/전체/아이폰-스냅"
+                      onClick={() => setShowMegaMenu(false)}
+                    >
                       아이폰-스냅
                     </Link>
                   </li>
@@ -494,18 +573,12 @@ export default function NavBar() {
                     </Link>
                   </li>
                   <li>
-                    <Link
-                      href="/community/board/가입인사"
-                      onClick={() => setShowMegaMenu(false)}
-                    >
+                    <Link href="/community/board/가입인사" onClick={() => setShowMegaMenu(false)}>
                       가입인사
                     </Link>
                   </li>
                   <li>
-                    <Link
-                      href="/community/board/방문후기"
-                      onClick={() => setShowMegaMenu(false)}
-                    >
+                    <Link href="/community/board/방문후기" onClick={() => setShowMegaMenu(false)}>
                       방문후기
                     </Link>
                   </li>
@@ -518,10 +591,7 @@ export default function NavBar() {
                     </Link>
                   </li>
                   <li>
-                    <Link
-                      href="/community/board/자유게시판"
-                      onClick={() => setShowMegaMenu(false)}
-                    >
+                    <Link href="/community/board/자유게시판" onClick={() => setShowMegaMenu(false)}>
                       자유게시판
                     </Link>
                   </li>
@@ -550,10 +620,7 @@ export default function NavBar() {
                     </Link>
                   </li>
                   <li>
-                    <Link
-                      href="/community/board/패션 꿀팁"
-                      onClick={() => setShowMegaMenu(false)}
-                    >
+                    <Link href="/community/board/패션 꿀팁" onClick={() => setShowMegaMenu(false)}>
                       패션 꿀팁
                     </Link>
                   </li>

@@ -1,5 +1,6 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseF";
 
 export default function CommentsUI({ company_name, id }) {
@@ -18,11 +19,21 @@ export default function CommentsUI({ company_name, id }) {
   const [page, setPage] = useState(1);              // 현재 페이지 번호
   const [totalPages, setTotalPages] = useState(1);
 
+  // ========== 팝업(우클릭/롱프레스) 상태 ==========
+  const [popup, setPopup] = useState({
+    visible: false,
+    x: 0,
+    y: 0,
+    targetUserId: "",
+  });
+  const pressTimerRef = useRef(null);
+  const router = useRouter();
+
   // --------------------------------------
   // (1) 초기 로딩: 로그인 정보 & 로컬 스토리지(1분 제한) 불러오기
   // --------------------------------------
   useEffect(() => {
-    // 1) 로그인 사용자 정보
+    // 로그인 사용자 정보 가져오기
     (async () => {
       const { data: userData } = await supabase.auth.getUser();
       if (userData?.user) {
@@ -30,7 +41,7 @@ export default function CommentsUI({ company_name, id }) {
       }
     })();
 
-    // 2) 로컬 스토리지에서 댓글 타임스탬프 가져오기
+    // 로컬 스토리지에서 댓글 타임스탬프 불러오기
     const stored = localStorage.getItem("commentTimestamps");
     if (stored) {
       try {
@@ -63,7 +74,7 @@ export default function CommentsUI({ company_name, id }) {
   // --------------------------------------
   async function fetchCommentsAndCount() {
     try {
-      // 4-1) partnershipsubmit.comment를 그대로 가져와서 reviewCount로 씀
+      // partnershipsubmit.comment 가져오기
       const { data: psData, error: psError } = await supabase
         .from("partnershipsubmit")
         .select("comment")
@@ -71,16 +82,14 @@ export default function CommentsUI({ company_name, id }) {
         .single();
 
       if (psError) {
-        console.error("파트너십테이블(comment 칼럼) 불러오기 에러:", psError);
+        console.error("파트너십테이블(comment) 불러오기 에러:", psError);
       } else if (psData) {
-        // DB에 저장된 comment 값 (예: 12)
         const totalCount = psData.comment || 0;
         setReviewCount(totalCount);
-        // 전체 페이지 수 계산 (ex: 12개면 12/5 → 2.4 → 3페이지)
         setTotalPages(Math.ceil(totalCount / PAGE_SIZE));
       }
 
-      // 4-2) is_admitted = true인 댓글만 page에 맞춰 가져오기
+      // is_admitted=true 인 댓글 page 단위로 가져오기
       const start = (page - 1) * PAGE_SIZE;
       const end = start + PAGE_SIZE - 1;
       const { data: commentData, error: commentError } = await supabase
@@ -91,7 +100,7 @@ export default function CommentsUI({ company_name, id }) {
           created_at,
           user_id,
           is_admitted,
-          profiles!inner(nickname)
+          profiles!inner(nickname, user_id)
         `)
         .eq("partnershipsubmit_id", id)
         .eq("is_admitted", true)
@@ -100,7 +109,6 @@ export default function CommentsUI({ company_name, id }) {
 
       if (commentError) {
         console.error("댓글 목록(is_admitted=true) 가져오기 에러:", commentError);
-        return;
       }
       if (commentData) {
         setComments(commentData);
@@ -132,23 +140,39 @@ export default function CommentsUI({ company_name, id }) {
       return;
     }
 
-    // 로그인 체크
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-
+    // 6-1) 로그인 체크
+    const { data: userData } = await supabase.auth.getUser();
     if (!userData || !userData.user) {
-      alert("로그인이 필요합니다!");
+      alert("로그인이 필요합니다! 로그인 후에 이용 가능합니다.");
       return;
     }
 
-    // DB insert (is_admitted = false)
+    // 6-2) 밴 여부(profiles.is_banned) 확인
     const user_id = userData.user.id;
-    const { data, error } = await supabase
+    const { data: bannedData, error: bannedError } = await supabase
+      .from("profiles")
+      .select("is_banned")
+      .eq("user_id", user_id)
+      .maybeSingle();
+
+    if (bannedError) {
+      console.error("밴 여부 확인 에러:", bannedError);
+      alert("죄송합니다. 잠시 후 다시 시도해 주세요!");
+      return;
+    }
+    if (bannedData && bannedData.is_banned) {
+      alert("차단된 사용자입니다. 1:1쪽지로 운영자에게 문의하시기바랍니다.");
+      return;
+    }
+
+    // 6-3) DB insert (is_admitted=false)
+    const { data: inserted, error } = await supabase
       .from("comments")
       .insert({
         user_id,
         partnershipsubmit_id: id,
         comment: commentText,
-        is_admitted: false, // 관리자 승인 전
+        is_admitted: false,
       })
       .select();
 
@@ -158,7 +182,7 @@ export default function CommentsUI({ company_name, id }) {
       return;
     }
 
-    if (data) {
+    if (inserted) {
       alert("댓글이 등록되었습니다! 관리자 승인 후 노출됩니다.");
       setCommentText("");
 
@@ -169,10 +193,6 @@ export default function CommentsUI({ company_name, id }) {
         now,
       ];
       setCommentTimestamps(newTimestamps);
-
-      // partnershipsubmit.comment는 여기서 절대 수정하지 않는다(관리자 페이지에서 수정)
-      // fetchCommentsAndCount() 호출해봐도 is_admitted=false라 화면엔 안 나옴.
-      // fetchCommentsAndCount();
     }
   }
 
@@ -199,21 +219,42 @@ export default function CommentsUI({ company_name, id }) {
       return;
     }
 
-    // partnershipsubmit.comment도 이 로직에선 수정 안 함
-    // 관리자 페이지에서 승인된 댓글을 삭제하면 -1 하든지 등등 처리
+    // 삭제 후 목록 갱신
     fetchCommentsAndCount();
   }
 
   // --------------------------------------
-  // (8) 날짜 포맷 (MM-DD HH:mm)
+  // (8) 날짜 포맷 (조건별: 오늘, n일 전, MM-DD, YYYY-MM-DD)
   // --------------------------------------
-  function formatDate(dateString) {
-    const date = new Date(dateString);
-    const month = (date.getMonth() + 1).toString().padStart(2, "0");
-    const day = date.getDate().toString().padStart(2, "0");
-    const hours = date.getHours().toString().padStart(2, "0");
-    const minutes = date.getMinutes().toString().padStart(2, "0");
-    return `${month}-${day} ${hours}:${minutes}`;
+  function formatDateCustom(dateString) {
+    const dateObj = new Date(dateString);
+    const now = new Date();
+
+    const diffMs = now - dateObj; // 밀리초 차이
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    // 같은 해인지?
+    const isSameYear = dateObj.getFullYear() === now.getFullYear();
+
+    if (diffDays < 1) {
+      // 오늘
+      return "오늘";
+    } else if (diffDays <= 7) {
+      // 1일 전, 2일 전, ... 7일 전
+      return `${diffDays}일 전`;
+    } else {
+      // 7일 초과
+      const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+      const day = String(dateObj.getDate()).padStart(2, "0");
+      if (isSameYear) {
+        // 올해면 "MM-DD"
+        return `${month}-${day}`;
+      } else {
+        // 연도가 다르면 "YYYY-MM-DD"
+        const year = dateObj.getFullYear();
+        return `${year}-${month}-${day}`;
+      }
+    }
   }
 
   // --------------------------------------
@@ -230,12 +271,70 @@ export default function CommentsUI({ company_name, id }) {
     }
   }
 
+  // ======================================
+  // (추가) 우클릭/롱프레스 -> 1:1 쪽지 팝업
+  // ======================================
+  function handleContextMenu(e, commentUserId) {
+    e.preventDefault();
+    if (commentUserId === currentUserId) return;
+
+    const { clientX, clientY } = e;
+    setPopup({
+      visible: true,
+      x: clientX,
+      y: clientY,
+      targetUserId: commentUserId,
+    });
+  }
+
+  function handleTouchStart(e, commentUserId) {
+    if (commentUserId === currentUserId) return;
+
+    pressTimerRef.current = setTimeout(() => {
+      const touch = e.touches[0];
+      setPopup({
+        visible: true,
+        x: touch.clientX,
+        y: touch.clientY,
+        targetUserId: commentUserId,
+      });
+    }, 500);
+  }
+  function handleTouchEnd() {
+    if (pressTimerRef.current) {
+      clearTimeout(pressTimerRef.current);
+    }
+  }
+
+  // ⬇︎ 쪽지 보내기 로직: 로그인 안 되어 있으면 알림
+  function handleSendMessage() {
+    setPopup((prev) => ({ ...prev, visible: false }));
+    // 1) 로그인 체크
+    if (!currentUserId) {
+      alert("로그인이 필요합니다! 로그인 후에 이용 가능합니다.");
+      return;
+    }
+    // 2) 로그인 되어 있으면 메시지 페이지로 이동
+    router.push(`/messages/${popup.targetUserId}`);
+  }
+
+  // 팝업 바깥 클릭 시 닫기
+  useEffect(() => {
+    function closePopup() {
+      if (popup.visible) {
+        setPopup((prev) => ({ ...prev, visible: false }));
+      }
+    }
+    window.addEventListener("click", closePopup);
+    return () => window.removeEventListener("click", closePopup);
+  }, [popup.visible]);
+
   // --------------------------------------
   // (10) UI
   // --------------------------------------
   return (
-    <div className="bg-white rounded mt-12">
-      {/* 상단: 업체명 + 댓글 개수 ( DB에서 읽어온 partnershipsubmit.comment 값 ) */}
+    <div className="bg-white rounded mt-12 relative">
+      {/* 상단: 업체명 + 댓글 개수 */}
       <div className="text-center mb-6">
         <h2 className="text-xl font-semibold mb-2">
           {company_name} 업체에 리뷰를 남겨보세요!
@@ -263,32 +362,41 @@ export default function CommentsUI({ company_name, id }) {
 
       {/* 승인된(is_admitted=true) 댓글 목록 (현재 페이지) */}
       <ul className="space-y-4 mb-4">
-        {comments.map((c) => (
-          <li
-            key={c.id}
-            className="p-3 rounded border border-gray-300 flex justify-between items-start"
-          >
-            <div>
-              <div className="font-semibold mb-1">
-                {c.profiles.nickname}{" "}
-                <span className="text-sm text-gray-500">
-                  {formatDate(c.created_at)}
+        {comments.map((c) => {
+          const displayedDate = formatDateCustom(c.created_at);
+          return (
+            <li
+              key={c.id}
+              className="bg-white rounded shadow p-4 flex flex-col"
+              onContextMenu={(e) => handleContextMenu(e, c.profiles.user_id)}
+              onTouchStart={(e) => handleTouchStart(e, c.profiles.user_id)}
+              onTouchEnd={handleTouchEnd}
+            >
+              {/* 닉네임 + 날짜 */}
+              <div className="flex items-baseline gap-2">
+                <span className="font-semibold text-black">
+                  {c.profiles.nickname}
                 </span>
+                <span className="text-sm text-gray-400">{displayedDate}</span>
               </div>
-              <div className="text-gray-700">{c.comment}</div>
-            </div>
 
-            {/* 본인 글만 삭제 가능 */}
-            {currentUserId === c.user_id && (
-              <button
-                className="text-red-400 text-sm"
-                onClick={() => handleDelete(c.id, c.user_id)}
-              >
-                삭제
-              </button>
-            )}
-          </li>
-        ))}
+              {/* 댓글 내용 */}
+              <div className="mt-1 text-gray-700">{c.comment}</div>
+
+              {/* 본인 글이면 삭제 버튼 */}
+              {currentUserId === c.user_id && (
+                <div className="mt-2 text-right">
+                  <button
+                    className="text-red-400 text-sm"
+                    onClick={() => handleDelete(c.id, c.user_id)}
+                  >
+                    삭제
+                  </button>
+                </div>
+              )}
+            </li>
+          );
+        })}
       </ul>
 
       {/* 페이지네이션 버튼 */}
@@ -311,6 +419,28 @@ export default function CommentsUI({ company_name, id }) {
           다음
         </button>
       </div>
+
+      {/* 우클릭/롱프레스 팝업 (쪽지 보내기) */}
+      {popup.visible && (
+        <div
+          className="z-50 bg-white border border-gray-300 rounded p-2"
+          style={{
+            position: "fixed",
+            top: popup.y,
+            left: popup.x,
+            minWidth: "120px",
+          }}
+        >
+          <ul className="text-center">
+            <li
+              className="cursor-pointer hover:underline text-blue-600"
+              onClick={handleSendMessage}
+            >
+              1:1 쪽지 보내기
+            </li>
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

@@ -5,6 +5,18 @@ import { usePathname } from "next/navigation";
 export default function MobileBottomNav() {
   const pathname = usePathname();
 
+  // ─────────────────────────────────────────
+  // (A) /messages/[something] 이면 언마운트
+  // ─────────────────────────────────────────
+  // 예) pathname = "/messages/abc123" → split("/") → ["messages","abc123"]
+  const segments = pathname.split("/").filter(Boolean); 
+  if (segments[0] === "messages" && segments.length > 1) {
+    return null; // /messages/동적 -> 안보이게(언마운트)
+  }
+
+  // ─────────────────────────────────────────
+  // (B) 네비 아이템 목록
+  // ─────────────────────────────────────────
   const navItems = [
     {
       label: "전체",
@@ -46,7 +58,6 @@ export default function MobileBottomNav() {
     },
     {
       label: "내주변",
-      // 여기서 기존의 아이콘 대신, 위치 마커 아이콘을 사용합니다.
       icon: (
         <svg
           width="24"
@@ -86,6 +97,9 @@ export default function MobileBottomNav() {
     },
   ];
 
+  // ─────────────────────────────────────────
+  // (C) 렌더링
+  // ─────────────────────────────────────────
   return (
     <nav
       style={{

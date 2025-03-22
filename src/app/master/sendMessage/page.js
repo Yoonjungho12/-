@@ -44,6 +44,8 @@ export default function ChatPopupB() {
 
   // 맨 아래 스크롤
   const bottomRef = useRef(null);
+  // 모바일 롱프레스 타이머 ref
+  const longPressTimer = useRef(null);
 
   // 1) 세션 로드
   useEffect(() => {
@@ -122,28 +124,30 @@ export default function ChatPopupB() {
     // (A) 처음에 전체 대화 로드
     loadInitialConversation(myId, otherId);
 
-    // (B) Realtime INSERT+UPDATE
+    // (B) Realtime INSERT, UPDATE, DELETE
     const channel = supabase.channel("messages-realtime");
     channel.on(
       "postgres_changes",
       { event: "*", schema: "public", table: "messages" },
       async (payload) => {
-        const { new: newRow, eventType } = payload; // 'INSERT' or 'UPDATE' etc.
+        const { new: newRow, eventType } = payload; // INSERT, UPDATE, DELETE 등
 
-        // 나↔상대 대화인지
+        // 나↔상대 대화인지 확인
         const relevant =
-          (newRow.sender_id === myId && newRow.receiver_id === otherId) ||
-          (newRow.sender_id === otherId && newRow.receiver_id === myId);
+          (newRow && newRow.sender_id === myId && newRow.receiver_id === otherId) ||
+          (newRow && newRow.sender_id === otherId && newRow.receiver_id === myId) ||
+          (payload.eventType === "DELETE" &&
+            payload.old &&
+            ((payload.old.sender_id === myId && payload.old.receiver_id === otherId) ||
+              (payload.old.sender_id === otherId && payload.old.receiver_id === myId)));
 
         if (!relevant) return;
 
         if (eventType === "INSERT") {
-          // 새 메시지 도착
           let finalRow = newRow;
 
-          // 만약 (sender=other, receiver=me)이면 => 내가 지금 보고 있음 => read_at= now
+          // 만약 (sender=other, receiver=me)이면, 내가 보고 있으므로 read_at 업데이트
           if (newRow.sender_id === otherId && newRow.receiver_id === myId) {
-            // DB에서 read_at=now + select("*") 로 변경된 row까지 가져오기
             const { data: updated, error } = await supabase
               .from("messages")
               .update({ read_at: new Date().toISOString() })
@@ -151,21 +155,17 @@ export default function ChatPopupB() {
               .select("*"); // 업데이트 후 최신 row 반환
 
             if (!error && updated?.length > 0) {
-              finalRow = updated[0]; // 이제 read_at가 있는 메시지
+              finalRow = updated[0];
             }
           }
 
-          // finalRow를 messages에 추가
           setMessages((prev) => {
             const updated = [...prev, finalRow];
             updated.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
             return updated;
           });
-
-          // 스크롤 아래로
           setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
         } else if (eventType === "UPDATE") {
-          // read_at 업데이트
           setMessages((prev) => {
             const updated = [...prev];
             const idx = updated.findIndex((m) => m.id === payload.new.id);
@@ -174,6 +174,9 @@ export default function ChatPopupB() {
             }
             return updated;
           });
+        } else if (eventType === "DELETE") {
+          // 삭제된 메시지는 state에서 제거
+          setMessages((prev) => prev.filter((m) => m.id !== payload.old.id));
         }
       }
     );
@@ -210,12 +213,51 @@ export default function ChatPopupB() {
     }
   }
 
+  // 5) 메시지 삭제 (내가 보낸 메시지에 대해)
+  async function handleDelete(msgId) {
+    if (!window.confirm("이 메시지를 삭제하시겠습니까?")) return;
+    try {
+      const { error } = await supabase.from("messages").delete().eq("id", msgId);
+      if (error) {
+        alert("삭제 실패: " + error.message);
+        return;
+      }
+      // 삭제 성공 시 state 업데이트는 실시간 DELETE 이벤트를 통해 처리됨
+    } catch (err) {
+      alert("삭제 오류: " + err.message);
+    }
+  }
+
+  // PC: 우클릭 이벤트 핸들러 (터치 지원 기기에서는 작동하지 않음)
+  function handleContextMenu(e, msgId) {
+    e.preventDefault();
+    if (window.confirm("이 메시지를 삭제하시겠습니까?")) {
+      handleDelete(msgId);
+    }
+  }
+
+  // 모바일: 롱프레스 이벤트 핸들러
+  function handleTouchStart(msgId) {
+    longPressTimer.current = setTimeout(() => {
+      if (window.confirm("이 메시지를 삭제하시겠습니까?")) {
+        handleDelete(msgId);
+      }
+    }, 1000); // 1초 이상 터치 시 삭제 옵션 노출
+  }
+
+  function handleTouchEnd() {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }
+
   // 닫기
   function handleClose() {
     window.close();
   }
 
-  // 5) UI
+  // 6) UI
   if (!otherId) {
     return <div className="p-4">잘못된 접근 (상대방 ID 없음)</div>;
   }
@@ -232,8 +274,7 @@ export default function ChatPopupB() {
         </div>
         <button
           onClick={handleClose}
-          className="text-sm text-zinc-500 hover:text-zinc-800 
-            border border-zinc-200 hover:bg-zinc-100 px-2 py-1 rounded-md"
+          className="text-sm text-zinc-500 hover:text-zinc-800 border border-zinc-200 hover:bg-zinc-100 px-2 py-1 rounded-md"
         >
           닫기
         </button>
@@ -245,29 +286,33 @@ export default function ChatPopupB() {
           <div className="text-sm text-zinc-500">대화가 없습니다.</div>
         ) : (
           messages.map((msg) => {
-            const isMine = (msg.sender_id === myId);
+            const isMine = msg.sender_id === myId;
             return (
               <div
                 key={msg.id}
                 className={`mb-2 flex w-full ${isMine ? "justify-end" : "justify-start"}`}
+                // 터치 지원 기기에서는 onContextMenu 이벤트를 사용하지 않도록 처리
+                onContextMenu={
+                  isMine && !("ontouchstart" in window)
+                    ? (e) => handleContextMenu(e, msg.id)
+                    : undefined
+                }
+                onTouchStart={isMine ? () => handleTouchStart(msg.id) : undefined}
+                onTouchEnd={isMine ? handleTouchEnd : undefined}
+                onTouchCancel={isMine ? handleTouchEnd : undefined}
               >
                 <div
-                  className={`max-w-[70%] p-2 text-sm shadow 
-                    ${
-                      isMine
-                        ? "bg-zinc-700 text-white rounded-tl-2xl rounded-br-2xl rounded-bl-2xl"
-                        : "bg-zinc-200 text-zinc-800 rounded-tr-2xl rounded-br-2xl rounded-bl-2xl"
-                    }`}
+                  className={`max-w-[70%] p-2 text-sm shadow ${
+                    isMine
+                      ? "bg-zinc-700 text-white rounded-tl-2xl rounded-br-2xl rounded-bl-2xl"
+                      : "bg-zinc-200 text-zinc-800 rounded-tr-2xl rounded-br-2xl rounded-bl-2xl"
+                  }`}
                 >
                   <div className="whitespace-pre-wrap">{msg.content}</div>
-
                   {/* 시간 & (read_at) */}
                   <div className="mt-1 text-xs opacity-70 text-right">
                     {formatLocalTime(msg.created_at)}
-                    {/* read_at 있으면 '읽음' */}
-                    {msg.read_at && (
-                      <span className="ml-1 text-blue-600">읽음</span>
-                    )}
+                    {msg.read_at && <span className="ml-1 text-blue-600">읽음</span>}
                   </div>
                 </div>
               </div>
@@ -282,8 +327,7 @@ export default function ChatPopupB() {
         <div className="flex gap-2">
           <textarea
             rows={2}
-            className="flex-1 border border-zinc-200 rounded-md p-2 text-sm
-              focus:outline-none focus:ring-1 focus:ring-zinc-400"
+            className="flex-1 border border-zinc-200 rounded-md p-2 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-400"
             placeholder="메시지를 입력..."
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}

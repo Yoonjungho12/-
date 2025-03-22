@@ -1,14 +1,17 @@
+//src/app/%28main%29/%28homefunction%29/page.js
+
 import Image from "next/image";
 import RecommendedShopsServer from "@/components/main/RecommendedShopsServer";
 import NewArrivalsSection from "@/components/main/newbie";
 import MainoneServer from "@/components/main/MainoneServer";
-// import RecommendedShops from "../components/main/recommendedShop";
+import RootLayout from "./layout";
+
 
 
 export default function Home() {
   return (
-    <>
-    <div className="container mx-auto">
+
+    <div className="container mx-auto pt-22">
       <div
         className="relative w-full overflow-hidden md:hidden"
         style={{ aspectRatio: "1250 / 450" }}
@@ -35,8 +38,7 @@ export default function Home() {
       <NewArrivalsSection />
 
     </div>
-     
-          </>
+   
   );
 }
 

@@ -1,33 +1,116 @@
 "use client";
 
-import React, { useState, useRef } from "react";
-import { useRouter } from "next/navigation";
+import React, { useEffect, useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import { supabase } from "@/lib/supabaseF";
 
 /**
  * MobileTopBar
- * - 검색창 펼칠 때 오른쪽→왼쪽 슬라이드
- * - 닫을 때 왼쪽→오른쪽 슬라이드
- * - 한글 IME 문제 해결 (조합 중에도 타이핑 반영)
- * - 포커스 시 전체 테두리에 표시되는 링
+ * - 루트("/") 경로에서는 컴포넌트 자체를 렌더링하지 않음
+ * - 검색창 열고 닫기 슬라이드 애니메이션
+ * - 한글 IME 문제 해결
+ * - /board/* => "지역별 업체 선택"
+ *   /today/* => "실시간 인기 업체"
+ *   /near-me => "내 주변 업체 찾기"
+ *   /club/* => "나이트/클럽"
+ *   /community* => "커뮤니티"
+ *   /messages => "1:1 채팅"
+ *   /messages/[senderId] => 해당 user_id의 닉네임
+ *   나머지는 title 미표시
  */
 export default function MobileTopBar({ title = "" }) {
   const router = useRouter();
+  const pathname = usePathname();
 
-  // (A) 검색창 열림/닫힘
+  // ─────────────────────────────────────────
+  // 1) 훅은 항상 같은 순서로 호출 (useState)
+  // ─────────────────────────────────────────
   const [showSearch, setShowSearch] = useState(false);
-  // (B) 검색 입력값
   const [searchTerm, setSearchTerm] = useState("");
-  // (C) 한글 입력(IME) 중인지 여부
   const [isComposing, setIsComposing] = useState(false);
 
-  // (1) 뒤로가기
+  // ─────────────────────────────────────────
+  // 2) 루트 경로면 렌더링 안 함
+  // ─────────────────────────────────────────
+  if (pathname === "/") {
+    return null;
+  }
+
+  // ─────────────────────────────────────────
+  // 3) 경로 기반 타이틀 매핑
+  // ─────────────────────────────────────────
+  // 예) /board/서울/테마 => segments = ["board","서울","테마"]
+  const segments = pathname.split("/").filter(Boolean); // "" 제거
+  let dynamicTitle = "";
+
+  // (A) /messages/[senderId] 전용 닉네임 상태
+  const [senderNickname, setSenderNickname] = useState("");
+
+  // (B) segments[0]에 따라 분기
+  if (segments[0] === "board") {
+    dynamicTitle = "지역별 업체 선택";
+  } else if (segments[0] === "today") {
+    dynamicTitle = "실시간 인기 업체";
+  } else if (pathname === "/near-me") {
+    dynamicTitle = "내 주변 업체 찾기";
+  } else if (segments[0] === "club") {
+    dynamicTitle = "나이트/클럽";
+  } else if (segments[0] === "community") {
+    dynamicTitle = "커뮤니티";
+  } else if (segments[0] === "messages") {
+    // 여기서 2번째 세그먼트가 존재하면 => senderId로 프로필 닉네임 로딩
+    if (segments.length === 1) {
+      // /messages까지
+      dynamicTitle = "1:1 채팅";
+    } else {
+      // /messages/[senderId]
+      // 아래 useEffect에서 senderNickname을 fetch
+      dynamicTitle = senderNickname || "상대방";
+    }
+  } else if (segments[0] === "mypage") {
+    dynamicTitle = "마이페이지";
+  } else if (segments[0] === "all") {
+    dynamicTitle = "전체 카테고리";
+  }
+
+  // ─────────────────────────────────────────
+  // 4) /messages/[senderId]이면, Supabase에서 프로필 닉네임 로딩
+  // ─────────────────────────────────────────
+  useEffect(() => {
+    // segments[0] === "messages" 이고, 2번째 세그먼트가 존재하면 => senderId
+    if (segments[0] === "messages" && segments[1]) {
+      const fetchSenderNickname = async () => {
+        try {
+          const { data, error } = await supabase
+            .from("profiles")
+            .select("nickname")
+            .eq("user_id", segments[1])
+            .single();
+          if (!error && data?.nickname) {
+            setSenderNickname(data.nickname);
+          } else {
+            setSenderNickname("알 수 없는 유저");
+          }
+        } catch (err) {
+          console.error("sender nickname fetch error:", err);
+          setSenderNickname("오류");
+        }
+      };
+      fetchSenderNickname();
+    }
+  }, [segments]);
+
+  // ─────────────────────────────────────────
+  // 5) 뒤로가기
+  // ─────────────────────────────────────────
   const handleBack = () => {
     router.back();
   };
 
-  // (2) 검색창 열고 닫기
+  // ─────────────────────────────────────────
+  // 6) 검색창 열고 닫기
+  // ─────────────────────────────────────────
   const handleSearchToggle = () => {
-    // 이미 열려 있으면(닫히는 시점) → 입력값 초기화
     if (showSearch) {
       setSearchTerm("");
       setIsComposing(false);
@@ -35,42 +118,41 @@ export default function MobileTopBar({ title = "" }) {
     setShowSearch((prev) => !prev);
   };
 
-  // (3) 검색 확정
+  // (E) 검색 확정
   const handleSearchConfirm = () => {
     const query = searchTerm.trim();
     if (!query) return;
-
     router.push(`/search?q=${encodeURIComponent(query)}`);
-    // 검색 후 닫기
     setShowSearch(false);
     setSearchTerm("");
     setIsComposing(false);
   };
 
-  // (4) 엔터키
+  // (F) Enter 키 (IME 확정 상태에서만)
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !isComposing) {
       handleSearchConfirm();
     }
   };
 
-  // (5) IME 조합 이벤트
+  // (G) 한글 IME 조합 이벤트
   const handleComposition = (e) => {
     if (e.type === "compositionstart") {
       setIsComposing(true);
     } else if (e.type === "compositionend") {
       setIsComposing(false);
-      // 조합 끝난 뒤 최종값 반영
       setSearchTerm(e.target.value);
     }
   };
 
-  // (6) onChange
+  // (H) onChange
   const handleChange = (e) => {
-    // 조합 중에도 임시로 표시
     setSearchTerm(e.target.value);
   };
 
+  // ─────────────────────────────────────────
+  // 7) 렌더링
+  // ─────────────────────────────────────────
   return (
     <div
       className="
@@ -98,7 +180,7 @@ export default function MobileTopBar({ title = "" }) {
         </svg>
       </button>
 
-      {/* 중앙 영역: 타이틀+검색창 겹치기 */}
+      {/* 중앙 영역: 타이틀 + 검색창 겹치기 */}
       <div className="relative flex-1 h-8 mx-2 overflow-hidden">
         {/* (a) 타이틀 */}
         <h1
@@ -109,11 +191,11 @@ export default function MobileTopBar({ title = "" }) {
             transition-transform duration-300
           "
           style={{
-            // 검색창 열릴 때 왼쪽으로 사라짐
+            // 검색창 열릴 때 왼쪽(-100%) 이동
             transform: showSearch ? "translateX(-100%)" : "translateX(0)",
           }}
         >
-          {title}
+          {dynamicTitle}
         </h1>
 
         {/* (b) 검색창 */}
@@ -132,19 +214,12 @@ export default function MobileTopBar({ title = "" }) {
             rounded-full
             border border-gray-300
             px-3 text-sm
-
-            /* 포커스링: 전체 테두리를 감싸도록 */
             focus:outline-none
-    
             focus:border-red-400
-            
-            focus:ring-offset-white
-
-            /* 부드러운 슬라이드 아웃/인 */
             transition-transform duration-300
           "
           style={{
-            // 검색창 열릴 때 오른쪽→왼쪽 (0), 닫힐 때 왼쪽→오른쪽(100%)
+            // 검색창 열릴 때 0%, 닫힐 때 100%
             transform: showSearch ? "translateX(0)" : "translateX(100%)",
           }}
         />

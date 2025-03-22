@@ -16,19 +16,19 @@ export default function RootLayout({ children }) {
 <>  
 
       <header>
-        <div className="hidden md:block ">
+        <div className="">
                 <NavBar />
               </div>
 
         <div className="block md:hidden fixed top-0 left-0 right-0 z-50 ">
-          <MobileTopBar />
+            <MobileTopBar />
         </div>
             <div className="block md:hidden fixed bottom-0 left-0 right-0 z-50">
         
         </div>
       </header>
 
-        <main className="pt-[50px] md:pt-29">
+        <main className="">
           {children}
         </main>
       

@@ -112,13 +112,13 @@ export default function ClientUI({ city, district, theme }) {
   return (
     <div>
       {/* 상단 영역 */}
-      <div className="bg-gray-700 px-4 py-8 text-white">
+      <div className="bg-gradient-to-r from-red-400 to-orange-400 px-4 py-8 text-white">
         <div className="mx-auto max-w-5xl text-center">
           <h1 className="text-2xl font-bold">
-            실시간 업데이트 되는 관리사님들을 확인해 보세요!
+            실시간 업데이트 되는 업체들을 확인해 보세요!
           </h1>
           <p className="mt-2 text-gray-200">
-            지쳐있던 몸과 마음을 힐링시켜드릴 관리사님들이 지금 기다리고 있습니다
+            지쳐있던 몸과 마음을 힐링시켜드릴 핫플이 지금 기다리고 있습니다
           </p>
         </div>
 
@@ -126,7 +126,7 @@ export default function ClientUI({ city, district, theme }) {
         <div className="mx-auto mt-6 flex max-w-5xl items-center justify-center gap-3">
           <button
             onClick={() => alert("지역검색 버튼 클릭!")}
-            className="rounded-md bg-orange-500 px-4 py-2 text-white hover:bg-orange-600"
+            className="rounded-md bg-gradient-to-r from-orange-400 to-orange-400 px-4 py-2 text-white hover:bg-orange-600"
           >
             지역검색
           </button>
@@ -134,14 +134,14 @@ export default function ClientUI({ city, district, theme }) {
           {/* 시·도 토글 버튼 */}
           <button
             onClick={handleToggleFilter}
-            className="flex items-center gap-1 rounded-md bg-gray-300 px-4 py-2 text-gray-800 hover:bg-gray-400"
+            className="flex items-center gap-1 rounded-md bg-gradient-to-r from-gray-100 to-gray-200  px-4 py-2 text-gray-800 hover:bg-gray-400"
           >
             {city} {district}
           </button>
 
           <button
             onClick={() => alert("테마 선택 모달 (예시)")}
-            className="flex items-center gap-1 rounded-md bg-gray-300 px-4 py-2 text-gray-800 hover:bg-gray-400"
+            className="flex items-center gap-1 rounded-md bg-gradient-to-r from-gray-100 to-gray-200 px-4 py-2 text-gray-800 hover:bg-gray-400"
           >
             테마: {theme}
           </button>
@@ -152,7 +152,7 @@ export default function ClientUI({ city, district, theme }) {
           <input
             type="text"
             placeholder="지역명 검색 (예: 송파, 역삼)"
-            className="w-full rounded-l-md border-2 border-r-0 border-gray-300 px-3 py-2 text-gray-700 focus:outline-none"
+            className="w-full rounded-l-md border-2 border-r-0 border-gray-300 px-3 py-2 text-white focus:outline-none"
           />
           <button className="rounded-r-md border-2 border-gray-300 bg-white px-3 py-2 hover:bg-gray-100">
             🔍
@@ -179,7 +179,7 @@ export default function ClientUI({ city, district, theme }) {
                       key={cityItem}
                       onClick={() => handleSelectCity(cityItem)}
                       className={`cursor-pointer px-4 py-2 hover:bg-orange-50 ${
-                        city === cityItem ? "bg-orange-100" : ""
+                        city === cityItem ? "bg-orange-200" : ""
                       }`}
                     >
                       {cityItem}
@@ -196,7 +196,7 @@ export default function ClientUI({ city, district, theme }) {
                       key={dist}
                       onClick={() => handleSelectDistrict(dist)}
                       className={`cursor-pointer py-1 px-2 hover:bg-orange-50 ${
-                        district === dist ? "bg-orange-100" : ""
+                        district === dist ? "bg-orange-200" : ""
                       }`}
                     >
                       {dist}
