@@ -9,6 +9,7 @@ const geist = Geist({ subsets: ["latin"] });
 export const metadata = {
   title: "여기닷 - 여기닷",
   description: "나이트 클럽, 1인샵, 여긷잣 등의 정보를 확인하세요.",
+  viewport: "initial-scale=1.0, user-scalable=no, maximum-scale=1, width=device-width",
 };
 
 export default function RootLayout({ children }) {
