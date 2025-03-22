@@ -5,7 +5,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseF";
 
-// (A) 날짜 포맷 함수
+/* ============ (A) 날짜 포맷 함수 ============ */
 function formatChatTime(dateString) {
   if (!dateString) return "";
   const d = new Date(dateString);
@@ -35,11 +35,58 @@ function formatChatTime(dateString) {
   return `${yyyy}-${mm}-${dd} ${strH}:${strM}`;
 }
 
+/* ============ (B) Visual Viewport 훅 (iOS 툴바/키보드 대응) ============ */
+function useVisualViewportHeight() {
+  const [calcHeight, setCalcHeight] = useState("100vh");
+
+  useEffect(() => {
+    function updateHeight() {
+      // PC/모바일 오프셋을 구분하고 싶다면
+      // (예: 모바일 -60, 데스크톱 -116) 로직을 넣으면 됩니다.
+      const isMdUp = window.innerWidth >= 768;
+      const offset = isMdUp ? 116 : 60; // 상황에 맞게 조절
+
+      if (window.visualViewport) {
+        // iOS 사파리 등: 키보드 올라오면 visualViewport.height가 줄어듦
+        const vh = window.visualViewport.height;
+        setCalcHeight(`calc(${vh}px - ${offset}px)`);
+        // console.log("visualViewport.height =", vh);
+      } else {
+        // 폴백: visualViewport가 없는 경우
+        const fallback = window.innerHeight;
+        setCalcHeight(`calc(${fallback}px - ${offset}px)`);
+      }
+    }
+
+    // 초기 1회 실행
+    updateHeight();
+
+    // visualViewport 지원 브라우저 (iOS 13+, 최신 안드로이드 등)
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", updateHeight);
+      window.visualViewport.addEventListener("scroll", updateHeight);
+    }
+    // 일반 resize (PC / 기타 브라우저)
+    window.addEventListener("resize", updateHeight);
+
+    return () => {
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener("resize", updateHeight);
+        window.visualViewport.removeEventListener("scroll", updateHeight);
+      }
+      window.removeEventListener("resize", updateHeight);
+    };
+  }, []);
+
+  return calcHeight;
+}
+
+/* ============ (C) 메인 채팅 컴포넌트 ============ */
 export default function ChatPage() {
   const router = useRouter();
   const { senderId } = useParams();
 
-  // (B) Supabase 세션
+  // Supabase 세션
   const [session, setSession] = useState(null);
 
   // 상대 닉네임
@@ -49,10 +96,10 @@ export default function ChatPage() {
   const [chatMessages, setChatMessages] = useState([]);
   const [newContent, setNewContent] = useState("");
 
-  // 스크롤 컨테이너 참조
+  // 스크롤 컨테이너
   const scrollContainerRef = useRef(null);
 
-  // ========== 1) 세션 로드 ==========
+  // (1) 세션 로드
   useEffect(() => {
     supabase.auth.getSession().then(({ data, error }) => {
       if (error) {
@@ -63,10 +110,10 @@ export default function ChatPage() {
     });
   }, []);
 
-  // ========== 2) 채팅 로드 함수 ==========
+  // (2) 채팅 로드 함수
   async function fetchChat(myId, otherId) {
     try {
-      // (A) 내가 받은 (상대→나) 메시지 → read_at= now
+      // (A) 상대→나 메시지 읽음처리
       await supabase
         .from("messages")
         .update({ read_at: new Date().toISOString() })
@@ -104,11 +151,11 @@ export default function ChatPage() {
 
       setOtherNickname(profData?.nickname || "상대방");
     } catch (err) {
-      console.error("채팅 로딩 오류 (catch):", err);
+      console.error("채팅 로딩 오류:", err);
     }
   }
 
-  // ========== 3) useEffect → fetch + 실시간 ==========
+  // (3) useEffect → fetch + 실시간
   useEffect(() => {
     if (!session?.user?.id || !senderId) return;
     const myId = session.user.id;
@@ -129,7 +176,7 @@ export default function ChatPage() {
 
         if (eventType === "INSERT") {
           let finalRow = newRow;
-          // 상대→나 메시지이면 → read_at= now
+          // 상대→나 메시지일 경우 읽음 처리
           if (newRow.sender_id === senderId && newRow.receiver_id === myId) {
             const { data: updated } = await supabase
               .from("messages")
@@ -166,7 +213,7 @@ export default function ChatPage() {
     };
   }, [session, senderId]);
 
-  // ========== 4) 스크롤 맨 아래 ==========
+  // (4) 스크롤 맨 아래
   useEffect(() => {
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTop =
@@ -174,7 +221,7 @@ export default function ChatPage() {
     }
   }, [chatMessages]);
 
-  // ========== 5) 메시지 전송 ==========
+  // (5) 메시지 전송
   async function handleSendMessage(e) {
     e.preventDefault();
     if (!newContent.trim()) return;
@@ -186,122 +233,116 @@ export default function ChatPage() {
     }
 
     try {
-      const { data, error } = await supabase.from("messages").insert({
-        sender_id: myId,
-        receiver_id: senderId,
-        content: newContent.trim(),
-      });
+      const { data, error } = await supabase
+        .from("messages")
+        .insert({
+          sender_id: myId,
+          receiver_id: senderId,
+          content: newContent.trim(),
+        });
 
       if (!error) {
         setNewContent("");
       }
     } catch (err) {
-      console.error("메시지 전송 오류 (catch):", err);
+      console.error("메시지 전송 오류:", err);
     }
   }
 
-  // ========== 뒤로가기 ==========
+  // 뒤로가기
   function handleGoBack() {
     router.push("/messages");
   }
 
-  // ========== (추가) 텍스트 에리어 onFocus ==========
+  // 텍스트에어리어 onFocus
   function handleFocusTextArea() {
-    // (1) 약간의 지연 후 자동 스크롤
-    // 키보드가 완전히 올라올 때까지 시간이 필요함
+    // 약간의 지연 후 스크롤
     setTimeout(() => {
       if (scrollContainerRef.current) {
         scrollContainerRef.current.scrollTop =
           scrollContainerRef.current.scrollHeight;
       }
-    }, 100); 
+    }, 100);
   }
 
-  // ========== UI ==========
+  // ** Visual Viewport 훅 사용 **
+  const dynamicHeight = useVisualViewportHeight();
+
   return (
-    /* 
-      - 여기서 100dvh - 60px로 화면 높이 지정 (툴바 제외)
-      - paddingBottom으로 iOS 홈인디케이터 safe area 고려 (필요하다면)
-      - 키보드 포커스 시 scrollTop 조정
-    */
     <div
       className="
         flex
         flex-col
         bg-gray-50
-
         mt-[30px]
-        h-[calc(100dvh-60px)]
         md:mt-[28px]
-        md:h-[calc(100dvh-116px)]
       "
       style={{
-        // (옵션) iOS 홈인디케이터 영역 고려
-        paddingBottom: "env(safe-area-inset-bottom)", 
+        /* VisualViewport로 계산된 height */
+        height: dynamicHeight,
+        /* iOS 홈인디케이터 고려 (옵션) */
+        paddingBottom: "env(safe-area-inset-bottom)",
       }}
     >
-      {/* (B) 채팅 헤더 (PC용) */}
-      <div className="flex-none border-b border-gray-200 p-4 flex items-center justify-between bg-white md:flex hidden">
+      {/* (B) PC 전용 헤더 */}
+      <div className="hidden md:flex flex-none border-b border-gray-200 p-4 items-center justify-between bg-white">
         <button
           onClick={handleGoBack}
           className="text-gray-600 hover:text-orange-500 mr-2"
         >
           &larr;
         </button>
-        <div className="text-lg font-semibold text-gray-800 ">
+        <div className="text-lg font-semibold text-gray-800">
           {otherNickname}
         </div>
         <div />
       </div>
 
-      {/* (C) 채팅 목록 (스크롤) */}
+      {/* (C) 채팅 목록 */}
       <div ref={scrollContainerRef} className="flex-1 p-3 overflow-y-auto">
-        {chatMessages.length === 0 && (
+        {chatMessages.length === 0 ? (
           <div className="text-sm text-gray-500">대화가 없습니다.</div>
-        )}
-        {chatMessages.map((msg) => {
-          const isMine = msg.sender_id === session?.user?.id;
-          return (
-            <div
-              key={msg.id}
-              className={`mb-2 w-full flex ${
-                isMine ? "justify-end" : "justify-start"
-              }`}
-            >
+        ) : (
+          chatMessages.map((msg) => {
+            const isMine = msg.sender_id === session?.user?.id;
+            return (
               <div
-                className={`
-                  max-w-[70%] p-2 text-sm shadow-sm
-                  ${
+                key={msg.id}
+                className={`mb-2 w-full flex ${
+                  isMine ? "justify-end" : "justify-start"
+                }`}
+              >
+                <div
+                  className={`max-w-[70%] p-2 text-sm shadow-sm ${
                     isMine
                       ? "bg-orange-400 text-white rounded-tl-2xl rounded-br-2xl rounded-bl-2xl"
                       : "bg-white text-gray-800 rounded-tr-2xl rounded-br-2xl rounded-bl-2xl"
-                  }
-                `}
-              >
-                <div className="whitespace-pre-wrap break-words">
-                  {msg.content}
-                </div>
-
-                {/* 시간+읽음 */}
-                <div className="mt-1 text-xs opacity-80 text-right">
-                  {formatChatTime(msg.created_at)}
-                  {isMine ? (
-                    msg.read_at ? (
-                      <span className="ml-1 text-white">읽음</span>
-                    ) : (
-                      <span className="ml-1 text-gray-300">...</span>
-                    )
-                  ) : msg.read_at ? (
-                    <span className="ml-1 text-blue-600">읽음</span>
-                  ) : null}
+                  }`}
+                >
+                  <div className="whitespace-pre-wrap break-words">
+                    {msg.content}
+                  </div>
+                  {/* 시간 + 읽음 */}
+                  <div className="mt-1 text-xs opacity-80 text-right">
+                    {formatChatTime(msg.created_at)}
+                    {isMine ? (
+                      msg.read_at ? (
+                        <span className="ml-1 text-white">읽음</span>
+                      ) : (
+                        <span className="ml-1 text-gray-300">...</span>
+                      )
+                    ) : msg.read_at ? (
+                      <span className="ml-1 text-blue-600">읽음</span>
+                    ) : null}
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
       </div>
 
-      {/* (D) 입력 영역 (하단) */}
+      {/* (D) 입력 영역 */}
       <form
         onSubmit={handleSendMessage}
         className="flex-none border-t border-gray-200 p-3 bg-white"
@@ -311,8 +352,10 @@ export default function ChatPage() {
             rows={1}
             className="
               flex-1
-              border border-gray-300
-              rounded-md p-2
+              border
+              border-gray-300
+              rounded-md
+              p-2
               text-base
               focus:outline-none
               focus:ring-1
