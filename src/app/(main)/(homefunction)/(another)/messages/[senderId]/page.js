@@ -345,7 +345,7 @@ export default function ChatPage() {
         <div className="flex items-center gap-2">
           <textarea
             rows={1}
-            className="flex-1 border border-gray-300 rounded-md p-2 text-sm focus:outline-none 
+            className="flex-1 border border-gray-300 rounded-md p-2 text-base focus:outline-none 
                        focus:ring-1 focus:ring-orange-400 resize-none"
             placeholder="메시지를 입력하세요"
             value={newContent}
