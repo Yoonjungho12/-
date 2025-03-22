@@ -5,81 +5,38 @@ import { useRouter, usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabaseF";
 
 /**
- * MobileTopBar
+ * MobileTopBar (원래 MobileBack.js 안에 있던 것)
  *
- * - "/" 경로에서는 컴포넌트 자체를 렌더링하지 않음 (단순히 null 반환)
- * - 검색창 열고 닫기 슬라이드 애니메이션
- * - 한글 IME 문제 해결
- * - /board/* => "지역별 업체 선택"
- *   /today/* => "실시간 인기 업체"
- *   /near-me => "내 주변 업체 찾기"
- *   /club/* => "나이트/클럽"
- *   /community* => "커뮤니티"
- *   /messages => "1:1 채팅"
- *   /messages/[senderId] => senderId(= profiles.user_id)의 닉네임 (Supabase로 조회)
- *   /mypage => "마이페이지"
- *   /all => "전체 카테고리"
- *   나머지는 title 미표시
+ * - "/" 경로면 컴포넌트 자체를 렌더링하지 않음 (null 반환)
+ * - /board/*, /today/*, /near-me, /club/*, /community*, /messages, etc. 각자 맞는 타이틀 표시
+ * - /messages/[senderId]이면 Supabase에서 닉네임 로딩
+ * - 검색창 열고 닫기: 슬라이드 애니메이션
+ * - 한글 IME(조합) 문제 해결
  */
 export default function MobileTopBar({ title = "" }) {
   // ─────────────────────────────────────────
-  // (1) Hooks: useState, useEffect 등은 컴포넌트 최상단에서
+  // (1) 훅은 항상 최상단에서 호출
   // ─────────────────────────────────────────
   const router = useRouter();
   const pathname = usePathname();
 
-  // 검색창 열기/닫기 상태
+  // 검색 관련 상태
   const [showSearch, setShowSearch] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [isComposing, setIsComposing] = useState(false);
 
-  // /messages/[senderId]에서 표시할 상대 닉네임
+  // /messages/[senderId]에서 쓰일 닉네임
   const [senderNickname, setSenderNickname] = useState("");
 
-  // ─────────────────────────────────────────
-  // (2) "/" 경로면 → 컴포넌트 자체를 렌더링 안 함
-  // ─────────────────────────────────────────
-  if (pathname === "/") {
-    return null;
-  }
-
-  // ─────────────────────────────────────────
-  // (3) 경로 기반으로 중앙 제목(dynamicTitle) 정하기
-  // ─────────────────────────────────────────
+  // pathname 세그먼트
   const segments = pathname.split("/").filter(Boolean);
-  let dynamicTitle = "";
-
-  if (segments[0] === "board") {
-    dynamicTitle = "지역별 업체 선택";
-  } else if (segments[0] === "today") {
-    dynamicTitle = "실시간 인기 업체";
-  } else if (pathname === "/near-me") {
-    dynamicTitle = "내 주변 업체 찾기";
-  } else if (segments[0] === "club") {
-    dynamicTitle = "나이트/클럽";
-  } else if (segments[0] === "community") {
-    dynamicTitle = "커뮤니티";
-  } else if (segments[0] === "messages") {
-    // /messages/[senderId]?
-    if (segments.length === 1) {
-      // 그냥 /messages
-      dynamicTitle = "1:1 채팅";
-    } else {
-      // /messages/[senderId]
-      dynamicTitle = senderNickname || "상대방";
-    }
-  } else if (segments[0] === "mypage") {
-    dynamicTitle = "마이페이지";
-  } else if (segments[0] === "all") {
-    dynamicTitle = "전체 카테고리";
-  }
 
   // ─────────────────────────────────────────
-  // (4) /messages/[senderId] → Supabase로 프로필 닉네임 가져오기
+  // (2) Supabase로 /messages/[senderId]의 닉네임 로딩
   // ─────────────────────────────────────────
   useEffect(() => {
     if (segments[0] === "messages" && segments[1]) {
-      const fetchSenderNickname = async () => {
+      const fetchNickname = async () => {
         try {
           const { data, error } = await supabase
             .from("profiles")
@@ -97,9 +54,43 @@ export default function MobileTopBar({ title = "" }) {
           setSenderNickname("오류");
         }
       };
-      fetchSenderNickname();
+      fetchNickname();
     }
   }, [segments]);
+
+  // ─────────────────────────────────────────
+  // (3) "/" 경로일 때는 여기서 일단 훅을 모두 호출하고,
+  //     마지막에 UI를 숨김(return null)
+  // ─────────────────────────────────────────
+  if (pathname === "/") {
+    return null; // 훅은 이미 호출됐으므로 규칙 위반X
+  }
+
+  // ─────────────────────────────────────────
+  // (4) 경로별 타이틀 정하기
+  // ─────────────────────────────────────────
+  let dynamicTitle = "";
+  if (segments[0] === "board") {
+    dynamicTitle = "지역별 업체 선택";
+  } else if (segments[0] === "today") {
+    dynamicTitle = "실시간 인기 업체";
+  } else if (pathname === "/near-me") {
+    dynamicTitle = "내 주변 업체 찾기";
+  } else if (segments[0] === "club") {
+    dynamicTitle = "나이트/클럽";
+  } else if (segments[0] === "community") {
+    dynamicTitle = "커뮤니티";
+  } else if (segments[0] === "messages") {
+    if (segments.length === 1) {
+      dynamicTitle = "1:1 채팅";
+    } else {
+      dynamicTitle = senderNickname || "상대방";
+    }
+  } else if (segments[0] === "mypage") {
+    dynamicTitle = "마이페이지";
+  } else if (segments[0] === "all") {
+    dynamicTitle = "전체 카테고리";
+  }
 
   // ─────────────────────────────────────────
   // (5) 뒤로가기 버튼
@@ -113,14 +104,14 @@ export default function MobileTopBar({ title = "" }) {
   // ─────────────────────────────────────────
   const handleSearchToggle = () => {
     if (showSearch) {
-      // 이미 열려 있다면 => 닫히면서 검색어 초기화
+      // 닫을 때 검색어 초기화
       setSearchTerm("");
       setIsComposing(false);
     }
     setShowSearch((prev) => !prev);
   };
 
-  // (A) 검색 확정 → /search?q=...
+  // 검색 확정
   const handleSearchConfirm = () => {
     const query = searchTerm.trim();
     if (!query) return;
@@ -130,14 +121,14 @@ export default function MobileTopBar({ title = "" }) {
     setIsComposing(false);
   };
 
-  // (B) Enter 키(IME가 끝난 상태에서만)
+  // Enter키 (IME 완료 상태에서만)
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !isComposing) {
       handleSearchConfirm();
     }
   };
 
-  // (C) 한글 IME 조합 이벤트
+  // IME 조합 이벤트
   const handleComposition = (e) => {
     if (e.type === "compositionstart") {
       setIsComposing(true);
@@ -147,7 +138,7 @@ export default function MobileTopBar({ title = "" }) {
     }
   };
 
-  // (D) 검색창 onChange
+  // onChange
   const handleChange = (e) => {
     setSearchTerm(e.target.value);
   };
@@ -166,7 +157,7 @@ export default function MobileTopBar({ title = "" }) {
       "
       style={{ height: "56px" }}
     >
-      {/* 왼쪽 아이콘 (뒤로가기) */}
+      {/* (왼쪽) 뒤로가기 아이콘 */}
       <button onClick={handleBack} aria-label="뒤로가기" className="p-1 mr-2">
         <svg
           width="24"
@@ -182,9 +173,9 @@ export default function MobileTopBar({ title = "" }) {
         </svg>
       </button>
 
-      {/* 가운데: 타이틀 + 검색창 겹치기 */}
+      {/* (가운데) 타이틀 + 검색창 겹치기 */}
       <div className="relative flex-1 h-8 mx-2 overflow-hidden">
-        {/* (i) 타이틀 */}
+        {/* 타이틀 */}
         <h1
           className="
             absolute top-0 left-0 w-full h-full
@@ -193,14 +184,13 @@ export default function MobileTopBar({ title = "" }) {
             transition-transform duration-300
           "
           style={{
-            // 검색창 열리면 → 타이틀 왼쪽(-100%)으로 이동
             transform: showSearch ? "translateX(-100%)" : "translateX(0)",
           }}
         >
           {dynamicTitle}
         </h1>
 
-        {/* (ii) 검색창 */}
+        {/* 검색창 */}
         <input
           type="text"
           value={searchTerm}
@@ -221,19 +211,14 @@ export default function MobileTopBar({ title = "" }) {
             transition-transform duration-300
           "
           style={{
-            // 열리면 0%, 닫히면 100%
             transform: showSearch ? "translateX(0)" : "translateX(100%)",
           }}
         />
       </div>
 
-      {/* 오른쪽 아이콘 (검색 or 검색완료) */}
+      {/* (오른쪽) 검색 열기/확정 아이콘 */}
       {showSearch ? (
-        <button
-          onClick={handleSearchConfirm}
-          aria-label="검색 확정"
-          className="p-1 ml-2"
-        >
+        <button onClick={handleSearchConfirm} aria-label="검색 확정" className="p-1 ml-2">
           <svg
             width="24"
             height="24"
@@ -248,11 +233,7 @@ export default function MobileTopBar({ title = "" }) {
           </svg>
         </button>
       ) : (
-        <button
-          onClick={handleSearchToggle}
-          aria-label="검색 열기"
-          className="p-1 ml-2"
-        >
+        <button onClick={handleSearchToggle} aria-label="검색 열기" className="p-1 ml-2">
           <svg
             width="24"
             height="24"
