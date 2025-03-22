@@ -15,6 +15,7 @@ const geist = Geist({ subsets: ["latin"] });
 export default function RootLayout({ children }) {
   return (
     <html lang="ko">
+      <meta name="viewport" content={metadata.viewport} />
       {/* 1) html, body 높이 채우고, flex 컨테이너로 만듦 */}
       <body className={`${geist.className} min-h-screen flex flex-col`}>
         
