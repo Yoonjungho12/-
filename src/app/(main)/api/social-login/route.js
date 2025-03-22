@@ -13,7 +13,7 @@ export async function GET(request) {
   const callbackBaseUrl =
     process.env.NODE_ENV === "development"
       ? "http://localhost:3000"
-      : process.env.CALL_BACK_URL // 예: "https://my-cool.vercel.app"
+      : process.env.NEXT_PUBLIC_CALL_BACK_URL // 예: "https://my-cool.vercel.app"
 
   // (3) Supabase OAuth URL 발급
   const { data, error } = await supabase.auth.signInWithOAuth({
