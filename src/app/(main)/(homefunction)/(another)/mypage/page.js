@@ -20,7 +20,9 @@ export default function MyMobileUI() {
   // "가고싶다" 목록 (DB에서 가져온 데이터)
   const [wishList, setWishList] = useState([]);
 
-  // 마운트 시 세션 & 프로필(닉네임) 가져오기
+  // --------------------------------------
+  // (1) 세션 & 프로필 불러오기
+  // --------------------------------------
   useEffect(() => {
     async function fetchUser() {
       // 1) 세션 확인
@@ -59,7 +61,9 @@ export default function MyMobileUI() {
   // 로그인 여부
   const isLoggedIn = !!session?.user;
 
-  // 세션 확인 후 "가고싶다" 목록 가져오기
+  // --------------------------------------
+  // (2) "가고싶다" 목록 불러오기
+  // --------------------------------------
   useEffect(() => {
     if (!isLoggedIn) {
       setWishList([]);
@@ -97,7 +101,9 @@ export default function MyMobileUI() {
     }
   }, [isLoggedIn, session]);
 
-  // 로그아웃
+  // --------------------------------------
+  // (3) 로그아웃
+  // --------------------------------------
   async function handleLogout() {
     const { error } = await supabase.auth.signOut();
     if (error) {
@@ -117,7 +123,9 @@ export default function MyMobileUI() {
     router.push("/signup");
   }
 
-  // "가고싶다" 항목 삭제
+  // ─────────────────────────────────────────────
+  // (4) "가고싶다" 항목 삭제
+  // ─────────────────────────────────────────────
   async function handleRemoveWish(id) {
     try {
       // DB에서 해당 id 레코드 삭제
@@ -134,7 +142,7 @@ export default function MyMobileUI() {
   }
 
   // ─────────────────────────────────────────────
-  // [정보수정] 버튼 → 수정모드로 전환
+  // (5) 닉네임 수정
   // ─────────────────────────────────────────────
   function handleEditNickname() {
     // 기존 nickname을 수정용 인풋에 세팅
@@ -142,9 +150,6 @@ export default function MyMobileUI() {
     setIsEditingNickname(true);
   }
 
-  // ─────────────────────────────────────────────
-  // [변경하기] 버튼 → DB에 닉네임 업데이트
-  // ─────────────────────────────────────────────
   async function handleUpdateNickname() {
     if (!session?.user?.id) {
       alert("로그인이 필요합니다.");
@@ -158,7 +163,7 @@ export default function MyMobileUI() {
 
     // DB 업데이트
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from("profiles")
         .update({ nickname: newNick })
         .eq("user_id", session.user.id);
@@ -179,20 +184,21 @@ export default function MyMobileUI() {
     }
   }
 
-  // [취소하기] 버튼 → 수정모드 취소
   function handleCancelEdit() {
     setIsEditingNickname(false);
     setEditNicknameInput("");
   }
 
   // ─────────────────────────────────────────────
-  // [가고싶다] 목록 클릭 → board/details/[partnershipsubmit.id]
+  // (6) "가고싶다" 목록 클릭 → board/details/[id]
   // ─────────────────────────────────────────────
   function handleWishClick(partnershipsubmitId) {
-    // 예: /board/details/123
     router.push(`/board/details/${partnershipsubmitId}`);
   }
 
+  // ------------------------------------------
+  // UI
+  // ------------------------------------------
   return (
     <div
       style={{
@@ -226,9 +232,7 @@ export default function MyMobileUI() {
                 marginRight: "12px",
               }}
             />
-            <div style={{ fontSize: "1rem", fontWeight: "bold" }}>
-              {nickname}
-            </div>
+            <div style={{ fontSize: "1rem", fontWeight: "bold" }}>{nickname}</div>
           </div>
         ) : (
           <div style={{ fontSize: "1rem", fontWeight: "bold", color: "#666" }}>
@@ -341,7 +345,7 @@ export default function MyMobileUI() {
       {/* 구분선 */}
       <hr style={{ border: "none", borderTop: "1px solid #eee" }} />
 
-      {/* 2x2 그리드 메뉴 (예시: 5개 버튼) */}
+      {/* 2x2 그리드 메뉴 (예시) */}
       <div
         style={{
           display: "grid",
@@ -372,7 +376,9 @@ export default function MyMobileUI() {
         </div>
         {wishList.length === 0 ? (
           <div style={{ fontSize: "0.9rem", color: "#666" }}>
-            {isLoggedIn ? "가고싶다 목록이 비어있습니다." : "로그인 후 이용해주세요."}
+            {isLoggedIn
+              ? "가고싶다 목록이 비어있습니다."
+              : "로그인 후 이용해주세요."}
           </div>
         ) : (
           wishList.map((wish) => (
@@ -385,7 +391,6 @@ export default function MyMobileUI() {
                 marginBottom: "0.5rem",
               }}
             >
-              {/* 여기 수정: 업체명을 클릭하면 board/details/[id]로 이동 */}
               <button
                 onClick={() => handleWishClick(wish.partnershipsubmit_id)}
                 style={{
@@ -400,7 +405,6 @@ export default function MyMobileUI() {
                 {wish.partnershipsubmit?.company_name || "알 수 없는 업체"}
               </button>
 
-              {/* 삭제 버튼 */}
               <button
                 onClick={() => handleRemoveWish(wish.id)}
                 style={{
@@ -458,12 +462,3 @@ const menuButtonStyle = {
   textAlign: "left",
   cursor: "pointer",
 };
-
-/**
- * 추가:
- * handleWishClick(partnershipsubmitId) → /board/details/[partnershipsubmitId] 로 라우팅
- */
-function handleWishClick(partnershipsubmitId) {
-  const router = useRouter();
-  router.push(`/board/details/${partnershipsubmitId}`);
-}
