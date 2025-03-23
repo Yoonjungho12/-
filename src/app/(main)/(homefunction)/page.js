@@ -11,7 +11,7 @@ import RootLayout from "./layout";
 export default function Home() {
   return (
 
-    <div className="container mx-auto pt-22">
+    <div className="container mx-auto pt-15 md:pt-[0px]">
       <div
         className="relative w-full overflow-hidden md:hidden"
         style={{ aspectRatio: "1250 / 450" }}

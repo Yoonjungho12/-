@@ -185,6 +185,14 @@ export default function MyMobileUI() {
     setEditNicknameInput("");
   }
 
+  // ─────────────────────────────────────────────
+  // [가고싶다] 목록 클릭 → board/details/[partnershipsubmit.id]
+  // ─────────────────────────────────────────────
+  function handleWishClick(partnershipsubmitId) {
+    // 예: /board/details/123
+    router.push(`/board/details/${partnershipsubmitId}`);
+  }
+
   return (
     <div
       style={{
@@ -342,7 +350,9 @@ export default function MyMobileUI() {
           marginTop: "1rem",
         }}
       >
-        <Link href='/messages' style={menuButtonStyle}>내 쪽지함 &gt;</Link>
+        <Link href="/messages" style={menuButtonStyle}>
+          내 쪽지함 &gt;
+        </Link>
         <button style={menuButtonStyle}>제휴신청 &gt;</button>
         <button style={menuButtonStyle}>내 글 관리 &gt;</button>
         <button style={menuButtonStyle}>가고싶다 &gt;</button>
@@ -375,11 +385,22 @@ export default function MyMobileUI() {
                 marginBottom: "0.5rem",
               }}
             >
-              {/* partnershipsubmit_id 테이블의 company_name 표시 */}
-              <div style={{ fontSize: "0.9rem" }}>
+              {/* 여기 수정: 업체명을 클릭하면 board/details/[id]로 이동 */}
+              <button
+                onClick={() => handleWishClick(wish.partnershipsubmit_id)}
+                style={{
+                  fontSize: "0.9rem",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: 0,
+                  textAlign: "left",
+                }}
+              >
                 {wish.partnershipsubmit?.company_name || "알 수 없는 업체"}
-              </div>
+              </button>
 
+              {/* 삭제 버튼 */}
               <button
                 onClick={() => handleRemoveWish(wish.id)}
                 style={{
@@ -437,3 +458,12 @@ const menuButtonStyle = {
   textAlign: "left",
   cursor: "pointer",
 };
+
+/**
+ * 추가:
+ * handleWishClick(partnershipsubmitId) → /board/details/[partnershipsubmitId] 로 라우팅
+ */
+function handleWishClick(partnershipsubmitId) {
+  const router = useRouter();
+  router.push(`/board/details/${partnershipsubmitId}`);
+}

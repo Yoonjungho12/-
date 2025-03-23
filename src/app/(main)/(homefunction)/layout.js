@@ -29,7 +29,7 @@ export default function RootLayout({ children }) {
         </div>
       </header>
 
-        <main className="">
+        <main className="pt-[56px] md:pt-[116px]">
           {children}
         </main>
       

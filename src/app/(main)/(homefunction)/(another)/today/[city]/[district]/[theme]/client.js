@@ -115,10 +115,11 @@ export default function ClientUI({ city, district, theme }) {
       <div className="bg-gradient-to-r from-red-400 to-orange-400 px-4 py-8 text-white">
         <div className="mx-auto max-w-5xl text-center">
           <h1 className="text-2xl font-bold">
-            실시간 업데이트 되는 업체들을 확인해 보세요!
+            실시간 업데이트되는 업체 정보를 확인해 보세요!
+
           </h1>
           <p className="mt-2 text-gray-200">
-            지쳐있던 몸과 마음을 힐링시켜드릴 핫플이 지금 기다리고 있습니다
+            최신 트렌드를 반영한 업체 정보를 자동화된 시스템을 활용하여 지속적인 업데이트가 이루어지고 있습니다.
           </p>
         </div>
 

@@ -307,14 +307,9 @@ export default function NavBar() {
                   <span className="text-sm mt-">로그인</span>
                 </Link>
 
-                <div
-                  className="flex cursor-pointer flex-col items-center text-gray-600 hover:text-orange-500"
-                  onClick={handleMyActivityClick}
-                >
-                  <img src="/icons/history.svg" width={30} alt="로그인 아이콘" />
-                  <span className="text-sm mt-">나의활동</span>
-                </div>
+                {/* 비로그인 상태에서는 나의활동/쪽지 숨기기 */}
 
+                {/* 제휴문의 */}
                 <div className="flex cursor-pointer flex-col items-center text-gray-600 hover:text-orange-500">
                   <Link href="/partnership" className="flex flex-col items-center">
                     <img src="/icons/paper.svg" width={30} alt="로그인 아이콘" />
@@ -373,7 +368,9 @@ export default function NavBar() {
             >
               <span className="font-sm">전체 카테고리</span>
               <svg
-                className={`h-4 w-4 transition-transform ${showMegaMenu ? "rotate-180" : ""}`}
+                className={`h-4 w-4 transition-transform ${
+                  showMegaMenu ? "rotate-180" : ""
+                }`}
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2"
@@ -398,7 +395,10 @@ export default function NavBar() {
             <Link href="/near-me" className="inline-block hover:text-orange-500 md:mx-5">
               내 주변 업체 찾기
             </Link>
-            <Link href="/club/전체/전체/전체" className="inline-block hover:text-orange-500 md:mx-5">
+            <Link
+              href="/club/전체/전체/전체"
+              className="inline-block hover:text-orange-500 md:mx-5"
+            >
               나이트/클럽
             </Link>
             <Link href="/community" className="inline-block hover:text-orange-500 md:mx-5">
@@ -434,37 +434,58 @@ export default function NavBar() {
                     </Link>
                   </li>
                   <li>
-                    <Link href="/board/전체/전체/라운지바" onClick={() => setShowMegaMenu(false)}>
+                    <Link
+                      href="/board/전체/전체/라운지바"
+                      onClick={() => setShowMegaMenu(false)}
+                    >
                       라운지바
                     </Link>
                   </li>
                   <li>
-                    <Link href="/board/전체/전체/헌팅포차" onClick={() => setShowMegaMenu(false)}>
+                    <Link
+                      href="/board/전체/전체/헌팅포차"
+                      onClick={() => setShowMegaMenu(false)}
+                    >
                       헌팅포차
                     </Link>
                   </li>
                   <li>
-                    <Link href="/board/전체/전체/감성주점" onClick={() => setShowMegaMenu(false)}>
+                    <Link
+                      href="/board/전체/전체/감성주점"
+                      onClick={() => setShowMegaMenu(false)}
+                    >
                       감성주점
                     </Link>
                   </li>
                   <li>
-                    <Link href="/board/전체/전체/나이트클럽" onClick={() => setShowMegaMenu(false)}>
+                    <Link
+                      href="/board/전체/전체/나이트클럽"
+                      onClick={() => setShowMegaMenu(false)}
+                    >
                       나이트클럽
                     </Link>
                   </li>
                   <li>
-                    <Link href="/board/전체/전체/성인용품" onClick={() => setShowMegaMenu(false)}>
+                    <Link
+                      href="/board/전체/전체/성인용품"
+                      onClick={() => setShowMegaMenu(false)}
+                    >
                       성인용품
                     </Link>
                   </li>
                   <li>
-                    <Link href="/board/전체/전체/룸카페" onClick={() => setShowMegaMenu(false)}>
+                    <Link
+                      href="/board/전체/전체/룸카페"
+                      onClick={() => setShowMegaMenu(false)}
+                    >
                       룸카페
                     </Link>
                   </li>
                   <li>
-                    <Link href="/board/전체/전체/눈썹문신" onClick={() => setShowMegaMenu(false)}>
+                    <Link
+                      href="/board/전체/전체/눈썹문신"
+                      onClick={() => setShowMegaMenu(false)}
+                    >
                       눈썹문신
                     </Link>
                   </li>
@@ -494,12 +515,18 @@ export default function NavBar() {
                     </Link>
                   </li>
                   <li>
-                    <Link href="/board/전체/전체/애견펜션" onClick={() => setShowMegaMenu(false)}>
+                    <Link
+                      href="/board/전체/전체/애견펜션"
+                      onClick={() => setShowMegaMenu(false)}
+                    >
                       애견펜션
                     </Link>
                   </li>
                   <li>
-                    <Link href="/board/전체/전체/애견미용" onClick={() => setShowMegaMenu(false)}>
+                    <Link
+                      href="/board/전체/전체/애견미용"
+                      onClick={() => setShowMegaMenu(false)}
+                    >
                       애견미용
                     </Link>
                   </li>
@@ -512,7 +539,10 @@ export default function NavBar() {
                     </Link>
                   </li>
                   <li>
-                    <Link href="/board/전체/전체/웨딩플래너" onClick={() => setShowMegaMenu(false)}>
+                    <Link
+                      href="/board/전체/전체/웨딩플래너"
+                      onClick={() => setShowMegaMenu(false)}
+                    >
                       웨딩플래너
                     </Link>
                   </li>
@@ -565,10 +595,7 @@ export default function NavBar() {
                 <h2 className="mb-2 font-semibold text-orange-500">커뮤니티</h2>
                 <ul className="space-y-1 text-sm text-gray-700">
                   <li>
-                    <Link
-                      href="/community/board/공지사항"
-                      onClick={() => setShowMegaMenu(false)}
-                    >
+                    <Link href="/community/board/공지사항" onClick={() => setShowMegaMenu(false)}>
                       공지사항
                     </Link>
                   </li>
@@ -591,15 +618,15 @@ export default function NavBar() {
                     </Link>
                   </li>
                   <li>
-                    <Link href="/community/board/자유게시판" onClick={() => setShowMegaMenu(false)}>
+                    <Link
+                      href="/community/board/자유게시판"
+                      onClick={() => setShowMegaMenu(false)}
+                    >
                       자유게시판
                     </Link>
                   </li>
                   <li>
-                    <Link
-                      href="/community/board/질문답변"
-                      onClick={() => setShowMegaMenu(false)}
-                    >
+                    <Link href="/community/board/질문답변" onClick={() => setShowMegaMenu(false)}>
                       질문답변
                     </Link>
                   </li>

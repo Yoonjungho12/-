@@ -62,7 +62,7 @@ export default function ChatPage() {
   // 마지막 메시지에 ref를 달기 위한 것
   const lastMsgRef = useRef(null);
 
-  // 1) 세션 로딩
+  // 세션 로딩
   useEffect(() => {
     supabase.auth.getSession().then(({ data, error }) => {
       if (error) {
@@ -73,7 +73,7 @@ export default function ChatPage() {
     });
   }, []);
 
-  // 2) 채팅 로드
+  // 채팅 로드 함수
   async function fetchChat(myId, otherId) {
     try {
       // 상대→나 메시지 read_at 처리
@@ -120,7 +120,7 @@ export default function ChatPage() {
     }
   }
 
-  // 3) 초기 로드 + 실시간
+  // 초기 로드 + 실시간
   useEffect(() => {
     if (!session?.user?.id || !senderId) return;
     const myId = session.user.id;
@@ -163,7 +163,9 @@ export default function ChatPage() {
           setChatMessages((prev) => {
             const list = [...prev];
             const idx = list.findIndex((m) => m.id === newRow.id);
-            if (idx !== -1) list[idx] = newRow;
+            if (idx !== -1) {
+              list[idx] = newRow;
+            }
             return list;
           });
         }
@@ -176,15 +178,14 @@ export default function ChatPage() {
     };
   }, [session, senderId]);
 
-  // 4) 마지막 메시지로 scrollIntoView
+  // 마지막 메시지로 scrollIntoView
   useEffect(() => {
-    // chatMessages가 변할 때마다 → 마지막 메시지 쪽으로 스크롤
     if (lastMsgRef.current) {
       lastMsgRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [chatMessages]);
 
-  // 5) 메시지 전송
+  // 메시지 전송
   async function handleSendMessage(e) {
     e.preventDefault();
     if (!newContent.trim()) return;
@@ -216,11 +217,10 @@ export default function ChatPage() {
 
   // iOS 수동 스크롤
   useEffect(() => {
-    if (!isIos) return;
+    if (!isIosDevice()) return;
 
     function handleViewportResize() {
       const currentHeight = window.visualViewport.height;
-      // offset 계산 (데스크톱/모바일)
       const isMdUp = window.innerWidth >= 768;
       const offset = isMdUp ? 116 : 60;
 
@@ -237,7 +237,7 @@ export default function ChatPage() {
     return () => {
       window.visualViewport.removeEventListener("resize", handleViewportResize);
     };
-  }, [isIos]);
+  }, []);
 
   // onFocus => 마지막 메시지 보이게
   function handleFocusTextArea() {
@@ -248,10 +248,20 @@ export default function ChatPage() {
     }, 100);
   }
 
+  // **Enter키로 메시지 전송** (Shift+Enter는 줄바꿈)
+  function handleKeyDown(e) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      // 엔터 + shift 미클릭 => 전송
+      e.preventDefault();
+      // 전송 함수 호출
+      handleSendMessage(e);
+    }
+  }
+
   // 최종 Return
   return (
     <div
-      className="flex flex-col bg-gray-50 mt-[30px] md:mt-[28px]"
+      className="flex flex-col bg-gray-50 md:pt-[61px]"
       style={{
         paddingBottom: "env(safe-area-inset-bottom)",
         minHeight: "100vh",
@@ -259,16 +269,11 @@ export default function ChatPage() {
       }}
     >
       {/* PC용 헤더 */}
-      <div className="hidden md:flex flex-none border-b border-gray-200 p-4 items-center justify-between bg-white">
-        <button
-          onClick={handleGoBack}
-          className="text-gray-600 hover:text-orange-500 mr-2"
-        >
+      <div className="hidden md:flex flex-none border-b border-gray-200 p-4 items-center justify-between bg-white fixed w-full top-29 z-50">
+        <button onClick={handleGoBack} className="text-gray-600 hover:text-orange-500 mr-2">
           &larr;
         </button>
-        <div className="text-lg font-semibold text-gray-800">
-          {otherNickname}
-        </div>
+        <div className="text-lg font-semibold text-gray-800">{otherNickname}</div>
         <div />
       </div>
 
@@ -279,7 +284,6 @@ export default function ChatPage() {
         ) : (
           chatMessages.map((msg, idx) => {
             const isMine = msg.sender_id === session?.user?.id;
-            // 마지막 메시지인지 체크
             const isLast = idx === chatMessages.length - 1;
             return (
               <div
@@ -287,7 +291,6 @@ export default function ChatPage() {
                 className={`mb-2 w-full flex ${
                   isMine ? "justify-end" : "justify-start"
                 }`}
-                // 마지막 메시지면 ref 달기
                 ref={isLast ? lastMsgRef : null}
               >
                 <div
@@ -297,16 +300,14 @@ export default function ChatPage() {
                       : "bg-white text-gray-800 rounded-tr-2xl rounded-br-2xl rounded-bl-2xl"
                   }`}
                 >
-                  <div className="whitespace-pre-wrap break-words">
-                    {msg.content}
-                  </div>
+                  <div className="whitespace-pre-wrap break-words">{msg.content}</div>
                   <div className="mt-1 text-xs opacity-80 text-right">
                     {formatChatTime(msg.created_at)}
                     {isMine ? (
                       msg.read_at ? (
                         <span className="ml-1 text-white">읽음</span>
                       ) : (
-                        <span className="ml-1 text-gray-300">...</span>
+                        <span className="ml-1 text-gray-300"></span>
                       )
                     ) : msg.read_at ? (
                       <span className="ml-1 text-blue-600">읽음</span>
@@ -328,9 +329,10 @@ export default function ChatPage() {
           <textarea
             rows={1}
             className="flex-1 border border-gray-300 rounded-md p-2 text-base focus:outline-none focus:ring-1 focus:ring-orange-400 resize-none"
-            placeholder="메시지를 입력하세요"
+            placeholder="메시지를 입력하세요 (Shift+Enter로 줄바꿈)"
             value={newContent}
             onFocus={handleFocusTextArea}
+            onKeyDown={handleKeyDown} // 엔터키 이벤트 추가
             onChange={(e) => setNewContent(e.target.value)}
           />
           <button
