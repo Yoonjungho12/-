@@ -206,7 +206,7 @@ export default function MyMobileUI() {
         margin: "0 auto",
         padding: "1rem",
         backgroundColor: "#fff",
-        minHeight: "100vh",
+        
         boxSizing: "border-box",
       }}
     >
