@@ -58,7 +58,8 @@ export default function ChatPage() {
   const [otherNickname, setOtherNickname] = useState("상대방");
 
   // 채팅 메시지, 입력값
-  const [chatMessages, setChatMessages] = useState();
+  const [chatMessages, setChatMessages] = useState(''
+  );
   const [newContent, setNewContent] = useState("");
 
   // 채팅 스크롤 컨테이너
