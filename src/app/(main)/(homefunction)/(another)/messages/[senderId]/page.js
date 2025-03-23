@@ -148,6 +148,7 @@ export default function ChatPage() {
       { event: "*", schema: "public", table: "messages" },
       async (payload) => {
         const { new: newRow, eventType } = payload;
+        // 나와 상대방 메시지만 필터
         const relevant =
           (newRow.sender_id === myId && newRow.receiver_id === senderId) ||
           (newRow.sender_id === senderId && newRow.receiver_id === myId);
@@ -176,7 +177,9 @@ export default function ChatPage() {
           setChatMessages((prev) => {
             const list = [...prev];
             const idx = list.findIndex((m) => m.id === newRow.id);
-            if (idx !== -1) list[idx] = newRow;
+            if (idx !== -1) {
+              list[idx] = newRow;
+            }
             return list;
           });
         }
@@ -235,21 +238,14 @@ export default function ChatPage() {
   }
 
   /* =========================
-   * (G) dvh 기본 + iOS 키보드 수동 제어
-   * - PC/모바일 offset
-   * - dvh (주소창 숨김 반영)
-   * - 키보드 올라오면 문서 스크롤
+   * (G) dvh + PC/모바일 offset
    ========================= */
+  const [dvHeight, setDvHeight] = useState(`calc(100dvh - 60px)`); // 기본 모바일 offset=60
 
-  // 1) dvh 기반 height 계산
-  const [dvHeight, setDvHeight] = useState(`calc(100dvh - 60px)`); // 기본은 모바일 offset=60
   useEffect(() => {
     function updateDvh() {
       const isMdUp = window.innerWidth >= 768;
       const offset = isMdUp ? 116 : 60;
-      // dvh로 기본 높이 잡기
-      // 브라우저가 dvh 지원 못하면 fallback
-      // (여기서는 단순히 100vh로 폴백하거나, @supports로 커버 가능)
       setDvHeight(`calc(100dvh - ${offset}px)`);
     }
     updateDvh();
@@ -259,7 +255,9 @@ export default function ChatPage() {
     };
   }, []);
 
-  // 2) iOS 수동 문서 스크롤: visualViewport.onresize
+  /* =========================
+   * (H) iOS 키보드 수동 제어
+   ========================= */
   useEffect(() => {
     if (!isIos) return;
 
@@ -271,20 +269,10 @@ export default function ChatPage() {
       if (currentHeight < prevVisualViewport.current) {
         // 키보드 올라옴
         const scrollHeight = document.scrollingElement.scrollHeight;
-        // 수동 스크롤
         const scrollTop = scrollHeight - (currentHeight - offset);
-        console.log(
-          "[iOS] Keyboard up => scrollTo:",
-          scrollTop,
-          "(scrollHeight:",
-          scrollHeight,
-          "currentHeight:",
-          currentHeight,
-          ")"
-        );
+        console.log("[iOS] Keyboard up => scrollTo:", scrollTop);
         window.scrollTo({ top: scrollTop, behavior: "smooth" });
       }
-
       prevVisualViewport.current = currentHeight;
     }
 
@@ -296,7 +284,7 @@ export default function ChatPage() {
     };
   }, [isIos]);
 
-  // (H) onFocus → 약간 지연 후 스크롤
+  /* (I) onFocus → 약간 지연 후 스크롤 (폴백) */
   function handleFocusTextArea() {
     setTimeout(() => {
       if (scrollContainerRef.current) {
@@ -307,7 +295,7 @@ export default function ChatPage() {
   }
 
   /* =========================
-   * (I) 최종 Return
+   * (J) 최종 Return
    ========================= */
   return (
     <div
@@ -321,15 +309,21 @@ export default function ChatPage() {
     >
       {/* 헤더 (PC 전용) */}
       <div className="hidden md:flex flex-none border-b border-gray-200 p-4 items-center justify-between bg-white">
-        <button onClick={handleGoBack} className="text-gray-600 hover:text-orange-500 mr-2">
+        <button
+          onClick={handleGoBack}
+          className="text-gray-600 hover:text-orange-500 mr-2"
+        >
           &larr;
         </button>
         <div className="text-lg font-semibold text-gray-800">{otherNickname}</div>
         <div />
       </div>
 
-      {/* 채팅 목록 */}
-      <div ref={scrollContainerRef} className="flex-1 p-3 overflow-y-auto md:pb-[66px]">
+      {/* 채팅 목록 (스크롤) */}
+      <div
+        ref={scrollContainerRef}
+        className="flex-1 p-3 overflow-y-auto md:pb-[66px]"
+      >
         {chatMessages.length === 0 ? (
           <div className="text-sm text-gray-500">대화가 없습니다.</div>
         ) : (
@@ -338,7 +332,9 @@ export default function ChatPage() {
             return (
               <div
                 key={msg.id}
-                className={`mb-2 w-full flex ${isMine ? "justify-end" : "justify-start"}`}
+                className={`mb-2 w-full flex ${
+                  isMine ? "justify-end" : "justify-start"
+                }`}
               >
                 <div
                   className={`max-w-[70%] p-2 text-sm shadow-sm ${
@@ -347,7 +343,9 @@ export default function ChatPage() {
                       : "bg-white text-gray-800 rounded-tr-2xl rounded-br-2xl rounded-bl-2xl"
                   }`}
                 >
-                  <div className="whitespace-pre-wrap break-words">{msg.content}</div>
+                  <div className="whitespace-pre-wrap break-words">
+                    {msg.content}
+                  </div>
                   <div className="mt-1 text-xs opacity-80 text-right">
                     {formatChatTime(msg.created_at)}
                     {isMine ? (
@@ -367,18 +365,24 @@ export default function ChatPage() {
         )}
       </div>
 
-      {/* 입력 영역 */}
+      {/* 하단 입력 영역 (fixed) - iOS 홈인디케이터 고려 */}
       <form
         onSubmit={handleSendMessage}
-        className="flex-none border-t border-gray-200 p-3 bg-white fixed w-full bottom-0 md:block">
-      
+        // position: fixed; -> 모바일에서 하단 고정
+        // w-full + bottom-0
+        // style에 safe-area-padding
+        className="flex-none border-t border-gray-200 p-3 bg-white fixed w-full bottom-0 md:block"
+        style={{
+          paddingBottom: "env(safe-area-inset-bottom)", // iOS 홈인디케이터 확보
+        }}
+      >
         <div className="flex items-center gap-2">
           <textarea
             rows={1}
             className="flex-1 border border-gray-300 rounded-md p-2 text-base focus:outline-none focus:ring-1 focus:ring-orange-400 resize-none"
             placeholder="메시지를 입력하세요"
             value={newContent}
-            onFocus={handleFocusTextArea}
+            onFocus={handleFocusTextArea} // 폴백 스크롤
             onChange={(e) => setNewContent(e.target.value)}
           />
           <button

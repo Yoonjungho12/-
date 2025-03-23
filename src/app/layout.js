@@ -6,7 +6,7 @@ import { Geist } from "next/font/google";
 export const metadata = {
   title: "여기닷",
   description: "여기닷 등의 정보를 확인하세요.",
-  viewport: "initial-scale=1.0, user-scalable=no, maximum-scale=1, width=device-width",
+  viewport: "initial-scale=1.0, user-scalable=no, maximum-scale=1, width=device-width viewport-fit=cover",
 };
 
 const geist = Geist({ subsets: ["latin"] });
