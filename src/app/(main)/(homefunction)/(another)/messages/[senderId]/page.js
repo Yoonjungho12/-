@@ -370,7 +370,7 @@ export default function ChatPage() {
       {/* 입력 영역 */}
       <form
         onSubmit={handleSendMessage}
-        className="flex-none border-t border-gray-200 p-3 bg-white fixed w-full bottom-0 md:block">
+        className="flex-none border-t border-gray-200 p-3 bg-white fixed w-full overflow-hidden bottom-0 md:block">
       
         <div className="flex items-center gap-2">
           <textarea
