@@ -34,6 +34,7 @@ function formatChatTime(dateString) {
     yyyy === now.getFullYear() &&
     mm === now.getMonth() + 1 &&
     dd === now.getDate();
+
   if (isToday) {
     return `${strH}:${strM}`;
   }
@@ -70,7 +71,7 @@ export default function ChatPage() {
   const prevVisualViewport = useRef(0);
 
   /* =========================
-   * (A) 세션 로딩
+   * (A) 세션 로드
    ========================= */
   useEffect(() => {
     supabase.auth.getSession().then(({ data, error }) => {
@@ -235,31 +236,30 @@ export default function ChatPage() {
   }
 
   /* =========================
-   * (G) dvh 기본 + iOS 키보드 수동 제어
-   * - PC/모바일 offset
-   * - dvh (주소창 숨김 반영)
-   * - 키보드 올라오면 문서 스크롤
+   * (G) dvh + offset
    ========================= */
+  const [dvHeight, setDvHeight] = useState(`calc(100dvh - 60px)`); // 모바일 기본 offset=60
 
-  // 1) dvh 기반 height 계산
-  const [dvHeight, setDvHeight] = useState(`calc(100dvh - 60px)`); // 기본은 모바일 offset=60
   useEffect(() => {
     function updateDvh() {
       const isMdUp = window.innerWidth >= 768;
       const offset = isMdUp ? 116 : 60;
-      // dvh로 기본 높이 잡기
-      // 브라우저가 dvh 지원 못하면 fallback
-      // (여기서는 단순히 100vh로 폴백하거나, @supports로 커버 가능)
       setDvHeight(`calc(100dvh - ${offset}px)`);
     }
     updateDvh();
+
+    // PC에서 창 크기 바뀌면 다시 계산
     window.addEventListener("resize", updateDvh);
     return () => {
       window.removeEventListener("resize", updateDvh);
     };
   }, []);
 
-  // 2) iOS 수동 문서 스크롤: visualViewport.onresize
+  /* =========================
+   * (H) iOS 키보드 수동 스크롤
+   * 키보드 올라옴: prev > current
+   * 키보드 내려감: prev < current
+  ========================= */
   useEffect(() => {
     if (!isIos) return;
 
@@ -268,21 +268,23 @@ export default function ChatPage() {
       const isMdUp = window.innerWidth >= 768;
       const offset = isMdUp ? 116 : 60;
 
+      // 키보드 올라옴
       if (currentHeight < prevVisualViewport.current) {
-        // 키보드 올라옴
         const scrollHeight = document.scrollingElement.scrollHeight;
-        // 수동 스크롤
         const scrollTop = scrollHeight - (currentHeight - offset);
-        console.log(
-          "[iOS] Keyboard up => scrollTo:",
-          scrollTop,
-          "(scrollHeight:",
-          scrollHeight,
-          "currentHeight:",
-          currentHeight,
-          ")"
-        );
+
+        console.log("[iOS] keyboard up => scrollTop:", scrollTop);
         window.scrollTo({ top: scrollTop, behavior: "smooth" });
+
+      // 키보드 내려감
+      } else if (currentHeight > prevVisualViewport.current) {
+        // 예) 다시 '목록 맨 아래'로 내려가기
+        // 프로젝트 상황에 따라 다를 수 있음
+        const scrollHeight = document.scrollingElement.scrollHeight;
+        console.log("[iOS] keyboard down => scroll to bottom?", scrollHeight);
+
+        // 여기서는 "채팅 하단"으로 가정
+        window.scrollTo({ top: scrollHeight, behavior: "smooth" });
       }
 
       prevVisualViewport.current = currentHeight;
@@ -296,7 +298,7 @@ export default function ChatPage() {
     };
   }, [isIos]);
 
-  // (H) onFocus → 약간 지연 후 스크롤
+  /* (I) onFocus → 약간 지연 후 스크롤 */
   function handleFocusTextArea() {
     setTimeout(() => {
       if (scrollContainerRef.current) {
@@ -307,19 +309,17 @@ export default function ChatPage() {
   }
 
   /* =========================
-   * (I) 최종 Return
+   * (J) 최종 Return
    ========================= */
   return (
     <div
       className="flex flex-col bg-gray-50 mt-[30px] md:mt-[28px]"
       style={{
-        // dvh 기반 + offset
-        height: dvHeight,
-        // iOS 홈인디케이터
-        paddingBottom: "env(safe-area-inset-bottom)",
+        height: dvHeight, // dvh + offset
+        paddingBottom: "env(safe-area-inset-bottom)", // iOS 홈인디케이터
       }}
     >
-      {/* 헤더 (PC 전용) */}
+      {/* PC 헤더 */}
       <div className="hidden md:flex flex-none border-b border-gray-200 p-4 items-center justify-between bg-white">
         <button onClick={handleGoBack} className="text-gray-600 hover:text-orange-500 mr-2">
           &larr;
