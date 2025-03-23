@@ -7,7 +7,6 @@ import { supabase } from "@/lib/supabaseF";
 
 /* ===============================
    (1) iOS 기기 판별 함수
-   (단순 userAgent 검사 예시)
 =============================== */
 function isIosDevice() {
   if (typeof window === "undefined") return false;
@@ -69,14 +68,6 @@ export default function ChatPage() {
   const isIos = isIosDevice();
   // 이전 visualViewport.height
   const prevVisualViewport = useRef(0);
-
-  // “현재 offset”을 상태로 관리
-  // => 평소엔 PC=116 / 모바일=60
-  // => iOS 키보드 올라오면 0, 내려오면 원복
-  const [offset, setOffset] = useState(60); // 모바일 기본
-
-  // dvHeight: dvh - offset
-  
 
   /* =========================
    * (A) 세션 로딩
@@ -185,9 +176,7 @@ export default function ChatPage() {
           setChatMessages((prev) => {
             const list = [...prev];
             const idx = list.findIndex((m) => m.id === newRow.id);
-            if (idx !== -1) {
-              list[idx] = newRow;
-            }
+            if (idx !== -1) list[idx] = newRow;
             return list;
           });
         }
@@ -246,89 +235,68 @@ export default function ChatPage() {
   }
 
   /* =========================
-   * (G) dvh + offset 상태
+   * (G) dvh 기본 + iOS 키보드 수동 제어
+   * - PC/모바일 offset
+   * - dvh (주소창 숨김 반영)
+   * - 키보드 올라오면 문서 스크롤
    ========================= */
-  // offset은 “PC=116, 모바일=60”을 기본
-  // 키보드 올라오면 => 0
-  // 키보드 내려오면 => 다시 60 or 116
-  const [currentOffset, setCurrentOffset] = useState(60);
-  // dvHeight: dvh - currentOffset
-  const [dvHeight, setDvHeight] = useState(`calc(100dvh - 60px)`);
 
-  function recalcDvh(offsetVal) {
-    // 브라우저가 dvh를 지원 못 하면 fallback
-    // 여기선 단순히 100vh로 대체 가능 or @supports
-    setDvHeight(`calc(100dvh - ${offsetVal}px)`);
-  }
-
+  // 1) dvh 기반 height 계산
+  const [dvHeight, setDvHeight] = useState(`calc(100dvh - 60px)`); // 기본은 모바일 offset=60
   useEffect(() => {
-    function updateDvhByScreen() {
+    function updateDvh() {
       const isMdUp = window.innerWidth >= 768;
-      const defaultOffset = isMdUp ? 116 : 60;
-      // 키보드가 없을 때 => 기본 offset 적용
-      setCurrentOffset(defaultOffset);
-      recalcDvh(defaultOffset);
+      const offset = isMdUp ? 116 : 60;
+      // dvh로 기본 높이 잡기
+      // 브라우저가 dvh 지원 못하면 fallback
+      // (여기서는 단순히 100vh로 폴백하거나, @supports로 커버 가능)
+      setDvHeight(`calc(100dvh - ${offset}px)`);
     }
-
-    // 처음 1회
-    updateDvhByScreen();
-
-    // PC에서 창 크기 바뀌면 다시 계산
-    window.addEventListener("resize", updateDvhByScreen);
+    updateDvh();
+    window.addEventListener("resize", updateDvh);
     return () => {
-      window.removeEventListener("resize", updateDvhByScreen);
+      window.removeEventListener("resize", updateDvh);
     };
   }, []);
 
-  /* =========================
-   * (H) iOS 키보드 수동 제어
-   * keyboard up => offset=0
-   * keyboard down => offset=60/116
-  ========================= */
+  // 2) iOS 수동 문서 스크롤: visualViewport.onresize
   useEffect(() => {
     if (!isIos) return;
 
     function handleViewportResize() {
       const currentHeight = window.visualViewport.height;
       const isMdUp = window.innerWidth >= 768;
-      const normalOffset = isMdUp ? 116 : 60;
+      const offset = isMdUp ? 116 : 60;
 
-      // 키보드 올라옴
       if (currentHeight < prevVisualViewport.current) {
-        console.log("keyboard up => offset=0");
-        setCurrentOffset(-60); // offset=0
-        recalcDvh(0);
-
-        // 문서 스크롤 올리기
+        // 키보드 올라옴
         const scrollHeight = document.scrollingElement.scrollHeight;
-        const scrollTop = scrollHeight - currentHeight; // offset=0
-        console.log("[iOS] Keyboard up => scrollTo:", scrollTop);
+        // 수동 스크롤
+        const scrollTop = scrollHeight - (currentHeight - offset);
+        console.log(
+          "[iOS] Keyboard up => scrollTo:",
+          scrollTop,
+          "(scrollHeight:",
+          scrollHeight,
+          "currentHeight:",
+          currentHeight,
+          ")"
+        );
         window.scrollTo({ top: scrollTop, behavior: "smooth" });
-
-      // 키보드 내려감
-      } else if (currentHeight > prevVisualViewport.current) {
-        console.log("keyboard down => offset=", normalOffset);
-        setCurrentOffset(normalOffset);
-        recalcDvh(normalOffset);
-
-        // 예: 채팅 목록 맨 아래로
-        const scrollHeight = document.scrollingElement.scrollHeight;
-        window.scrollTo({ top: scrollHeight, behavior: "smooth" });
       }
 
       prevVisualViewport.current = currentHeight;
     }
 
-    // iOS
     window.visualViewport.onresize = handleViewportResize;
     return () => {
       if (window.visualViewport) {
         window.visualViewport.onresize = null;
       }
     };
-  }, []);
+  }, [isIos]);
 
-  // (I) onFocus -> 지연 후 스크롤
+  // (H) onFocus → 약간 지연 후 스크롤
   function handleFocusTextArea() {
     setTimeout(() => {
       if (scrollContainerRef.current) {
@@ -339,14 +307,16 @@ export default function ChatPage() {
   }
 
   /* =========================
-   * (J) 최종 Return
+   * (I) 최종 Return
    ========================= */
   return (
     <div
       className="flex flex-col bg-gray-50 mt-[30px] md:mt-[28px]"
       style={{
-        height: dvHeight, // dvh + dynamic offset
-        paddingBottom: "env(safe-area-inset-bottom)", // iOS 홈인디케이터
+        // dvh 기반 + offset
+        height: dvHeight,
+        // iOS 홈인디케이터
+        paddingBottom: "env(safe-area-inset-bottom)",
       }}
     >
       {/* 헤더 (PC 전용) */}
@@ -359,7 +329,7 @@ export default function ChatPage() {
       </div>
 
       {/* 채팅 목록 */}
-      <div ref={scrollContainerRef} className="flex-1 p-3 overflow-y-auto">
+      <div ref={scrollContainerRef} className="flex-1 p-3 overflow-y-auto pb-[67px]">
         {chatMessages.length === 0 ? (
           <div className="text-sm text-gray-500">대화가 없습니다.</div>
         ) : (
@@ -400,8 +370,8 @@ export default function ChatPage() {
       {/* 입력 영역 */}
       <form
         onSubmit={handleSendMessage}
-        className="flex-none border-t border-gray-200 p-3 bg-white"
-      >
+        className="flex-none border-t border-gray-200 p-3 bg-white fixed w-full bottom-0 md:block">
+      
         <div className="flex items-center gap-2">
           <textarea
             rows={1}
