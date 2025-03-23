@@ -8,10 +8,9 @@ export default function MobileBottomNav() {
   // ─────────────────────────────────────────
   // (A) /messages/[something] 이면 언마운트
   // ─────────────────────────────────────────
-  // 예) pathname = "/messages/abc123" → split("/") → ["messages","abc123"]
-  const segments = pathname.split("/").filter(Boolean); 
+  const segments = pathname.split("/").filter(Boolean);
   if (segments[0] === "messages" && segments.length > 1) {
-    return null; // /messages/동적 -> 안보이게(언마운트)
+    return null; // /messages/[동적] -> 안보이게
   }
 
   // ─────────────────────────────────────────
@@ -98,7 +97,7 @@ export default function MobileBottomNav() {
   ];
 
   // ─────────────────────────────────────────
-  // (C) 렌더링
+  // (C) 렌더링 (세이프 에리어 + 60px 높이)
   // ─────────────────────────────────────────
   return (
     <nav
@@ -107,7 +106,10 @@ export default function MobileBottomNav() {
         bottom: 0,
         left: 0,
         right: 0,
-        height: "60px",
+        height: "calc(60px + env(safe-area-inset-bottom))",
+        paddingLeft: "env(safe-area-inset-left)",
+        paddingRight: "env(safe-area-inset-right)",
+        paddingBottom: "env(safe-area-inset-bottom)",
         background: "#fff",
         borderTop: "1px solid #ccc",
         display: "flex",
