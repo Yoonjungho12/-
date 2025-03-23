@@ -5,17 +5,13 @@ import React, { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseF";
 
-/* ===============================
-   (1) iOS 기기 판별 함수
-=============================== */
+// 1) iOS 기기 판별
 function isIosDevice() {
   if (typeof window === "undefined") return false;
   return /iPhone|iPad|iPod/i.test(navigator.userAgent);
 }
 
-/* ===============================
-   (2) 날짜/시간 포맷 함수
-=============================== */
+// 2) 날짜/시간 포맷
 function formatChatTime(dateString) {
   if (!dateString) return "";
   const d = new Date(dateString);
@@ -44,35 +40,29 @@ function formatChatTime(dateString) {
   return `${yyyy}-${mm}-${dd} ${strH}:${strM}`;
 }
 
-/* ===============================
-   (3) 메인 채팅 컴포넌트
-=============================== */
+// 3) 메인 컴포넌트
 export default function ChatPage() {
   const router = useRouter();
   const { senderId } = useParams();
 
-  // 세션 정보
+  // 세션
   const [session, setSession] = useState(null);
 
-  // 상대방 닉네임
+  // 상대 닉네임
   const [otherNickname, setOtherNickname] = useState("상대방");
 
-  // 채팅 메시지, 입력값
-  const [chatMessages, setChatMessages] = useState(''
-  );
+  // 채팅 메시지, 입력
+  const [chatMessages, setChatMessages] = useState([]);
   const [newContent, setNewContent] = useState("");
-
-  // 채팅 스크롤 컨테이너
-  const scrollContainerRef = useRef(null);
 
   // iOS 여부
   const isIos = isIosDevice();
-  // 이전 visualViewport.height
   const prevVisualViewport = useRef(0);
 
-  /* =========================
-   * (A) 세션 로딩
-   ========================= */
+  // 마지막 메시지에 ref를 달기 위한 것
+  const lastMsgRef = useRef(null);
+
+  // 1) 세션 로딩
   useEffect(() => {
     supabase.auth.getSession().then(({ data, error }) => {
       if (error) {
@@ -81,21 +71,19 @@ export default function ChatPage() {
         setSession(data.session);
       }
     });
-  },);
+  }, []);
 
-  /* =========================
-   * (B) 채팅 로드 함수
-   ========================= */
+  // 2) 채팅 로드
   async function fetchChat(myId, otherId) {
     try {
-      // 1) 상대→나 메시지 → read_at 처리
+      // 상대→나 메시지 read_at 처리
       await supabase
         .from("messages")
         .update({ read_at: new Date().toISOString() })
         .match({ sender_id: otherId, receiver_id: myId })
         .is("read_at", null);
 
-      // 2) 전체 대화 조회
+      // 전체 대화
       const { data, error } = await supabase
         .from("messages")
         .select(`
@@ -117,7 +105,7 @@ export default function ChatPage() {
         setChatMessages(data);
       }
 
-      // 3) 상대방 닉네임
+      // 상대방 닉네임
       const { data: profData } = await supabase
         .from("profiles")
         .select("nickname")
@@ -132,14 +120,12 @@ export default function ChatPage() {
     }
   }
 
-  /* =========================
-   * (C) 초기 로드 + 실시간
-   ========================= */
+  // 3) 초기 로드 + 실시간
   useEffect(() => {
     if (!session?.user?.id || !senderId) return;
     const myId = session.user.id;
 
-    // 처음 로드
+    // 초기 로드
     fetchChat(myId, senderId);
 
     // 실시간
@@ -157,7 +143,7 @@ export default function ChatPage() {
 
         if (eventType === "INSERT") {
           let finalRow = newRow;
-          // 상대→나 → read_at
+          // 상대→나 => read_at
           if (newRow.sender_id === senderId && newRow.receiver_id === myId) {
             const { data: updated } = await supabase
               .from("messages")
@@ -190,19 +176,15 @@ export default function ChatPage() {
     };
   }, [session, senderId]);
 
-  /* =========================
-   * (D) 목록 변경 → 맨 아래 스크롤
-   ========================= */
+  // 4) 마지막 메시지로 scrollIntoView
   useEffect(() => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTop =
-        scrollContainerRef.current.scrollHeight;
+    // chatMessages가 변할 때마다 → 마지막 메시지 쪽으로 스크롤
+    if (lastMsgRef.current) {
+      lastMsgRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [chatMessages]);
 
-  /* =========================
-   * (E) 메시지 전송
-   ========================= */
+  // 5) 메시지 전송
   async function handleSendMessage(e) {
     e.preventDefault();
     if (!newContent.trim()) return;
@@ -219,7 +201,6 @@ export default function ChatPage() {
         receiver_id: senderId,
         content: newContent.trim(),
       });
-
       if (!error) {
         setNewContent("");
       }
@@ -228,120 +209,86 @@ export default function ChatPage() {
     }
   }
 
-  /* =========================
-   * (F) 뒤로가기
-   ========================= */
+  // 뒤로가기
   function handleGoBack() {
     router.push("/messages");
   }
 
-  /* =========================
-   * (G) dvh 기본 + iOS 키보드 수동 제어
-   * - PC/모바일 offset
-   * - dvh (주소창 숨김 반영)
-   * - 키보드 올라오면 문서 스크롤
-   ========================= */
-
-  // 1) dvh 기반 height 계산
-  const [dvHeight, setDvHeight] = useState(`calc(100svh - 60px)`); // 기본은 모바일 offset=60
-  useEffect(() => {
-    function updateDvh() {
-      const isMdUp = window.innerWidth >= 768;
-      const offset = isMdUp ? 116 : 60;
-      // dvh로 기본 높이 잡기
-      // 브라우저가 dvh 지원 못하면 fallback
-      // (여기서는 단순히 100vh로 폴백하거나, @supports로 커버 가능)
-      setDvHeight(`calc(100dvh - ${offset}px)`);
-    }
-    updateDvh();
-    window.addEventListener("resize", updateDvh);
-    return () => {
-      window.removeEventListener("resize", updateDvh);
-    };
-  },);
-
-  // 2) iOS 수동 문서 스크롤: visualViewport.onresize
+  // iOS 수동 스크롤
   useEffect(() => {
     if (!isIos) return;
 
     function handleViewportResize() {
       const currentHeight = window.visualViewport.height;
+      // offset 계산 (데스크톱/모바일)
       const isMdUp = window.innerWidth >= 768;
       const offset = isMdUp ? 116 : 60;
 
       if (currentHeight < prevVisualViewport.current) {
         // 키보드 올라옴
         const scrollHeight = document.scrollingElement.scrollHeight;
-        // 수동 스크롤
         const scrollTop = scrollHeight - (currentHeight - offset);
-        console.log(
-          "[iOS] Keyboard up => scrollTo:",
-          scrollTop,
-          "(scrollHeight:",
-          scrollHeight,
-          "currentHeight:",
-          currentHeight,
-          ")"
-        );
         window.scrollTo({ top: scrollTop, behavior: "smooth" });
       }
-
       prevVisualViewport.current = currentHeight;
     }
 
-    window.visualViewport.onresize = handleViewportResize;
+    window.visualViewport.addEventListener("resize", handleViewportResize);
     return () => {
-      if (window.visualViewport) {
-        window.visualViewport.onresize = null;
-      }
+      window.visualViewport.removeEventListener("resize", handleViewportResize);
     };
   }, [isIos]);
 
-  // (H) onFocus → 약간 지연 후 스크롤
+  // onFocus => 마지막 메시지 보이게
   function handleFocusTextArea() {
     setTimeout(() => {
-      if (scrollContainerRef.current) {
-        scrollContainerRef.current.scrollTop =
-          scrollContainerRef.current.scrollHeight;
+      if (lastMsgRef.current) {
+        lastMsgRef.current.scrollIntoView({ behavior: "smooth" });
       }
     }, 100);
   }
 
-  /* =========================
-   * (I) 최종 Return
-   ========================= */
+  // 최종 Return
   return (
     <div
       className="flex flex-col bg-gray-50 mt-[30px] md:mt-[28px]"
       style={{
-        // dvh 기반 + offset (일단 주석 처리)
-        // height: dvHeight,
-        // iOS 홈인디케이터
         paddingBottom: "env(safe-area-inset-bottom)",
-        minHeight: '100vh',
-        minHeight: '-webkit-fill-available',
+        minHeight: "100vh",
+        minHeight: "-webkit-fill-available",
       }}
     >
-      {/* 헤더 (PC 전용) */}
+      {/* PC용 헤더 */}
       <div className="hidden md:flex flex-none border-b border-gray-200 p-4 items-center justify-between bg-white">
-        <button onClick={handleGoBack} className="text-gray-600 hover:text-orange-500 mr-2">
+        <button
+          onClick={handleGoBack}
+          className="text-gray-600 hover:text-orange-500 mr-2"
+        >
           &larr;
         </button>
-        <div className="text-lg font-semibold text-gray-800">{otherNickname}</div>
+        <div className="text-lg font-semibold text-gray-800">
+          {otherNickname}
+        </div>
         <div />
       </div>
 
       {/* 채팅 목록 */}
-      <div ref={scrollContainerRef} className="flex-1 p-3 overflow-y-auto pb-[66px]">
+      <div className="flex-1 p-3 overflow-y-auto pb-[66px]">
         {chatMessages.length === 0 ? (
           <div className="text-sm text-gray-500">대화가 없습니다.</div>
         ) : (
-          chatMessages.map((msg) => {
+          chatMessages.map((msg, idx) => {
             const isMine = msg.sender_id === session?.user?.id;
+            // 마지막 메시지인지 체크
+            const isLast = idx === chatMessages.length - 1;
             return (
               <div
                 key={msg.id}
-                className={`mb-2 w-full flex ${isMine ? "justify-end" : "justify-start"}`}
+                className={`mb-2 w-full flex ${
+                  isMine ? "justify-end" : "justify-start"
+                }`}
+                // 마지막 메시지면 ref 달기
+                ref={isLast ? lastMsgRef : null}
               >
                 <div
                   className={`max-w-[70%] p-2 text-sm shadow-sm ${
@@ -350,7 +297,9 @@ export default function ChatPage() {
                       : "bg-white text-gray-800 rounded-tr-2xl rounded-br-2xl rounded-bl-2xl"
                   }`}
                 >
-                  <div className="whitespace-pre-wrap break-words">{msg.content}</div>
+                  <div className="whitespace-pre-wrap break-words">
+                    {msg.content}
+                  </div>
                   <div className="mt-1 text-xs opacity-80 text-right">
                     {formatChatTime(msg.created_at)}
                     {isMine ? (
@@ -370,11 +319,11 @@ export default function ChatPage() {
         )}
       </div>
 
-      {/* 입력 영역 */}
+      {/* 입력 영역 (하단 fixed) */}
       <form
         onSubmit={handleSendMessage}
-        className="flex-none border-t border-gray-200 p-3 bg-white fixed w-full overflow-hidden bottom-0 md:block">
-
+        className="flex-none border-t border-gray-200 p-3 bg-white fixed w-full bottom-0 md:block"
+      >
         <div className="flex items-center gap-2">
           <textarea
             rows={1}
