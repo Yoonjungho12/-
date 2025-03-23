@@ -296,7 +296,7 @@ export default function ChatPage() {
       // 키보드 올라옴
       if (currentHeight < prevVisualViewport.current) {
         console.log("keyboard up => offset=0");
-        setCurrentOffset(0); // offset=0
+        setCurrentOffset(-60); // offset=0
         recalcDvh(0);
 
         // 문서 스크롤 올리기
