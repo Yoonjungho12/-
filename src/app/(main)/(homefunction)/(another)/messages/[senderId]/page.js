@@ -58,7 +58,7 @@ export default function ChatPage() {
   const [otherNickname, setOtherNickname] = useState("상대방");
 
   // 채팅 메시지, 입력값
-  const [chatMessages, setChatMessages] = useState([]);
+  const [chatMessages, setChatMessages] = useState();
   const [newContent, setNewContent] = useState("");
 
   // 채팅 스크롤 컨테이너
@@ -80,7 +80,7 @@ export default function ChatPage() {
         setSession(data.session);
       }
     });
-  }, []);
+  },);
 
   /* =========================
    * (B) 채팅 로드 함수
@@ -257,7 +257,7 @@ export default function ChatPage() {
     return () => {
       window.removeEventListener("resize", updateDvh);
     };
-  }, []);
+  },);
 
   // 2) iOS 수동 문서 스크롤: visualViewport.onresize
   useEffect(() => {
@@ -313,10 +313,12 @@ export default function ChatPage() {
     <div
       className="flex flex-col bg-gray-50 mt-[30px] md:mt-[28px]"
       style={{
-        // dvh 기반 + offset
-        height: dvHeight,
+        // dvh 기반 + offset (일단 주석 처리)
+        // height: dvHeight,
         // iOS 홈인디케이터
         paddingBottom: "env(safe-area-inset-bottom)",
+        minHeight: '100vh',
+        minHeight: '-webkit-fill-available',
       }}
     >
       {/* 헤더 (PC 전용) */}
@@ -371,7 +373,7 @@ export default function ChatPage() {
       <form
         onSubmit={handleSendMessage}
         className="flex-none border-t border-gray-200 p-3 bg-white fixed w-full overflow-hidden bottom-0 md:block">
-      
+
         <div className="flex items-center gap-2">
           <textarea
             rows={1}
