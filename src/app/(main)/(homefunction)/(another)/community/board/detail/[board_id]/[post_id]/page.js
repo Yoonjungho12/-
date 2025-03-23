@@ -158,10 +158,10 @@ export default async function PostDetailPage({ params: ParamsPromise }) {
                   return (
                     <div
                       key={comment.id}
-                      className="bg-white rounded-lg shadow p-4"
+                      className="bg-white rounded-lg shadow-lg p-4"
                     >
                       <div className="flex items-center justify-between mb-2">
-                        <span className="font-semibold text-gray-800 text-sm">
+                        <span className="font-semibold text-orange-400 text-sm">
                           {cNick}
                         </span>
                         <span className="text-xs text-gray-400">{cDateStr}</span>

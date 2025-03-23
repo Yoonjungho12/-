@@ -57,7 +57,7 @@ export default function CommentForm({ postId }) {
     <div className="border-t border-gray-300 pt-4">
       <h3 className="text-sm font-bold mb-2">댓글 작성</h3>
       <textarea
-        className="w-full border p-2 text-sm mb-2"
+        className="w-full border-[0.5px] r p-2 text-sm mb-2 rounded"
         rows={4}
         placeholder="댓글을 입력하세요"
         value={content}
@@ -66,7 +66,7 @@ export default function CommentForm({ postId }) {
       <div className="text-right">
         <button
           onClick={handleSubmit}
-          className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded"
+          className="px-4 py-2 bg-orange-500 hover:bg-blue-600 text-white text-sm rounded"
         >
           등록
         </button>

@@ -33,7 +33,6 @@ export default function CommentsUI({ company_name, id }) {
   // (1) 초기 로딩: 로그인 정보 & 로컬 스토리지(1분 제한) 불러오기
   // --------------------------------------
   useEffect(() => {
-    // 로그인 사용자 정보 가져오기
     (async () => {
       const { data: userData } = await supabase.auth.getUser();
       if (userData?.user) {
@@ -41,7 +40,6 @@ export default function CommentsUI({ company_name, id }) {
       }
     })();
 
-    // 로컬 스토리지에서 댓글 타임스탬프 불러오기
     const stored = localStorage.getItem("commentTimestamps");
     if (stored) {
       try {
@@ -74,7 +72,7 @@ export default function CommentsUI({ company_name, id }) {
   // --------------------------------------
   async function fetchCommentsAndCount() {
     try {
-      // partnershipsubmit.comment 가져오기
+      // partnershipsubmit.comment 가져오기 → 총 댓글 수
       const { data: psData, error: psError } = await supabase
         .from("partnershipsubmit")
         .select("comment")
@@ -140,14 +138,14 @@ export default function CommentsUI({ company_name, id }) {
       return;
     }
 
-    // 6-1) 로그인 체크
+    // 로그인 체크
     const { data: userData } = await supabase.auth.getUser();
-    if (!userData || !userData.user) {
+    if (!userData?.user) {
       alert("로그인이 필요합니다! 로그인 후에 이용 가능합니다.");
       return;
     }
 
-    // 6-2) 밴 여부(profiles.is_banned) 확인
+    // 밴 여부 확인
     const user_id = userData.user.id;
     const { data: bannedData, error: bannedError } = await supabase
       .from("profiles")
@@ -165,16 +163,15 @@ export default function CommentsUI({ company_name, id }) {
       return;
     }
 
-    // 6-3) DB insert (is_admitted=false)
-    const { data: inserted, error } = await supabase
+    // DB insert (is_admitted=false)
+    const { error } = await supabase
       .from("comments")
       .insert({
         user_id,
         partnershipsubmit_id: id,
         comment: commentText,
         is_admitted: false,
-      })
-      .select();
+      });
 
     if (error) {
       console.error("댓글 등록 에러:", error);
@@ -182,22 +179,20 @@ export default function CommentsUI({ company_name, id }) {
       return;
     }
 
-    if (inserted) {
-      alert("댓글이 등록되었습니다! 관리자 승인 후 노출됩니다.");
-      setCommentText("");
+    alert("댓글이 등록되었습니다! 관리자 승인 후 노출됩니다.");
+    setCommentText("");
 
-      // 1분 제한 타임스탬프 갱신
-      const now = Date.now();
-      const newTimestamps = [
-        ...commentTimestamps.filter((ts) => now - ts < ONE_MINUTE),
-        now,
-      ];
-      setCommentTimestamps(newTimestamps);
-    }
+    // 1분 제한 타임스탬프 갱신
+    const now = Date.now();
+    const newTimestamps = [
+      ...commentTimestamps.filter((ts) => now - ts < ONE_MINUTE),
+      now,
+    ];
+    setCommentTimestamps(newTimestamps);
   }
 
   // --------------------------------------
-  // (7) 댓글 삭제 (본인 글만 가능)
+  // (7) 댓글 삭제 (본인 글만 가능) + partnershipsubmit.comment -= 1
   // --------------------------------------
   async function handleDelete(commentId, commentUserId) {
     if (currentUserId !== commentUserId) {
@@ -208,6 +203,15 @@ export default function CommentsUI({ company_name, id }) {
       return;
     }
 
+    // 1) 이 댓글이 실제 승인된 상태인지 (local state에서 확인 가능)
+    const targetComment = comments.find((c) => c.id === commentId);
+    if (!targetComment) {
+      console.error("삭제 대상 댓글을 찾지 못했습니다.");
+      return;
+    }
+    const wasAdmitted = targetComment.is_admitted; // 목록상 is_admitted는 true일 것
+
+    // 2) DB에서 댓글 삭제
     const { error } = await supabase
       .from("comments")
       .delete()
@@ -219,7 +223,21 @@ export default function CommentsUI({ company_name, id }) {
       return;
     }
 
-    // 삭제 후 목록 갱신
+    // 3) 만약 승인된 댓글이었다면 partnershipsubmit.comment - 1
+    if (wasAdmitted) {
+      const { error: updateError } = await supabase
+        .from("partnershipsubmit")
+        .update({
+          // 만약 음수 방지가 필요하면 Math.max(reviewCount - 1, 0)을 사용
+          comment: reviewCount > 0 ? reviewCount - 1 : 0,
+        })
+        .eq("id", id);
+      if (updateError) {
+        console.error("업체 리뷰 수 감소 에러:", updateError);
+      }
+    }
+
+    // 4) 목록 갱신
     fetchCommentsAndCount();
   }
 
@@ -237,20 +255,15 @@ export default function CommentsUI({ company_name, id }) {
     const isSameYear = dateObj.getFullYear() === now.getFullYear();
 
     if (diffDays < 1) {
-      // 오늘
       return "오늘";
     } else if (diffDays <= 7) {
-      // 1일 전, 2일 전, ... 7일 전
       return `${diffDays}일 전`;
     } else {
-      // 7일 초과
       const month = String(dateObj.getMonth() + 1).padStart(2, "0");
       const day = String(dateObj.getDate()).padStart(2, "0");
       if (isSameYear) {
-        // 올해면 "MM-DD"
         return `${month}-${day}`;
       } else {
-        // 연도가 다르면 "YYYY-MM-DD"
         const year = dateObj.getFullYear();
         return `${year}-${month}-${day}`;
       }
@@ -286,10 +299,8 @@ export default function CommentsUI({ company_name, id }) {
       targetUserId: commentUserId,
     });
   }
-
   function handleTouchStart(e, commentUserId) {
     if (commentUserId === currentUserId) return;
-
     pressTimerRef.current = setTimeout(() => {
       const touch = e.touches[0];
       setPopup({
@@ -305,20 +316,14 @@ export default function CommentsUI({ company_name, id }) {
       clearTimeout(pressTimerRef.current);
     }
   }
-
-  // ⬇︎ 쪽지 보내기 로직: 로그인 안 되어 있으면 알림
   function handleSendMessage() {
     setPopup((prev) => ({ ...prev, visible: false }));
-    // 1) 로그인 체크
     if (!currentUserId) {
-      alert("로그인이 필요합니다! 로그인 후에 이용 가능합니다.");
+      alert("로그인이 필요합니다! 로그인 후 이용 가능합니다.");
       return;
     }
-    // 2) 로그인 되어 있으면 메시지 페이지로 이동
     router.push(`/messages/${popup.targetUserId}`);
   }
-
-  // 팝업 바깥 클릭 시 닫기
   useEffect(() => {
     function closePopup() {
       if (popup.visible) {

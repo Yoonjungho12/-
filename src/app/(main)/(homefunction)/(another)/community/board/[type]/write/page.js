@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import { createClient } from '@supabase/supabase-js';
+import React, { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
+import { createClient } from "@supabase/supabase-js";
 
 // 1) Supabase 클라이언트 생성
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -36,106 +36,116 @@ const THEMES = [
 export default function WritePage() {
   const router = useRouter();
   const { type } = useParams();
-  const decodedType = decodeURIComponent(type || '');
+  const decodedType = decodeURIComponent(type || "");
 
-  // 로그인된 사용자 ID를 저장할 상태
+  // 로그인된 사용자 ID
   const [userId, setUserId] = useState(null);
 
-  // 글 제목, 내용 상태
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
+  // 글 제목, 내용
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
 
-  // 테마 선택 상태 (기본값: THEMES[0].id)
+  // 테마 선택 (기본값: THEMES[0].id)
   const [theme, setTheme] = useState(THEMES[0].id);
 
   // 게시판 타입별 ID와 이름 매핑
-  let boardTitle = { name: '', id: 0 };
+  let boardTitle = { name: "", id: 0 };
   switch (decodedType) {
-    case '공지사항':
-      boardTitle = { name: '공지사항', id: 1 };
+    case "공지사항":
+      boardTitle = { name: "공지사항", id: 1 };
       break;
-    case '가입인사':
-      boardTitle = { name: '가입인사', id: 2 };
+    case "가입인사":
+      boardTitle = { name: "가입인사", id: 2 };
       break;
-    case '방문후기':
-      boardTitle = { name: '방문후기', id: 3 };
+    case "방문후기":
+      boardTitle = { name: "방문후기", id: 3 };
       break;
-    case '자유게시판':
-      boardTitle = { name: '자유게시판', id: 4 };
+    case "자유게시판":
+      boardTitle = { name: "자유게시판", id: 4 };
       break;
-    case '유머게시판':
-      boardTitle = { name: '유머게시판', id: 5 };
+    case "유머게시판":
+      boardTitle = { name: "유머게시판", id: 5 };
       break;
-    case '질문답변':
-      boardTitle = { name: '질문답변', id: 6 };
+    case "질문답변":
+      boardTitle = { name: "질문답변", id: 6 };
       break;
-    case '제휴업체':
-      boardTitle = { name: '제휴업체 SNS', id: 7 };
+    case "제휴업체":
+      boardTitle = { name: "제휴업체 SNS", id: 7 };
       break;
-    case '코스공유':
-      boardTitle = { name: '맛집/핫플/데이트 코스 공유', id: 8 };
+    case "코스공유":
+      boardTitle = { name: "맛집/핫플/데이트 코스 공유", id: 8 };
       break;
     default:
-      boardTitle = { name: '알 수 없는 게시판', id: -1 };
+      boardTitle = { name: "알 수 없는 게시판", id: -1 };
       break;
   }
 
-  // 2) 컴포넌트 마운트 시점에 세션(로그인 유저 ID) 로드
+  // 컴포넌트 마운트 시점에 세션(로그인 유저 ID) 로드
   useEffect(() => {
     async function fetchSession() {
       const { data, error } = await supabase.auth.getSession();
       if (error) {
-        console.error('세션 불러오기 오류:', error);
+        console.error("세션 불러오기 오류:", error);
         return;
       }
       const currentUserId = data.session?.user?.id;
       if (!currentUserId) {
-        console.log('로그인이 필요합니다!');
+        console.log("로그인이 필요합니다!");
       } else {
-        console.log('로그인 사용자 ID:', currentUserId);
+        console.log("로그인 사용자 ID:", currentUserId);
         setUserId(currentUserId);
       }
     }
     fetchSession();
   }, []);
 
-  // "글 저장" 버튼 클릭
+  // "글 저장" 버튼
   const handleSave = async () => {
     try {
-      // userId가 아직 없으면 로그인 필요
       if (!userId) {
-        alert('로그인이 필요합니다!');
+        alert("로그인이 필요합니다!");
         return;
       }
 
-      // 3) posts 테이블에 데이터 삽입
-      const { data, error } = await supabase.from('posts').insert({
+      // (1) Insert 객체 구성
+      // "방문후기" 게시판일 때만 theme_id 넣고, 아니면 넣지 않는다.
+      const insertData = {
         board_id: boardTitle.id,
         user_id: userId,
-        title: title,
-        content: content,
-        theme_id: theme,
-      });
+        title,
+        content,
+      };
+      if (boardTitle.name === "방문후기") {
+        insertData.theme_id = theme;
+      }
+
+      // 디버깅: Insert Query 파라미터
+      console.log("==> [handleSave] Insert Query Data:", insertData);
+
+      // posts 테이블에 삽입
+      const { data, error } = await supabase.from("posts").insert(insertData);
+
+      // 디버깅: Supabase 결과
+      console.log("==> [handleSave] Supabase Insert Result data:", data);
+      console.log("==> [handleSave] Supabase Insert Result error:", error);
 
       if (error) {
-        console.error('게시글 저장 오류:', error);
-        alert('게시글 저장 중 오류가 발생했습니다!');
+        console.error("게시글 저장 오류:", JSON.stringify(error, null, 2));
+        alert("게시글 저장 중 오류가 발생했습니다!");
         return;
       }
 
-      // 작성 후 팝업창 → "게시 완료! 관리자 승인 후에 노출됩니다"
-      alert('게시 완료! 관리자 승인 후에 노출됩니다');
-
-      router.push('/community');
+      alert("게시 완료! 관리자 승인 후에 노출됩니다");
+      router.push("/community");
     } catch (err) {
-      console.error('에러 발생:', err);
-      alert('알 수 없는 오류가 발생했습니다!');
+      console.error("에러 발생:", err);
+      alert("알 수 없는 오류가 발생했습니다!");
     }
   };
 
-  // "목록" 버튼 클릭
+  // "목록" 버튼
   const handleList = () => {
-    router.push('/community');
+    router.push("/community");
   };
 
   return (
@@ -162,7 +172,7 @@ export default function WritePage() {
             </td>
           </tr>
           {/* 테마 선택 (방문후기 게시판일 때만 표시) */}
-          {boardTitle.name === '방문후기' && (
+          {boardTitle.name === "방문후기" && (
             <tr className="border-b border-gray-300">
               <td className="w-24 p-2 bg-gray-100 align-middle">테마</td>
               <td className="p-2">

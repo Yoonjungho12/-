@@ -157,7 +157,7 @@ export default function MainoneClient({ initialRegion, initialData }) {
       </div>
 
       {/* ▼▼ 가로 스크롤 탭 ▼▼ */}
-      <div className="mt-6 max-w-7xl mx-auto px-4">
+      <div className="mt-6 max-w-7xl mx-auto px-4 ">
         <div className="relative p-2">
           {/* 왼쪽 화살표 */}
           <button
@@ -205,7 +205,7 @@ export default function MainoneClient({ initialRegion, initialData }) {
                     onClick={() => handleClickRegion(region)}
                     className={`shadow-sm ${
   isSelected
-    ? "px-4 py-2 bg-orange-600 text-white md:w-40 text-sm md:text-base"
+    ? "px-4 py-2 bg-gradient-to-r from-red-400 to-orange-400 text-white md:w-40 text-sm md:text-base"
     : "border-gray-200 px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 md:w-40 text-sm md:text-base"
 }`}
                     aria-label={`${region} 지역 선택`}
@@ -244,7 +244,7 @@ export default function MainoneClient({ initialRegion, initialData }) {
       </div>
 
       {/* 모바일/데스크톱 카드 */}
-      <div className="mt-6 mx-auto max-w-7xl pb-8">
+      <div className="mt-6 mx-auto max-w-7xl pb-8 ">
         {/* (모바일) 슬라이드 */}
         <div className="block sm:hidden px-4 ">
           <div

@@ -82,23 +82,23 @@ export default function RecommendedShopsClient({ initialTag, initialShops }) {
         ★ 부모 컨테이너가 어딘가에서 width 제한을 해도,
         아래 기법을 쓰면 해당 섹션만은 "뷰포트 기준"으로 깔림
       */}
-      <section
-        className="
-          relative 
-          left-1/2 
-          -translate-x-1/2 
-          w-screen 
-          bg-gray-50 
-          py-10 
-          flex 
-          flex-col 
-          items-center 
-          mb-10
-          mt-10
-          md:mt-20
-
-        "
-      >
+     <section
+  className="
+    relative 
+    left-1/2 
+    -translate-x-1/2 
+    w-screen 
+    py-10 
+    flex 
+    flex-col 
+    items-center 
+    mb-10
+    mt-10
+    md:mt-20
+    bg-gradient-to-r from-red-400 to-orange-400
+    text-white
+  "
+>
         {/* 
           여기부터 실제 "콘텐츠 폭" 
           max-w-7xl + mx-auto로 가운데 정렬 
@@ -106,13 +106,13 @@ export default function RecommendedShopsClient({ initialTag, initialShops }) {
         <div className="mx-auto w-full max-w-5xl px-4">
           {/* === 핵심: 제목 양옆에 수평선(직선) 넣기 === */}
           <div className="flex items-center justify-center mt-2 mb-4 w-[100%] mx-auto">
-            <hr className="flex-grow border-1 border-gray-700" />
-            <h2 className="mx-3 text-xl md:text-2xl font-bold text-gray-800 whitespace-nowrap px-3">
+            <hr className="flex-grow border-[0.5px] border-white" />
+            <h2 className="mx-3 text-xl md:text-2xl font-bold text-white  whitespace-nowrap px-3">
               여기닷! 테마별 업체 추천
             </h2>
-            <hr className="flex-grow border-1 border-gray-700" />
+            <hr className="flex-grow border-[0.5px] border-white" />
           </div>
-          <p className="text-gray-600 text-sm md:text-[16px] text-center">
+          <p className="text-white text-sm md:text-[16px] text-center">
             회원님께서 필요한 업체를 테마별로 빠르게 찾아보세요!
           </p>
 
@@ -126,8 +126,8 @@ export default function RecommendedShopsClient({ initialTag, initialShops }) {
                   onClick={() => handleClickTag(tag)}
                   className={
                     isSelected
-                      ? "rounded-full bg-orange-500 px-2 py-2 md:py-3 md:px-3 text-white hover:bg-orange-600 text-sm md:text-base"
-                      : "rounded-full border border-orange-500 px-2 py-2 md:py-0 md:px-3 bg-orange-50 text-orange-500 hover:bg-orange-100 text-sm md:text-base"
+                      ? "rounded-full bg-orange-500 border border-white px-2 py-2 md:py-3 md:px-3 text-white hover:bg-orange-600 text-sm md:text-base"
+                      : "rounded-full border border-orange-500 px-2 py-2 md:py-0 md:px-3 bg-white text-orange-600 hover:bg-white text-sm md:text-base"
                   }
                 >
                   {tag}

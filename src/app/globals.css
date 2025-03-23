@@ -65,13 +65,13 @@ body {
         /* grid 컨테이너 */
         .region-grid-container {
           display: grid;
-          gap: 1px;  /* 작은 간격 */
+      
           ;
          
         }
             .theme-grid-container {
           display: grid;
-          gap: 1px;  /* 작은 간격 */
+      
        
          
         }
@@ -107,13 +107,13 @@ body {
            border-left: 1px solid #ddd;
           padding: 9px;
           cursor: pointer;
-          background-color: #fff;
-          color: #333;
+          background-color: #f5f5f5;
+         
           text-align: left;
           vertical-align: middle !important ;
           
-          border-radius: 15px;
-          margin: 5px;
+         
+          
           transition: background-color 0.15s, color 0.15s; /* 클릭/호버 이펙트용 */
         }
         .region-cell:hover {
@@ -121,7 +121,7 @@ body {
         }
         .region-cell.selected {
           /* background-color: #f9665e; */
-          background-color: rgb(228, 97, 15);
+        
           color: #fff;
         }
 
