@@ -5,9 +5,18 @@ import React, { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseF";
 
-/* =========================================
-   (A) 날짜/시간 포맷 함수
-========================================= */
+/* ===============================
+   (1) 간단히 iOS 기기 판별 함수
+   userAgent 검사. (단순 예시)
+=============================== */
+function isIosDevice() {
+  if (typeof window === "undefined") return false;
+  return /iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
+/* ===============================
+   (2) 날짜/시간 포맷 함수
+=============================== */
 function formatChatTime(dateString) {
   if (!dateString) return "";
   const d = new Date(dateString);
@@ -36,110 +45,54 @@ function formatChatTime(dateString) {
   return `${yyyy}-${mm}-${dd} ${strH}:${strM}`;
 }
 
-/* =========================================
-   (B) useVisualViewportDvh 훅
-   1) 기본적으로 "calc(100dvh - offset)" 사용
-   2) window.visualViewport가 있으면
-      그 값(visualViewport.height - offset) 우선 적용
-   3) 디버깅용 콘솔 로그 포함
-========================================= */
-function useVisualViewportDvh() {
-  const [calcHeight, setCalcHeight] = useState("100dvh");
-
-  useEffect(() => {
-    function updateHeight() {
-      console.log("=== [updateHeight] called ===");
-      const isMdUp = window.innerWidth >= 768;
-      const offset = isMdUp ? 116 : 60;
-
-      // 우선 dvh 기준
-      let nextHeight = `calc(100dvh - ${offset}px)`;
-      console.log("Base dvh calc =>", nextHeight);
-
-      // visualViewport가 지원되면 키보드·툴바 반영
-      if (window.visualViewport) {
-        const vh = window.visualViewport.height;
-        console.log("visualViewport.height =", vh);
-        nextHeight = `calc(${vh}px - ${offset}px)`;
-      } else {
-        console.log("visualViewport not supported, using 100dvh fallback");
-      }
-
-      console.log(">> setCalcHeight =>", nextHeight);
-      setCalcHeight(nextHeight);
-    }
-
-    // 초기 1회
-    updateHeight();
-
-    // 이벤트 등록
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener("resize", updateHeight);
-      window.visualViewport.addEventListener("scroll", updateHeight);
-    }
-    window.addEventListener("resize", updateHeight);
-
-    return () => {
-      if (window.visualViewport) {
-        window.visualViewport.removeEventListener("resize", updateHeight);
-        window.visualViewport.removeEventListener("scroll", updateHeight);
-      }
-      window.removeEventListener("resize", updateHeight);
-    };
-  }, []);
-
-  return calcHeight;
-}
-
-/* =========================================
-   (C) 메인 채팅 컴포넌트
-========================================= */
+/* ===============================
+   (3) 메인 채팅 컴포넌트
+=============================== */
 export default function ChatPage() {
   const router = useRouter();
   const { senderId } = useParams();
 
-  // 세션 / 사용자 정보
+  // 3-1) Supabase 세션
   const [session, setSession] = useState(null);
 
-  // 상대 닉네임
+  // 3-2) 상대방 닉네임
   const [otherNickname, setOtherNickname] = useState("상대방");
 
-  // 채팅 목록, 입력값
+  // 3-3) 채팅 메시지 목록, 입력값
   const [chatMessages, setChatMessages] = useState([]);
   const [newContent, setNewContent] = useState("");
 
-  // 스크롤 컨테이너
+  // 3-4) 채팅 목록 스크롤 컨테이너
   const scrollContainerRef = useRef(null);
 
-  /* ========== 1) 세션 로드 ========== */
+  // 3-5) iOS 판별
+  const isIos = isIosDevice();
+
+  // 3-6) 이전 visualViewport.height를 저장해둘 ref
+  const prevVisualViewport = useRef(0);
+
+  /* ========== (A) 세션 로딩 ========== */
   useEffect(() => {
     supabase.auth.getSession().then(({ data, error }) => {
       if (error) {
         console.error("세션 로딩 오류:", error);
       } else {
-        console.log("세션 로딩:", data);
         setSession(data.session);
       }
     });
   }, []);
 
-  /* ========== 2) 채팅 불러오기 ========== */
+  /* ========== (B) 채팅 로드 함수 ========== */
   async function fetchChat(myId, otherId) {
     try {
-      // (A) 상대가 보낸 메시지 → read_at 처리
-      const updateRes = await supabase
+      // (B-1) 상대→나 메시지 읽음처리
+      await supabase
         .from("messages")
         .update({ read_at: new Date().toISOString() })
         .match({ sender_id: otherId, receiver_id: myId })
         .is("read_at", null);
 
-      if (updateRes.error) {
-        console.error("읽음처리 오류:", updateRes.error);
-      } else {
-        console.log("읽음처리 성공:", updateRes.data);
-      }
-
-      // (B) 전체 채팅 목록
+      // (B-2) 전체 대화 조회
       const { data, error } = await supabase
         .from("messages")
         .select(`
@@ -157,47 +110,44 @@ export default function ChatPage() {
         )
         .order("created_at", { ascending: true });
 
-      if (error) {
-        console.error("채팅목록 오류:", error);
-      } else {
-        console.log("채팅목록 로드:", data);
+      if (!error && data) {
         setChatMessages(data);
       }
 
-      // (C) 상대 닉네임 불러오기
-      const { data: profData, error: profErr } = await supabase
+      // (B-3) 상대방 닉네임
+      const { data: profData } = await supabase
         .from("profiles")
         .select("nickname")
         .eq("user_id", otherId)
         .single();
 
-      if (!profErr && profData?.nickname) {
+      if (profData?.nickname) {
         setOtherNickname(profData.nickname);
       } else {
         setOtherNickname("상대방");
       }
     } catch (err) {
-      console.error("채팅 로딩 catch오류:", err);
+      console.error("채팅 로드 오류:", err);
     }
   }
 
-  /* ========== 3) 초기 로드 + 리얼타임 ========== */
+  /* ========== (C) 초기 로드 + 리얼타임 ========== */
   useEffect(() => {
     if (!session?.user?.id || !senderId) return;
     const myId = session.user.id;
-    console.log("채팅 useEffect -> myId:", myId, "senderId:", senderId);
 
-    // 처음 로드
+    // 1) 채팅 초기 로드
     fetchChat(myId, senderId);
 
-    // 리얼타임
+    // 2) 실시간
     const channel = supabase.channel("chat-realtime");
     channel.on(
       "postgres_changes",
       { event: "*", schema: "public", table: "messages" },
       async (payload) => {
         const { new: newRow, eventType } = payload;
-        // 나와 상대의 메시지만 필터
+
+        // 관련 없는 메시지 필터
         const relevant =
           (newRow.sender_id === myId && newRow.receiver_id === senderId) ||
           (newRow.sender_id === senderId && newRow.receiver_id === myId);
@@ -205,17 +155,16 @@ export default function ChatPage() {
         if (!relevant) return;
 
         if (eventType === "INSERT") {
+          // 상대 → 나 메시지면 즉시 read_at 처리
           let finalRow = newRow;
-          // 상대 → 나 메시지면 즉시 read_at 업데이트
           if (newRow.sender_id === senderId && newRow.receiver_id === myId) {
-            const { data: updated, error } = await supabase
+            const { data: updated } = await supabase
               .from("messages")
               .update({ read_at: new Date().toISOString() })
               .match({ id: newRow.id })
               .select("*");
-            if (!error && updated?.length > 0) {
+            if (updated && updated.length > 0) {
               finalRow = updated[0];
-              console.log("상대→나 메시지 읽음처리:", finalRow);
             }
           }
           setChatMessages((prev) => {
@@ -224,7 +173,7 @@ export default function ChatPage() {
             return next;
           });
         } else if (eventType === "UPDATE") {
-          // 기존 메시지 상태 갱신
+          // 메시지 업데이트 반영
           setChatMessages((prev) => {
             const list = [...prev];
             const idx = list.findIndex((m) => m.id === newRow.id);
@@ -241,7 +190,7 @@ export default function ChatPage() {
     };
   }, [session, senderId]);
 
-  /* ========== 4) 스크롤 맨 아래로 이동 ========== */
+  /* ========== (D) 메시지 목록 변경 시 맨 아래 스크롤 ========== */
   useEffect(() => {
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTop =
@@ -249,42 +198,84 @@ export default function ChatPage() {
     }
   }, [chatMessages]);
 
-  /* ========== 5) 메시지 전송 ========== */
+  /* ========== (E) 메시지 전송 ========== */
   async function handleSendMessage(e) {
     e.preventDefault();
     if (!newContent.trim()) return;
 
     const myId = session?.user?.id;
     if (!myId) {
-      alert("로그인이 필요합니다!");
+      alert("로그인이 필요합니다.");
       return;
     }
 
     try {
-      const { data, error } = await supabase.from("messages").insert({
+      const { error } = await supabase.from("messages").insert({
         sender_id: myId,
         receiver_id: senderId,
         content: newContent.trim(),
       });
+
       if (!error) {
-        console.log("메시지 전송 성공:", data);
         setNewContent("");
-      } else {
-        console.error("메시지 전송 오류:", error);
       }
     } catch (err) {
-      console.error("메시지 전송 catch오류:", err);
+      console.error("메시지 전송 오류:", err);
     }
   }
 
-  /* 뒤로가기 */
+  /* ========== (F) 뒤로가기 ========== */
   function handleGoBack() {
     router.push("/messages");
   }
 
-  /* 텍스트에어리어 onFocus */
+  /* ==============================
+     (G) iOS 키보드 수동 스크롤 조정
+     visualViewport.onresize
+============================== */
+  useEffect(() => {
+    if (!isIos) return;
+
+    function handleViewportResize() {
+      // 현재 visualViewport 높이
+      const currentHeight = window.visualViewport.height;
+
+      // 이전보다 작아지면 → 키보드가 올라왔다고 추정
+      if (currentHeight < prevVisualViewport.current) {
+        // 전체 문서 높이
+        const scrollHeight = document.scrollingElement.scrollHeight;
+        // 계산 → 현재 키보드에 가려지지 않을 top
+        const scrollTop = scrollHeight - currentHeight;
+
+        console.log(
+          "[iOS] keyboard up => scrollTop:",
+          scrollTop,
+          "| scrollHeight:",
+          scrollHeight,
+          "| currentHeight:",
+          currentHeight
+        );
+
+        // 스크롤 이동
+        window.scrollTo({ top: scrollTop, behavior: "smooth" });
+      }
+
+      // 저장
+      prevVisualViewport.current = currentHeight;
+    }
+
+    // iOS에서만 등록
+    window.visualViewport.onresize = handleViewportResize;
+
+    return () => {
+      if (window.visualViewport) {
+        window.visualViewport.onresize = null;
+      }
+    };
+  }, [isIos]);
+
+  /* (H) onFocus 시점에 스크롤 내려주기 (추가 보조) */
   function handleFocusTextArea() {
-    // 약간의 지연 후 스크롤
     setTimeout(() => {
       if (scrollContainerRef.current) {
         scrollContainerRef.current.scrollTop =
@@ -293,28 +284,12 @@ export default function ChatPage() {
     }, 100);
   }
 
-  // ================================
-  // (D) dvh + visualViewport 사용
-  // ================================
-  const dynamicHeight = useVisualViewportDvh();
-
+  /* =======================
+     최종 Return (UI)
+======================= */
   return (
-    <div
-      className="
-        flex
-        flex-col
-        bg-gray-50
-        mt-[30px]
-        md:mt-[28px]
-      "
-      style={{
-        // dvh + visualViewport로 동적 계산된 높이
-        height: dynamicHeight,
-        // iOS 홈인디케이터 영역 (옵션)
-        paddingBottom: "env(safe-area-inset-bottom)",
-      }}
-    >
-      {/* (B) PC 헤더 */}
+    <div className="flex flex-col bg-gray-50 mt-[30px] md:mt-[28px] h-screen">
+      {/* PC용 헤더 */}
       <div className="hidden md:flex flex-none border-b border-gray-200 p-4 items-center justify-between bg-white">
         <button
           onClick={handleGoBack}
@@ -322,11 +297,13 @@ export default function ChatPage() {
         >
           &larr;
         </button>
-        <div className="text-lg font-semibold text-gray-800">{otherNickname}</div>
+        <div className="text-lg font-semibold text-gray-800">
+          {otherNickname}
+        </div>
         <div />
       </div>
 
-      {/* (C) 채팅 목록 */}
+      {/* 채팅 목록 */}
       <div ref={scrollContainerRef} className="flex-1 p-3 overflow-y-auto">
         {chatMessages.length === 0 ? (
           <div className="text-sm text-gray-500">대화가 없습니다.</div>
@@ -350,7 +327,6 @@ export default function ChatPage() {
                   <div className="whitespace-pre-wrap break-words">
                     {msg.content}
                   </div>
-                  {/* 시간 + 읽음 여부 */}
                   <div className="mt-1 text-xs opacity-80 text-right">
                     {formatChatTime(msg.created_at)}
                     {isMine ? (
@@ -370,7 +346,7 @@ export default function ChatPage() {
         )}
       </div>
 
-      {/* (D) 입력 영역 */}
+      {/* 입력 영역 */}
       <form
         onSubmit={handleSendMessage}
         className="flex-none border-t border-gray-200 p-3 bg-white"
@@ -378,18 +354,7 @@ export default function ChatPage() {
         <div className="flex items-center gap-2">
           <textarea
             rows={1}
-            className="
-              flex-1
-              border
-              border-gray-300
-              rounded-md
-              p-2
-              text-base
-              focus:outline-none
-              focus:ring-1
-              focus:ring-orange-400
-              resize-none
-            "
+            className="flex-1 border border-gray-300 rounded-md p-2 text-base focus:outline-none focus:ring-1 focus:ring-orange-400 resize-none"
             placeholder="메시지를 입력하세요"
             value={newContent}
             onFocus={handleFocusTextArea}
