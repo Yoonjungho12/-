@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabaseF";
 
 /* ===============================
    (1) iOS 기기 판별 함수
+   (단순 userAgent 검사 예시)
 =============================== */
 function isIosDevice() {
   if (typeof window === "undefined") return false;
@@ -34,7 +35,6 @@ function formatChatTime(dateString) {
     yyyy === now.getFullYear() &&
     mm === now.getMonth() + 1 &&
     dd === now.getDate();
-
   if (isToday) {
     return `${strH}:${strM}`;
   }
@@ -70,8 +70,16 @@ export default function ChatPage() {
   // 이전 visualViewport.height
   const prevVisualViewport = useRef(0);
 
+  // “현재 offset”을 상태로 관리
+  // => 평소엔 PC=116 / 모바일=60
+  // => iOS 키보드 올라오면 0, 내려오면 원복
+  const [offset, setOffset] = useState(60); // 모바일 기본
+
+  // dvHeight: dvh - offset
+  
+
   /* =========================
-   * (A) 세션 로드
+   * (A) 세션 로딩
    ========================= */
   useEffect(() => {
     supabase.auth.getSession().then(({ data, error }) => {
@@ -177,7 +185,9 @@ export default function ChatPage() {
           setChatMessages((prev) => {
             const list = [...prev];
             const idx = list.findIndex((m) => m.id === newRow.id);
-            if (idx !== -1) list[idx] = newRow;
+            if (idx !== -1) {
+              list[idx] = newRow;
+            }
             return list;
           });
         }
@@ -236,29 +246,44 @@ export default function ChatPage() {
   }
 
   /* =========================
-   * (G) dvh + offset
+   * (G) dvh + offset 상태
    ========================= */
-  const [dvHeight, setDvHeight] = useState(`calc(100dvh - 60px)`); // 모바일 기본 offset=60
+  // offset은 “PC=116, 모바일=60”을 기본
+  // 키보드 올라오면 => 0
+  // 키보드 내려오면 => 다시 60 or 116
+  const [currentOffset, setCurrentOffset] = useState(60);
+  // dvHeight: dvh - currentOffset
+  const [dvHeight, setDvHeight] = useState(`calc(100dvh - 60px)`);
+
+  function recalcDvh(offsetVal) {
+    // 브라우저가 dvh를 지원 못 하면 fallback
+    // 여기선 단순히 100vh로 대체 가능 or @supports
+    setDvHeight(`calc(100dvh - ${offsetVal}px)`);
+  }
 
   useEffect(() => {
-    function updateDvh() {
+    function updateDvhByScreen() {
       const isMdUp = window.innerWidth >= 768;
-      const offset = isMdUp ? 116 : 60;
-      setDvHeight(`calc(100dvh - ${offset}px)`);
+      const defaultOffset = isMdUp ? 116 : 60;
+      // 키보드가 없을 때 => 기본 offset 적용
+      setCurrentOffset(defaultOffset);
+      recalcDvh(defaultOffset);
     }
-    updateDvh();
+
+    // 처음 1회
+    updateDvhByScreen();
 
     // PC에서 창 크기 바뀌면 다시 계산
-    window.addEventListener("resize", updateDvh);
+    window.addEventListener("resize", updateDvhByScreen);
     return () => {
-      window.removeEventListener("resize", updateDvh);
+      window.removeEventListener("resize", updateDvhByScreen);
     };
   }, []);
 
   /* =========================
-   * (H) iOS 키보드 수동 스크롤
-   * 키보드 올라옴: prev > current
-   * 키보드 내려감: prev < current
+   * (H) iOS 키보드 수동 제어
+   * keyboard up => offset=0
+   * keyboard down => offset=60/116
   ========================= */
   useEffect(() => {
     if (!isIos) return;
@@ -266,39 +291,44 @@ export default function ChatPage() {
     function handleViewportResize() {
       const currentHeight = window.visualViewport.height;
       const isMdUp = window.innerWidth >= 768;
-      const offset = isMdUp ? 116 : 60;
+      const normalOffset = isMdUp ? 116 : 60;
 
       // 키보드 올라옴
       if (currentHeight < prevVisualViewport.current) {
-        const scrollHeight = document.scrollingElement.scrollHeight;
-        const scrollTop = scrollHeight - (currentHeight - offset);
+        console.log("keyboard up => offset=0");
+        setCurrentOffset(0); // offset=0
+        recalcDvh(0);
 
-        console.log("[iOS] keyboard up => scrollTop:", scrollTop);
+        // 문서 스크롤 올리기
+        const scrollHeight = document.scrollingElement.scrollHeight;
+        const scrollTop = scrollHeight - currentHeight; // offset=0
+        console.log("[iOS] Keyboard up => scrollTo:", scrollTop);
         window.scrollTo({ top: scrollTop, behavior: "smooth" });
 
       // 키보드 내려감
       } else if (currentHeight > prevVisualViewport.current) {
-        // 예) 다시 '목록 맨 아래'로 내려가기
-        // 프로젝트 상황에 따라 다를 수 있음
-        const scrollHeight = document.scrollingElement.scrollHeight;
-        console.log("[iOS] keyboard down => scroll to bottom?", scrollHeight);
+        console.log("keyboard down => offset=", normalOffset);
+        setCurrentOffset(normalOffset);
+        recalcDvh(normalOffset);
 
-        // 여기서는 "채팅 하단"으로 가정
+        // 예: 채팅 목록 맨 아래로
+        const scrollHeight = document.scrollingElement.scrollHeight;
         window.scrollTo({ top: scrollHeight, behavior: "smooth" });
       }
 
       prevVisualViewport.current = currentHeight;
     }
 
+    // iOS
     window.visualViewport.onresize = handleViewportResize;
     return () => {
       if (window.visualViewport) {
         window.visualViewport.onresize = null;
       }
     };
-  }, [isIos]);
+  }, []);
 
-  /* (I) onFocus → 약간 지연 후 스크롤 */
+  // (I) onFocus -> 지연 후 스크롤
   function handleFocusTextArea() {
     setTimeout(() => {
       if (scrollContainerRef.current) {
@@ -315,11 +345,11 @@ export default function ChatPage() {
     <div
       className="flex flex-col bg-gray-50 mt-[30px] md:mt-[28px]"
       style={{
-        height: dvHeight, // dvh + offset
+        height: dvHeight, // dvh + dynamic offset
         paddingBottom: "env(safe-area-inset-bottom)", // iOS 홈인디케이터
       }}
     >
-      {/* PC 헤더 */}
+      {/* 헤더 (PC 전용) */}
       <div className="hidden md:flex flex-none border-b border-gray-200 p-4 items-center justify-between bg-white">
         <button onClick={handleGoBack} className="text-gray-600 hover:text-orange-500 mr-2">
           &larr;
