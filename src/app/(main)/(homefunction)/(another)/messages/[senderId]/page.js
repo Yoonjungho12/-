@@ -329,7 +329,7 @@ export default function ChatPage() {
       </div>
 
       {/* 채팅 목록 */}
-      <div ref={scrollContainerRef} className="flex-1 p-3 overflow-y-auto pb-[67px]">
+      <div ref={scrollContainerRef} className="flex-1 p-3 overflow-y-auto md:pb-[66px]">
         {chatMessages.length === 0 ? (
           <div className="text-sm text-gray-500">대화가 없습니다.</div>
         ) : (
