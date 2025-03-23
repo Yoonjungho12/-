@@ -6,8 +6,8 @@ import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseF";
 
 /* ===============================
-   (1) 간단히 iOS 기기 판별 함수
-   userAgent 검사. (단순 예시)
+   (1) iOS 기기 판별 함수
+   (단순 userAgent 검사 예시)
 =============================== */
 function isIosDevice() {
   if (typeof window === "undefined") return false;
@@ -35,6 +35,7 @@ function formatChatTime(dateString) {
     yyyy === now.getFullYear() &&
     mm === now.getMonth() + 1 &&
     dd === now.getDate();
+
   if (isToday) {
     return `${strH}:${strM}`;
   }
@@ -52,26 +53,25 @@ export default function ChatPage() {
   const router = useRouter();
   const { senderId } = useParams();
 
-  // 3-1) Supabase 세션
+  // 세션 정보
   const [session, setSession] = useState(null);
 
-  // 3-2) 상대방 닉네임
+  // 상대방 닉네임
   const [otherNickname, setOtherNickname] = useState("상대방");
 
-  // 3-3) 채팅 메시지 목록, 입력값
+  // 채팅 메시지, 입력값
   const [chatMessages, setChatMessages] = useState([]);
   const [newContent, setNewContent] = useState("");
 
-  // 3-4) 채팅 목록 스크롤 컨테이너
+  // 채팅 스크롤 컨테이너
   const scrollContainerRef = useRef(null);
 
-  // 3-5) iOS 판별
+  // iOS 여부
   const isIos = isIosDevice();
-
-  // 3-6) 이전 visualViewport.height를 저장해둘 ref
+  // 이전 visualViewport.height
   const prevVisualViewport = useRef(0);
 
-  /* ========== (A) 세션 로딩 ========== */
+  /* ========== (A) 세션 로드 ========== */
   useEffect(() => {
     supabase.auth.getSession().then(({ data, error }) => {
       if (error) {
@@ -85,7 +85,7 @@ export default function ChatPage() {
   /* ========== (B) 채팅 로드 함수 ========== */
   async function fetchChat(myId, otherId) {
     try {
-      // (B-1) 상대→나 메시지 읽음처리
+      // (B-1) 상대→나 메시지 → read_at 처리
       await supabase
         .from("messages")
         .update({ read_at: new Date().toISOString() })
@@ -114,7 +114,7 @@ export default function ChatPage() {
         setChatMessages(data);
       }
 
-      // (B-3) 상대방 닉네임
+      // (B-3) 상대 닉네임 불러오기
       const { data: profData } = await supabase
         .from("profiles")
         .select("nickname")
@@ -131,23 +131,22 @@ export default function ChatPage() {
     }
   }
 
-  /* ========== (C) 초기 로드 + 리얼타임 ========== */
+  /* ========== (C) 초기 로드 + 실시간 ========== */
   useEffect(() => {
     if (!session?.user?.id || !senderId) return;
     const myId = session.user.id;
 
-    // 1) 채팅 초기 로드
+    // 채팅 초기 로드
     fetchChat(myId, senderId);
 
-    // 2) 실시간
+    // Realtime
     const channel = supabase.channel("chat-realtime");
     channel.on(
       "postgres_changes",
       { event: "*", schema: "public", table: "messages" },
       async (payload) => {
         const { new: newRow, eventType } = payload;
-
-        // 관련 없는 메시지 필터
+        // 나와 상대에 해당하는 메시지만
         const relevant =
           (newRow.sender_id === myId && newRow.receiver_id === senderId) ||
           (newRow.sender_id === senderId && newRow.receiver_id === myId);
@@ -155,8 +154,8 @@ export default function ChatPage() {
         if (!relevant) return;
 
         if (eventType === "INSERT") {
-          // 상대 → 나 메시지면 즉시 read_at 처리
           let finalRow = newRow;
+          // 상대→나 → read_at 처리
           if (newRow.sender_id === senderId && newRow.receiver_id === myId) {
             const { data: updated } = await supabase
               .from("messages")
@@ -173,7 +172,7 @@ export default function ChatPage() {
             return next;
           });
         } else if (eventType === "UPDATE") {
-          // 메시지 업데이트 반영
+          // 업데이트 반영
           setChatMessages((prev) => {
             const list = [...prev];
             const idx = list.findIndex((m) => m.id === newRow.id);
@@ -230,22 +229,26 @@ export default function ChatPage() {
   }
 
   /* ==============================
-     (G) iOS 키보드 수동 스크롤 조정
-     visualViewport.onresize
+     (G) iOS 키보드 수동 스크롤 + offset
+     브라우저 폭 >=768 (PC) => offset=116
+     브라우저 폭 <768 (모바일) => offset=60
 ============================== */
   useEffect(() => {
     if (!isIos) return;
 
     function handleViewportResize() {
-      // 현재 visualViewport 높이
       const currentHeight = window.visualViewport.height;
+      const isMdUp = window.innerWidth >= 768;
+      const offset = isMdUp ? 116 : 60;
 
-      // 이전보다 작아지면 → 키보드가 올라왔다고 추정
+      // 이전보다 줄었다면 => 키보드 올라옴
       if (currentHeight < prevVisualViewport.current) {
         // 전체 문서 높이
         const scrollHeight = document.scrollingElement.scrollHeight;
-        // 계산 → 현재 키보드에 가려지지 않을 top
-        const scrollTop = scrollHeight - currentHeight;
+
+        // offset 고려해서, 키보드 영역 + 툴바나 헤더 높이만큼 띄우기
+        // 정확한 계산은 상황에 따라 다를 수 있습니다.
+        const scrollTop = scrollHeight - (currentHeight - offset);
 
         console.log(
           "[iOS] keyboard up => scrollTop:",
@@ -253,14 +256,15 @@ export default function ChatPage() {
           "| scrollHeight:",
           scrollHeight,
           "| currentHeight:",
-          currentHeight
+          currentHeight,
+          "| offset:",
+          offset
         );
 
-        // 스크롤 이동
+        // 문서 스크롤 이동
         window.scrollTo({ top: scrollTop, behavior: "smooth" });
       }
 
-      // 저장
       prevVisualViewport.current = currentHeight;
     }
 
@@ -297,9 +301,7 @@ export default function ChatPage() {
         >
           &larr;
         </button>
-        <div className="text-lg font-semibold text-gray-800">
-          {otherNickname}
-        </div>
+        <div className="text-lg font-semibold text-gray-800">{otherNickname}</div>
         <div />
       </div>
 
