@@ -89,10 +89,10 @@ export default function SignupPage() {
       email: userId,
       password: password,
       options: {
-    data: {
-      display_name: name,
-    },
-  },
+        data: {
+          display_name: name,
+        },
+      },
     });
 
     // ─────────── 에러 메시지 한글화 ───────────
@@ -126,8 +126,12 @@ export default function SignupPage() {
       if (insertError) {
         throw new Error(insertError.message);
       }
-      alert("가입이 완료되었습니다!");
-      router.push("/login");
+
+      // 가입 성공 시, 이메일만 로컬스토리지에 저장하기
+      localStorage.setItem("pendingEmail", userId);
+
+      // 그리고 이메일 인증 안내 페이지로 이동
+      router.push("/email-confirmation");
     } catch (err) {
       alert("프로필 저장 중 오류: " + err.message);
     }

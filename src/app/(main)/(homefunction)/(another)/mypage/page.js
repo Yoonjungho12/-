@@ -5,27 +5,23 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseF";
 
-// 전체 컴포넌트
 export default function MyMobileUI() {
   const router = useRouter();
 
-  // (A) 세션 & 닉네임 상태
   const [session, setSession] = useState(null);
   const [nickname, setNickname] = useState("...");
 
-  // 닉네임 수정 모드
   const [isEditingNickname, setIsEditingNickname] = useState(false);
   const [editNicknameInput, setEditNicknameInput] = useState("");
 
-  // "가고싶다" 목록
   const [wishList, setWishList] = useState([]);
 
-  // ─────────────────────────────────────────
-  // (1) 세션 & 프로필 로드
-  // ─────────────────────────────────────────
   useEffect(() => {
     async function fetchUser() {
-      const { data: { session }, error } = await supabase.auth.getSession();
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.getSession();
       if (error) {
         console.error("Session Error:", error);
       }
@@ -54,9 +50,6 @@ export default function MyMobileUI() {
 
   const isLoggedIn = !!session?.user;
 
-  // ─────────────────────────────────────────
-  // (2) "가고싶다" 목록
-  // ─────────────────────────────────────────
   useEffect(() => {
     if (!isLoggedIn) {
       setWishList([]);
@@ -89,9 +82,6 @@ export default function MyMobileUI() {
     }
   }, [isLoggedIn, session]);
 
-  // ─────────────────────────────────────────
-  // (3) 로그아웃
-  // ─────────────────────────────────────────
   async function handleLogout() {
     const { error } = await supabase.auth.signOut();
     if (error) {
@@ -101,23 +91,17 @@ export default function MyMobileUI() {
     setSession(null);
   }
 
-  // 로그인 / 회원가입
   function handleLogin() {
     router.push("/login");
   }
+
   function handleSignup() {
     router.push("/signup");
   }
 
-  // ─────────────────────────────────────────
-  // (4) "가고싶다" 항목 삭제
-  // ─────────────────────────────────────────
   async function handleRemoveWish(id) {
     try {
-      const { error } = await supabase
-        .from("wantToGo")
-        .delete()
-        .eq("id", id);
+      const { error } = await supabase.from("wantToGo").delete().eq("id", id);
       if (error) {
         console.error("Wish Delete Error:", error);
         return;
@@ -128,13 +112,11 @@ export default function MyMobileUI() {
     }
   }
 
-  // ─────────────────────────────────────────
-  // (5) 닉네임 수정
-  // ─────────────────────────────────────────
+  // ▼ 계정설정 버튼을 누르면 해당 페이지로 이동하도록 수정
   function handleEditNickname() {
-    setEditNicknameInput(nickname);
-    setIsEditingNickname(true);
+    router.push("/mypage/account-setting");
   }
+
   async function handleUpdateNickname() {
     if (!session?.user?.id) {
       alert("로그인이 필요합니다.");
@@ -163,21 +145,16 @@ export default function MyMobileUI() {
       alert("오류가 발생했습니다.");
     }
   }
+
   function handleCancelEdit() {
     setIsEditingNickname(false);
     setEditNicknameInput("");
   }
 
-  // ─────────────────────────────────────────
-  // (6) "가고싶다" 목록 클릭
-  // ─────────────────────────────────────────
   function handleWishClick(partnershipsubmitId) {
     router.push(`/board/details/${partnershipsubmitId}`);
   }
 
-  // ─────────────────────────────────────────
-  // UI
-  // ─────────────────────────────────────────
   return (
     <div className="max-w-[600px] mx-auto p-6 bg-white box-border">
       {/* 헤더 */}
@@ -187,42 +164,38 @@ export default function MyMobileUI() {
 
       {/* 프로필 영역 */}
       <div className="flex items-center mb-6">
-        {/* 아바타 (임시) */}
-        <div className="w-[60px] h-[60px] bg-gray-300 rounded-full mr-4" />
+        {/* 아바타: 원형, 오른쪽 마진 제거 */}
+        <div className="w-[60px] h-[60px] bg-gray-300 rounded-full" />
 
-        <div>
+        {/* 여유 공간 (만약 약간의 간격이 필요하면 ml-4 등으로 적절히 조정) */}
+        <div className="ml-4 flex-1">
           {isLoggedIn ? (
-            <>
-              <div className="text-lg font-bold mb-1">
-                {nickname}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3">
+              <div className="flex-1">
+                <div className="text-lg font-bold mb-1">{nickname}</div>
+                <div className="text-sm text-gray-600">
+                  {session.user?.email || ""}
+                </div>
               </div>
-              <div className="text-sm text-gray-600">
-                {session.user?.email || ""}
+              <div className="flex items-center space-x-2 mt-2 sm:mt-0">
+                <button
+                  onClick={handleEditNickname}
+                  className="bg-gray-200 text-sm px-3 py-1 rounded"
+                >
+                  계정설정
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="bg-gray-200 text-sm px-3 py-1 rounded"
+                >
+                  로그아웃
+                </button>
               </div>
-            </>
+            </div>
           ) : (
             <div className="text-base font-bold text-gray-600">
               로그인을 해주세요
             </div>
-          )}
-        </div>
-
-        {/* 오른쪽 버튼 */}
-        <div className="ml-auto">
-          {isLoggedIn ? (
-            <button
-              onClick={handleEditNickname}
-              className="bg-gray-200 text-sm px-3 py-1 rounded"
-            >
-              계정설정
-            </button>
-          ) : (
-            <button
-              onClick={handleLogin}
-              className="bg-gray-200 text-sm px-3 py-1 rounded"
-            >
-              로그인
-            </button>
           )}
         </div>
       </div>
@@ -255,10 +228,7 @@ export default function MyMobileUI() {
 
       {/* (B) 메뉴 목록 (수직) */}
       <div className="flex flex-col space-y-1">
-        <MenuItem
-          label="1:1 채팅"
-          onClick={() => router.push("/messages")}
-        />
+        <MenuItem label="1:1 채팅" onClick={() => router.push("/messages")} />
         <MenuItem
           label="내 댓글"
           onClick={() => router.push("/mypage/myComments")}
@@ -267,19 +237,14 @@ export default function MyMobileUI() {
           label="내 커뮤니티 게시글"
           onClick={() => router.push("/mypage/myCommunityPosts")}
         />
-        <MenuItem
-          label="제휴신청"
-          onClick={() => router.push("/partnership")}
-        />
+        <MenuItem label="제휴신청" onClick={() => router.push("/partnership")} />
       </div>
 
       <hr className="border-t border-gray-300 my-6" />
 
       {/* (C) 가고싶다 목록 */}
       <div>
-        <div className="font-bold text-lg mb-2 text-[#f9665e]">
-          가고싶다
-        </div>
+        <div className="font-bold text-lg mb-2 text-[#f9665e]">가고싶다</div>
         {wishList.length === 0 ? (
           <div className="text-sm text-gray-600">
             {isLoggedIn
@@ -289,10 +254,7 @@ export default function MyMobileUI() {
         ) : (
           <div className="space-y-2">
             {wishList.map((wish) => (
-              <div
-                key={wish.id}
-                className="flex justify-between items-center"
-              >
+              <div key={wish.id} className="flex justify-between items-center">
                 <button
                   onClick={() => handleWishClick(wish.partnershipsubmit_id)}
                   className="text-sm text-left underline"
@@ -334,12 +296,12 @@ function MenuItem({ label, onClick }) {
     <button
       onClick={onClick}
       className="
-        w-full 
-        text-left 
-        py-3 
-        border-b 
-        border-gray-200 
-        text-base 
+        w-full
+        text-left
+        py-3
+        border-b
+        border-gray-200
+        text-base
         hover:bg-gray-100
       "
     >
