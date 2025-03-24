@@ -1,90 +1,191 @@
 "use client";
 import React, { useState } from "react";
-import { createClient } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
-import { supabase } from "../lib/supabaseF";
+import { supabase } from "../lib/supabaseF"; // 이미 설정된 Supabase 클라이언트
 
 export default function SignupPage() {
-  // 폼 상태
-  const [userId, setUserId] = useState(""); // 아이디 (이메일 형태)
+  // ─────────────────────────────────────────
+  // (A) 상태값들
+  // ─────────────────────────────────────────
+  const [userId, setUserId] = useState(""); // 이메일 (아이디)
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
-
   const [name, setName] = useState("");
   const [nickname, setNickname] = useState("");
   const [phone, setPhone] = useState("");
 
-  // 예) 약관동의 체크
+  // 닉네임 중복확인 결과
+  const [nicknameAvailable, setNicknameAvailable] = useState(null); // true / false / null(미확인)
+  const [nicknameCheckError, setNicknameCheckError] = useState("");
+
+  // 약관동의 (예시)
   const [checkedTerm1, setCheckedTerm1] = useState(true);
   const [checkedTerm2, setCheckedTerm2] = useState(true);
 
   const router = useRouter();
 
-  // 가입하기 버튼 클릭
-  const handleSubmit = async (e) => {
+  // ─────────────────────────────────────────
+  // (B) 닉네임 중복확인 - DB 조회
+  // ─────────────────────────────────────────
+  async function handleCheckNickname() {
+    if (!nickname.trim()) {
+      setNicknameAvailable(false);
+      setNicknameCheckError("닉네임을 입력해주세요.");
+      return;
+    }
+
+    try {
+      // 1) profiles 테이블에서 동일한 nickname 존재 여부 조회
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("user_id")
+        .eq("nickname", nickname.trim())
+        .maybeSingle();
+
+      if (error) {
+        throw new Error(error.message || "서버오류");
+      }
+
+      if (data) {
+        // 이미 동일 닉네임 존재
+        setNicknameAvailable(false);
+        setNicknameCheckError("이미 사용 중인 닉네임입니다.");
+      } else {
+        // 사용 가능
+        setNicknameAvailable(true);
+        setNicknameCheckError("사용 가능한 닉네임입니다.");
+      }
+    } catch (err) {
+      console.error("닉네임 중복확인 에러:", err);
+      setNicknameAvailable(false);
+      setNicknameCheckError(err.message || "중복확인 중 오류");
+    }
+  }
+
+  // ─────────────────────────────────────────
+  // (C) 가입하기
+  // ─────────────────────────────────────────
+  async function handleSubmit(e) {
     e.preventDefault();
+
+    // 1) 비번 동일 여부
     if (password !== passwordConfirm) {
       alert("비밀번호가 일치하지 않습니다.");
       return;
     }
-
-    // 1) Supabase Auth 로 아이디/비밀번호 가입
-    const { data, error } = await supabase.auth.signUp({
-      email: userId,
-      password: password,
-    });
-    if (error) {
-      alert("Auth 가입 실패: " + error.message);
+    // 2) 닉네임 중복확인 (미확인, 또는 중복이면 막기)
+    if (nicknameAvailable !== true) {
+      alert("닉네임 중복확인을 해주세요!");
+      return;
+    }
+    // 3) 약관동의 체크 여부
+    if (!checkedTerm1 || !checkedTerm2) {
+      alert("약관에 동의해주셔야 가입 가능합니다!");
       return;
     }
 
-    // userId(이메일), password는 이미 Supabase Auth에 등록됨
-    // 2) 나머지 정보(이름, 닉네임, 휴대폰, + email)를 서버에 전송
-    //    Supabase Auth 가입결과로 data.user.id가 나옴(유니크 UUID)
-    const user_id = data.user?.id;
-    try {
-      const res = await fetch("/api/signUp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          user_id: user_id,
-          name: name,
-          nickname: nickname,
-          phone: phone,
-          email: userId, // ← 여기서 이메일을 함께 넘김 (profiles.email 칼럼에 저장)
-        }),
-      });
-      if (!res.ok) {
-        const msg = await res.text();
-        throw new Error(msg);
+    // 4) Supabase Auth 가입
+    const { data, error } = await supabase.auth.signUp({
+      email: userId,
+      password: password,
+      options: {
+    data: {
+      display_name: name,
+    },
+  },
+    });
+
+    // ─────────── 에러 메시지 한글화 ───────────
+    if (error) {
+      if (error.message === "User already registered") {
+        alert("이미 가입된 이메일 주소입니다.");
+      } else {
+        alert(error.message); // 다른 오류는 그대로 표출
       }
-      alert("가입 완료!");
+      return;
+    }
+    // ────────────────────────────────────────
+
+    // 5) profiles 테이블에 추가 정보 (user_id, name, nickname, phone, etc.)
+    const user_id = data.user?.id;
+    if (!user_id) {
+      alert("가입 오류: user_id가 없습니다.");
+      return;
+    }
+
+    try {
+      const { error: insertError } = await supabase
+        .from("profiles")
+        .insert({
+          user_id,
+          email: userId,
+          name,
+          nickname,
+          phone,
+        });
+      if (insertError) {
+        throw new Error(insertError.message);
+      }
+      alert("가입이 완료되었습니다!");
       router.push("/login");
     } catch (err) {
-      alert("프로필 저장 중 오류가 발생했습니다: " + err.message);
+      alert("프로필 저장 중 오류: " + err.message);
     }
-  };
+  }
 
+  // ─────────────────────────────────────────
+  // (D) 소셜 로그인 (예시: 구글, 카카오)
+  // ─────────────────────────────────────────
+  const [errorMessage, setErrorMessage] = useState("");
+
+  async function handleGoogleLogin() {
+    setErrorMessage("");
+    try {
+      // /api/social-login?provider=google → OAuth
+      const res = await fetch(`/api/social-login?provider=google`);
+      const { url, error } = await res.json();
+      if (error || !url) {
+        setErrorMessage(error || "구글 로그인 오류");
+        return;
+      }
+      window.location.href = url;
+    } catch (err) {
+      console.error("구글 로그인 실패:", err);
+      setErrorMessage(err.message || "구글 로그인 중 오류 발생");
+    }
+  }
+
+  async function handleKakaoLogin() {
+    setErrorMessage("");
+    try {
+      const res = await fetch(`/api/social-login?provider=kakao`);
+      const { url, error } = await res.json();
+      if (error || !url) {
+        setErrorMessage(error || "카카오 로그인 오류");
+        return;
+      }
+      window.location.href = url;
+    } catch (err) {
+      console.error("카카오 로그인 실패:", err);
+      setErrorMessage(err.message || "카카오 로그인 중 오류 발생");
+    }
+  }
+
+  // ─────────────────────────────────────────
+  // (E) UI
+  // ─────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center px-4">
-      {/* 로고 */}
+      {/* 로고/상단 */}
       <div className="mb-6 text-center">
-        <h1 className="text-2xl font-bold text-red-500">
-          VIP info
-          <span className="ml-1 text-base font-normal text-green-600">
-            VIP 건마
-          </span>
-        </h1>
+        <h1 className="text-2xl font-bold text-orange-500">여기닷</h1>
       </div>
 
-      {/* 흰색 박스 */}
+      {/* 흰색 컨테이너 */}
       <div className="w-full max-w-md rounded-md bg-white p-6 shadow">
-        {/* 제목 */}
-        <h2 className="mb-4 text-xl font-semibold text-gray-700">
-          간편 회원가입
-        </h2>
+        <h2 className="mb-4 text-xl font-semibold text-gray-700">간편 회원가입</h2>
 
-        {/* 약관동의 (예시 2개) */}
+        {/* (1) 약관동의 */}
         <div className="mb-5 border border-gray-200">
           <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
             <div className="flex items-center space-x-2">
@@ -95,15 +196,9 @@ export default function SignupPage() {
                 strokeWidth="2"
                 viewBox="0 0 24 24"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M5 13l4 4L19 7"
-                />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
-              <span className="text-sm font-medium text-gray-700">
-                전체동의
-              </span>
+              <span className="text-sm font-medium text-gray-700">전체동의</span>
             </div>
           </div>
           <div className="px-4 py-3 space-y-2">
@@ -119,11 +214,8 @@ export default function SignupPage() {
                   회원가입약관의 내용에 동의 (필수)
                 </span>
               </div>
-              <button className="text-sm text-gray-500 hover:underline">
-                보기
-              </button>
+              <button className="text-sm text-gray-500 hover:underline">보기</button>
             </div>
-
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <input
@@ -136,43 +228,38 @@ export default function SignupPage() {
                   개인정보 이용 및 활용 동의 (필수)
                 </span>
               </div>
-              <button className="text-sm text-gray-500 hover:underline">
-                보기
-              </button>
+              <button className="text-sm text-gray-500 hover:underline">보기</button>
             </div>
           </div>
         </div>
 
-        {/* 입력 폼 */}
+        {/* (2) 가입 폼 */}
         <form onSubmit={handleSubmit} className="space-y-3">
-          {/* 아이디 */}
+          {/* 이메일(아이디) */}
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-600">
-              아이디 <span className="text-red-500">*</span>
+              아이디(이메일) <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
-              className="w-full rounded border border-gray-300 px-3 py-2 text-sm
-                         focus:outline-none focus:ring-2 focus:ring-red-400"
-              placeholder="아이디(이메일)"
               value={userId}
               onChange={(e) => setUserId(e.target.value)}
+              className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+              placeholder="예: user@example.com"
             />
           </div>
 
           {/* 비밀번호 */}
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-600">
-              비밀번호 (8자리 이상, 문자, 숫자, 특수문자){" "}
-              <span className="text-red-500">*</span>
+              비밀번호 <span className="text-red-500">*</span>
             </label>
             <input
               type="password"
-              className="w-full rounded border border-gray-300 px-3 py-2 text-sm
-                         focus:outline-none focus:ring-2 focus:ring-red-400"
-              placeholder="비밀번호"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+              placeholder="비밀번호"
             />
           </div>
 
@@ -183,11 +270,10 @@ export default function SignupPage() {
             </label>
             <input
               type="password"
-              className="w-full rounded border border-gray-300 px-3 py-2 text-sm
-                         focus:outline-none focus:ring-2 focus:ring-red-400"
-              placeholder="비밀번호 재입력"
               value={passwordConfirm}
               onChange={(e) => setPasswordConfirm(e.target.value)}
+              className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+              placeholder="비밀번호 재입력"
             />
           </div>
 
@@ -198,28 +284,50 @@ export default function SignupPage() {
             </label>
             <input
               type="text"
-              className="w-full rounded border border-gray-300 px-3 py-2 text-sm
-                         focus:outline-none focus:ring-2 focus:ring-red-400"
-              placeholder="이름"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+              placeholder="실명 입력"
             />
           </div>
 
-          {/* 닉네임 */}
+          {/* 닉네임 + 중복확인 버튼 */}
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-600">
-              닉네임(공백없이 한글, 영문, 숫자만 입력가능){" "}
-              <span className="text-red-500">*</span>
+              닉네임 <span className="text-red-500">*</span>
             </label>
-            <input
-              type="text"
-              className="w-full rounded border border-gray-300 px-3 py-2 text-sm
-                         focus:outline-none focus:ring-2 focus:ring-red-400"
-              placeholder="닉네임"
-              value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
-            />
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={nickname}
+                onChange={(e) => {
+                  setNickname(e.target.value);
+                  setNicknameAvailable(null);
+                  setNicknameCheckError("");
+                }}
+                className="flex-1 border border-gray-300 px-3 py-2 rounded text-sm 
+                           focus:outline-none focus:ring-2 focus:ring-orange-400"
+                placeholder="닉네임"
+              />
+              <button
+                type="button"
+                onClick={handleCheckNickname}
+                className="px-3 py-2 rounded bg-gray-300 text-sm text-gray-700 hover:bg-gray-400"
+              >
+                중복확인
+              </button>
+            </div>
+            {/* 결과 메시지 */}
+            {nicknameAvailable === false && (
+              <p className="mt-1 text-sm text-red-500">
+                {nicknameCheckError || "이미 사용 중입니다."}
+              </p>
+            )}
+            {nicknameAvailable === true && (
+              <p className="mt-1 text-sm text-green-600">
+                {nicknameCheckError || "사용 가능합니다."}
+              </p>
+            )}
           </div>
 
           {/* 휴대폰 번호 */}
@@ -229,43 +337,19 @@ export default function SignupPage() {
             </label>
             <input
               type="text"
-              className="w-full rounded border border-gray-300 px-3 py-2 text-sm
-                         focus:outline-none focus:ring-2 focus:ring-red-400"
-              placeholder="휴대폰 번호"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
+              className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+              placeholder="예: 010-1234-5678"
             />
           </div>
 
-          {/* (사진 속) 캡차 */}
+          {/* 샘플로 캡차 or etc. */}
           <div className="flex items-center space-x-2">
-            <div className="flex items-center space-x-2">
-              <img
-                src="/images/captcha-sample.png"
-                alt="captcha"
-                className="h-10 w-20 rounded border border-gray-300"
-              />
-              {/* 스피커 아이콘 */}
-              <svg
-                className="h-6 w-6 text-gray-500"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M11.49 3.87L6.6 7H4a2 2 0 00-2 2v6a2 2 
-                     0 002 2h2.6l4.89 3.13A1 1 0 0012 19V5a1 
-                     1 0 00-.51-.87z"
-                />
-              </svg>
-            </div>
+            <img src="/images/captcha-sample.png" alt="captcha" className="h-10 w-20 border" />
             <input
               type="text"
-              className="flex-1 rounded border border-gray-300 px-3 py-2 text-sm
-                         focus:outline-none focus:ring-2 focus:ring-red-400"
+              className="flex-1 border border-gray-300 px-3 py-2 text-sm rounded focus:outline-none focus:ring-2 focus:ring-orange-400"
               placeholder="캡차 입력"
             />
           </div>
@@ -273,45 +357,42 @@ export default function SignupPage() {
           {/* 가입하기 버튼 */}
           <button
             type="submit"
-            className="mt-3 w-full rounded bg-red-500 py-2 text-sm font-medium text-white hover:bg-red-600"
+            className="mt-3 w-full rounded bg-orange-400 py-2 text-base font-medium text-white
+                       hover:bg-orange-600"
           >
             가입하기
           </button>
         </form>
 
-        {/* 하단 안내문구 */}
-        <div className="mt-4 text-sm text-gray-500">
-          <p>이름, 닉네임은 변경이 불가능합니다</p>
-          <p>변경시 고객센터로 문의 부탁 드립니다</p>
-        </div>
-
-        {/* 고객센터 */}
-        <div className="mt-4 flex items-center space-x-3 text-sm text-gray-600">
-          <svg
-            className="h-5 w-5 text-gray-500"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            viewBox="0 0 24 24"
+        {/* 소셜 로그인 */}
+        <div className="flex items-center justify-center gap-5 mt-4">
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
+            className="flex items-center justify-center gap-2 rounded bg-white border border-blue-600 
+                       text-base font-medium text-black hover:bg-blue-500 hover:text-white w-full py-3"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M2 5a2 2 0 012-2h4.5a2 2 
-                 0 011.414.586l2.914 2.914A2 2 
-                 0 0113 7.914V19a2 2 0 01-2 2H4a2 
-                 2 0 01-2-2V5z"
-            />
-          </svg>
-          <p>고객센터 0504-1361-3000 (문자문의)</p>
-        </div>
+            <img src="/icons/google.svg" alt="google" width={20} />
+            <span>구글 가입</span>
+          </button>
 
-        {/* 회원탈퇴 */}
-        <div className="mt-4 text-sm text-gray-500">
-          <button className="text-gray-500 hover:text-red-500 hover:underline">
-            회원탈퇴
+          <button
+            type="button"
+            onClick={handleKakaoLogin}
+            className="flex items-center justify-center gap-2 rounded bg-yellow-300 
+                       text-base font-medium text-gray-800 hover:bg-yellow-400 w-full py-3"
+          >
+            <img src="/icons/kakao.svg" alt="kakao" width={20} />
+            <span>카카오 가입</span>
           </button>
         </div>
+
+        {/* 에러 메시지 */}
+        {errorMessage && (
+          <div className="mt-2 text-sm text-red-500 text-center">
+            {errorMessage}
+          </div>
+        )}
       </div>
     </div>
   );

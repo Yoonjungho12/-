@@ -268,7 +268,7 @@ export default function NavBar() {
                   onClick={handleMyActivityClick}
                 >
                   <img src="/icons/history.svg" width={30} alt="로그인 아이콘" />
-                  <span className="text-sm mt-">나의활동</span>
+                  <span className="text-sm mt-">마이페이지</span>
                 </div>
 
                 {/* 1:1 쪽지 */}

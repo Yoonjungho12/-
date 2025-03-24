@@ -115,7 +115,7 @@ export default function RegionSelectorSSR({
   function renderCell(item, isSelected, linkHref) {
     // 공통 스타일
     const baseClass =
-      "region-cell flex items-center justify-center text-xs md:text-sm px-3 py-2 cursor-pointer m-[0.5px]";
+      "region-cell flex items-center justify-center text-xs md:text-sm px-3 py-2 cursor-pointer";
 
     // 선택된 경우 그라데이션
     const selectedClass =

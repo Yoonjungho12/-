@@ -1,41 +1,36 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabaseF"; // Supabase 클라이언트
+import Link from "next/link";
+import { supabase } from "@/lib/supabaseF";
 
+// 전체 컴포넌트
 export default function MyMobileUI() {
   const router = useRouter();
 
-  // 로그인 세션 & 닉네임 상태
+  // (A) 세션 & 닉네임 상태
   const [session, setSession] = useState(null);
   const [nickname, setNickname] = useState("...");
 
-  // “정보수정” 모드 여부
+  // 닉네임 수정 모드
   const [isEditingNickname, setIsEditingNickname] = useState(false);
-  // 수정용 인풋 값
   const [editNicknameInput, setEditNicknameInput] = useState("");
 
-  // "가고싶다" 목록 (DB에서 가져온 데이터)
+  // "가고싶다" 목록
   const [wishList, setWishList] = useState([]);
 
-  // --------------------------------------
-  // (1) 세션 & 프로필 불러오기
-  // --------------------------------------
+  // ─────────────────────────────────────────
+  // (1) 세션 & 프로필 로드
+  // ─────────────────────────────────────────
   useEffect(() => {
     async function fetchUser() {
-      // 1) 세션 확인
-      const {
-        data: { session },
-        error: sessionError,
-      } = await supabase.auth.getSession();
-      if (sessionError) {
-        console.error("Session Error:", sessionError);
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) {
+        console.error("Session Error:", error);
       }
       setSession(session);
 
-      // 2) 닉네임 불러오기
       if (session?.user) {
         try {
           const { data: profile, error: profileError } = await supabase
@@ -54,22 +49,19 @@ export default function MyMobileUI() {
         }
       }
     }
-
     fetchUser();
   }, []);
 
-  // 로그인 여부
   const isLoggedIn = !!session?.user;
 
-  // --------------------------------------
-  // (2) "가고싶다" 목록 불러오기
-  // --------------------------------------
+  // ─────────────────────────────────────────
+  // (2) "가고싶다" 목록
+  // ─────────────────────────────────────────
   useEffect(() => {
     if (!isLoggedIn) {
       setWishList([]);
       return;
     }
-
     async function fetchWishList() {
       try {
         const { data, error } = await supabase
@@ -92,30 +84,27 @@ export default function MyMobileUI() {
         console.error("Unknown Error:", err);
       }
     }
-
     if (session?.user?.id) {
       fetchWishList();
     }
   }, [isLoggedIn, session]);
 
-  // --------------------------------------
+  // ─────────────────────────────────────────
   // (3) 로그아웃
-  // --------------------------------------
+  // ─────────────────────────────────────────
   async function handleLogout() {
     const { error } = await supabase.auth.signOut();
     if (error) {
       console.error("Logout Error:", error);
       return;
     }
-    setSession(null); // 세션 제거
+    setSession(null);
   }
 
-  // 로그인 페이지 이동
+  // 로그인 / 회원가입
   function handleLogin() {
     router.push("/login");
   }
-
-  // 회원가입 페이지 이동
   function handleSignup() {
     router.push("/signup");
   }
@@ -125,7 +114,10 @@ export default function MyMobileUI() {
   // ─────────────────────────────────────────
   async function handleRemoveWish(id) {
     try {
-      const { error } = await supabase.from("wantToGo").delete().eq("id", id);
+      const { error } = await supabase
+        .from("wantToGo")
+        .delete()
+        .eq("id", id);
       if (error) {
         console.error("Wish Delete Error:", error);
         return;
@@ -143,7 +135,6 @@ export default function MyMobileUI() {
     setEditNicknameInput(nickname);
     setIsEditingNickname(true);
   }
-
   async function handleUpdateNickname() {
     if (!session?.user?.id) {
       alert("로그인이 필요합니다.");
@@ -154,19 +145,16 @@ export default function MyMobileUI() {
       alert("닉네임은 비어있을 수 없습니다.");
       return;
     }
-
     try {
       const { error } = await supabase
         .from("profiles")
         .update({ nickname: newNick })
         .eq("user_id", session.user.id);
-
       if (error) {
         console.error("Nickname Update Error:", error);
         alert("닉네임 변경 실패!");
         return;
       }
-
       setNickname(newNick);
       setIsEditingNickname(false);
       alert("닉네임이 변경되었습니다!");
@@ -175,93 +163,63 @@ export default function MyMobileUI() {
       alert("오류가 발생했습니다.");
     }
   }
-
   function handleCancelEdit() {
     setIsEditingNickname(false);
     setEditNicknameInput("");
   }
 
   // ─────────────────────────────────────────
-  // (6) "가고싶다" 목록 클릭 → board/details/[id]
+  // (6) "가고싶다" 목록 클릭
   // ─────────────────────────────────────────
   function handleWishClick(partnershipsubmitId) {
     router.push(`/board/details/${partnershipsubmitId}`);
   }
 
-  // ------------------------------------------
+  // ─────────────────────────────────────────
   // UI
-  // ------------------------------------------
+  // ─────────────────────────────────────────
   return (
-    <div
-      style={{
-        maxWidth: "600px",
-        margin: "0 auto",
-        padding: "1.5rem",
-        backgroundColor: "#fff",
-        boxSizing: "border-box",
-      }}
-    >
-      {/* (A) 헤더 영역 */}
-      <h2 style={{ fontSize: "1.5rem", marginBottom: "3rem", marginTop:'1rem',fontWeight: "bold" }}>
+    <div className="max-w-[600px] mx-auto p-6 bg-white box-border">
+      {/* 헤더 */}
+      <h2 className="text-2xl hidden md:block font-bold md:mt-4 md:mb-12">
         마이페이지
       </h2>
 
-      {/* 프로필 */}
-      <div style={{ display: "flex", alignItems: "center", marginBottom: "1.5rem" }}>
-        {/* 임시 아바타 */}
-        <div
-          style={{
-            width: "60px",
-            height: "60px",
-            borderRadius: "50%",
-            backgroundColor: "#eee",
-            marginRight: "1rem",
-          }}
-        />
+      {/* 프로필 영역 */}
+      <div className="flex items-center mb-6">
+        {/* 아바타 (임시) */}
+        <div className="w-[60px] h-[60px] bg-gray-300 rounded-full mr-4" />
+
         <div>
           {isLoggedIn ? (
             <>
-              <div style={{ fontSize: "1.2rem", fontWeight: "bold", marginBottom: "0.3rem" }}>
+              <div className="text-lg font-bold mb-1">
                 {nickname}
               </div>
-              <div style={{ fontSize: "0.9rem", color: "#666" }}>
+              <div className="text-sm text-gray-600">
                 {session.user?.email || ""}
               </div>
             </>
           ) : (
-            <div style={{ fontSize: "1rem", fontWeight: "bold", color: "#666" }}>
+            <div className="text-base font-bold text-gray-600">
               로그인을 해주세요
             </div>
           )}
         </div>
 
-        {/* 오른쪽 계정설정 or 로그인 */}
-        <div style={{ marginLeft: "auto" }}>
+        {/* 오른쪽 버튼 */}
+        <div className="ml-auto">
           {isLoggedIn ? (
             <button
-              style={{
-                background: "#eee",
-                border: "none",
-                padding: "4px 8px",
-                borderRadius: "4px",
-                fontSize: "0.85rem",
-                cursor: "pointer",
-              }}
               onClick={handleEditNickname}
+              className="bg-gray-200 text-sm px-3 py-1 rounded"
             >
               계정설정
             </button>
           ) : (
             <button
-              style={{
-                background: "#eee",
-                border: "none",
-                padding: "4px 8px",
-                borderRadius: "4px",
-                fontSize: "0.85rem",
-                cursor: "pointer",
-              }}
               onClick={handleLogin}
+              className="bg-gray-200 text-sm px-3 py-1 rounded"
             >
               로그인
             </button>
@@ -271,57 +229,37 @@ export default function MyMobileUI() {
 
       {/* 닉네임 수정모드 */}
       {isEditingNickname && (
-        <div style={{ marginBottom: "1.5rem" }}>
+        <div className="mb-6">
           <input
             type="text"
             value={editNicknameInput}
             onChange={(e) => setEditNicknameInput(e.target.value)}
-            style={{
-              width: "200px",
-              marginRight: "8px",
-              border: "1px solid #ccc",
-              padding: "6px",
-            }}
+            className="w-[200px] border border-gray-300 px-2 py-1 mr-2"
           />
           <button
             onClick={handleUpdateNickname}
-            style={{
-              marginRight: "5px",
-              backgroundColor: "#4CAF50",
-              border: "none",
-              color: "#fff",
-              padding: "6px 12px",
-              cursor: "pointer",
-              borderRadius: "4px",
-            }}
+            className="bg-green-500 text-white px-4 py-1 rounded mr-2"
           >
             변경
           </button>
           <button
             onClick={handleCancelEdit}
-            style={{
-              backgroundColor: "#ccc",
-              border: "none",
-              color: "#333",
-              padding: "6px 12px",
-              cursor: "pointer",
-              borderRadius: "4px",
-            }}
+            className="bg-gray-300 px-4 py-1 rounded"
           >
             취소
           </button>
         </div>
       )}
 
-      <hr style={{ borderTop: "1px solid #ddd", marginBottom: "1.5rem" }} />
+      <hr className="border-t border-gray-300 mb-6" />
 
-      {/* (B) 메뉴 목록 (수직으로) */}
-      <div>
+      {/* (B) 메뉴 목록 (수직) */}
+      <div className="flex flex-col space-y-1">
         <MenuItem
           label="1:1 채팅"
           onClick={() => router.push("/messages")}
         />
-     <MenuItem
+        <MenuItem
           label="내 댓글"
           onClick={() => router.push("/mypage/myComments")}
         />
@@ -329,90 +267,56 @@ export default function MyMobileUI() {
           label="내 커뮤니티 게시글"
           onClick={() => router.push("/mypage/myCommunityPosts")}
         />
-        
-           <MenuItem
+        <MenuItem
           label="제휴신청"
           onClick={() => router.push("/partnership")}
         />
       </div>
 
-      <hr style={{ borderTop: "1px solid #ddd", margin: "1.5rem 0" }} />
+      <hr className="border-t border-gray-300 my-6" />
 
       {/* (C) 가고싶다 목록 */}
       <div>
-        <div
-          style={{
-            fontWeight: "bold",
-            fontSize: "1.1rem",
-            marginBottom: "0.5rem",
-            color: "#f9665e",
-          }}
-        >
+        <div className="font-bold text-lg mb-2 text-[#f9665e]">
           가고싶다
         </div>
         {wishList.length === 0 ? (
-          <div style={{ fontSize: "0.9rem", color: "#666" }}>
+          <div className="text-sm text-gray-600">
             {isLoggedIn
               ? "가고싶다 목록이 비어있습니다."
               : "로그인 후 이용해주세요."}
           </div>
         ) : (
-          wishList.map((wish) => (
-            <div
-              key={wish.id}
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "0.5rem",
-              }}
-            >
-              <button
-                onClick={() => handleWishClick(wish.partnershipsubmit_id)}
-                style={{
-                  fontSize: "0.9rem",
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  padding: 0,
-                  textAlign: "left",
-                  textDecoration: "underline",
-                }}
+          <div className="space-y-2">
+            {wishList.map((wish) => (
+              <div
+                key={wish.id}
+                className="flex justify-between items-center"
               >
-                {wish.partnershipsubmit?.company_name || "알 수 없는 업체"}
-              </button>
-
-              <button
-                onClick={() => handleRemoveWish(wish.id)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  color: "#f00",
-                  fontSize: "1rem",
-                  cursor: "pointer",
-                }}
-              >
-                X
-              </button>
-            </div>
-          ))
+                <button
+                  onClick={() => handleWishClick(wish.partnershipsubmit_id)}
+                  className="text-sm text-left underline"
+                >
+                  {wish.partnershipsubmit?.company_name || "알 수 없는 업체"}
+                </button>
+                <button
+                  onClick={() => handleRemoveWish(wish.id)}
+                  className="text-red-500 text-base"
+                >
+                  X
+                </button>
+              </div>
+            ))}
+          </div>
         )}
       </div>
 
-      <hr style={{ borderTop: "1px solid #ddd", margin: "1.5rem 0" }} />
+      <hr className="border-t border-gray-300 my-6" />
 
-      {/* (D) 고객센터 영역 */}
+      {/* (D) 고객센터 */}
       <div>
-        <div
-          style={{
-            fontSize: "1.1rem",
-            fontWeight: "bold",
-            marginBottom: "0.5rem",
-          }}
-        >
-          고객센터
-        </div>
-        <div style={{ fontSize: "0.9rem", lineHeight: "1.5" }}>
+        <div className="text-lg font-bold mb-2">고객센터</div>
+        <div className="text-sm leading-5 text-gray-700">
           <div>평일 오전 9:30~18:00</div>
           <div>0504-1361-3000 (문자문의)</div>
           <div>카톡 1:1상담 입점문의</div>
@@ -422,25 +326,22 @@ export default function MyMobileUI() {
   );
 }
 
-/* ------------------------------------------
-   공통 메뉴 아이템 (수직 나열)
-   label: 버튼 제목
-   onClick: 클릭 시 동작
------------------------------------------- */
+/**
+ * 공통 메뉴 아이템 컴포넌트
+ */
 function MenuItem({ label, onClick }) {
   return (
     <button
       onClick={onClick}
-      style={{
-        width: "100%",
-        textAlign: "left",
-        padding: "1rem 0",
-        background: "none",
-        border: "none",
-        borderBottom: "1px solid #eee",
-        fontSize: "1rem",
-        cursor: "pointer",
-      }}
+      className="
+        w-full 
+        text-left 
+        py-3 
+        border-b 
+        border-gray-200 
+        text-base 
+        hover:bg-gray-100
+      "
     >
       {label}
     </button>

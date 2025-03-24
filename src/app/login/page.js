@@ -22,7 +22,12 @@ export default function LoginPage() {
         password,
       });
       if (error) {
-        setErrorMessage(error.message);
+        // 에러 메시지를 한글로 매핑
+        if (error.message === "Invalid login credentials") {
+          setErrorMessage("아이디 또는 비밀번호가 일치하지 않습니다.");
+        } else {
+          setErrorMessage(error.message);
+        }
         return;
       }
       // 로그인 성공 → 홈으로 이동
@@ -88,9 +93,8 @@ export default function LoginPage() {
       <div className="w-full max-w-md rounded-md bg-white p-6 shadow text-base">
         {/* 로고 영역 */}
         <div className="mb-6 text-center">
-          <h1 className="text-2xl font-bold text-red-500">
-            VIP info
-            <span className="ml-1 text-xl font-normal text-green-600">VIP 건마</span>
+          <h1 className="text-2xl font-bold text-orange-500">
+            여기닷
           </h1>
         </div>
 
@@ -148,25 +152,23 @@ export default function LoginPage() {
           </div>
 
           {/* 로그인 버튼 */}
-          <button
-            type="submit"
-            className="w-full rounded bg-red-500 py-3 text-base font-medium text-white hover:bg-red-600"
-          >
-            로그인
-          </button>
+          <div className="flex flex-col items-center justify-center">
+            {/* 로그인 버튼 */}
+            <button
+              type="submit"
+              className="w-full rounded bg-orange-400 py-3 text-base font-medium text-white hover:bg-orange-500 mb-3"
+            >
+              로그인
+            </button>
 
-          {/* 소셜 로그인 버튼들 */}
-          <div className="flex items-center justify-center space-x-3">
             {/* (1) 구글 로그인 버튼 */}
             <button
               type="button"
               onClick={handleGoogleLogin}
-              className="flex items-center space-x-1 rounded bg-blue-500 px-4 py-3
-                         text-base font-medium text-white hover:bg-blue-600"
+              className="items-center space-x-1 rounded bg-white px-4 py-3
+                         text-base font-medium text-black hover:bg-blue-500 hover:text-white w-full flex justify-center border-[0.5px] border-blue-600 mb-3"
             >
-              <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 512 512">
-                <path d="M256 8C119.1 8 8 119.1 8 256c0 123.4 90.98 225.9 209 245.2v-173h-63v-72h63v-55.1c0-62.2 37.3-96.3 93.8-96.3 27.4 0 56 4.9 56 4.9v61h-31.5c-31 0-40.7 19.3-40.7 39.2v46.3h69.2l-11 72h-58.2v173C413 481.9 504 379.4 504 256 504 119.1 392.9 8 256 8z" />
-              </svg>
+              <img src="/icons/google.svg" alt="" width={20} />
               <span>구글 로그인</span>
             </button>
 
@@ -175,12 +177,9 @@ export default function LoginPage() {
               type="button"
               onClick={handleKakaoLogin}
               className="flex items-center space-x-1 rounded bg-yellow-300 px-4 py-3
-                         text-base font-medium text-gray-800 hover:bg-yellow-400"
+                         text-base font-medium text-gray-800 hover:bg-yellow-400 w-full flex justify-center"
             >
-              <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M0 0h24v24H0z" fill="none" />
-                <path d="M3 3h18v18H3V3z" />
-              </svg>
+              <img src="/icons/kakao.svg" alt="" width={20} />
               <span>카카오 로그인</span>
             </button>
           </div>

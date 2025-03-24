@@ -674,7 +674,7 @@ export default function NewListingPage() {
         <div className="flex justify-center">
           <button
             type="submit"
-            className="px-4 py-2 rounded bg-blue-600 text-white font-semibold hover:bg-blue-700"
+            className="px-4 py-2 rounded bg-orange-500 text-white font-semibold hover:bg-orange-400"
           >
             {editId ? "수정하기" : "등록하기"}
           </button>

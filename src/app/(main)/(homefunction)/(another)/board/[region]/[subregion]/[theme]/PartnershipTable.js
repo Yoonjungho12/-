@@ -1,9 +1,12 @@
-
-import React from "react";
+// PartnershipTable.server.jsx
 import { supabase } from "@/lib/supabaseE";
 import Link from "next/link";
+import PartnershipRow from "./PartnershipRow.client"; 
+// ↑ 클라이언트 컴포넌트 임포트
 
-// (1) 헬퍼 함수
+///////////////////////////////////////////////
+// 1. 헬퍼 함수들
+///////////////////////////////////////////////
 function createSlug(text) {
   if (typeof text !== "string" || text.trim() === "") return "no-slug";
   const slug = text
@@ -35,7 +38,7 @@ function getLowestPrice(item) {
   return lowestPrice || 0;
 }
 
-/** (2) sortPosts : "가격 높은 순(priceDesc)" & "조회수 낮은 순(viewsAsc)" 제거 */
+/** 정렬: VIP 우선 + (가격 낮은순, 조회수 높은순) */
 function sortPosts(posts, sortType) {
   if (!posts || posts.length === 0) return;
 
@@ -59,67 +62,14 @@ function sortPosts(posts, sortType) {
       case "viewsDesc":
         return bViews - aViews;
       default:
-        // 그 외 or ''
-        return 0; // VIP 우선만
+        return 0;
     }
   });
 }
 
-// (3) 테이블 스타일
-const tableStyle = {
-  width: "100%",
-  borderCollapse: "collapse",
-};
-const thStyle = {
-  padding: "8px",
-  border: "1px solid #ccc",
-  textAlign: "center",
-  whiteSpace: "nowrap",
-};
-const tdStyle = {
-  padding: "8px",
-  border: "1px solid #eee",
-  verticalAlign: "middle",
-};
-const titleCellStyle = {
-  ...tdStyle,
-  maxWidth: "500px",
-  overflow: "hidden",
-  textOverflow: "ellipsis",
-  whiteSpace: "nowrap",
-};
-const vipTrStyle = { backgroundColor: (0.954, 0.038,75.164) };
-const baseTrStyle = { backgroundColor: "#ffffff" };
-const vipBadgeStyle = {
-  display: "inline-block",
-  color: "#fff",
-  backgroundColor: "#c23e2d",
-  padding: "4px 6px",
-  marginRight: "6px",
-  borderRadius: "4px",
-  fontWeight: "bold",
-  fontSize: "12px",
-  animation: "textBlink 2s infinite",
-};
-const normalBadgeStyle = {
-  display: "inline-block",
-  color: "#fff",
-  backgroundColor: "#b196c1",
-  padding: "4px 6px",
-  marginRight: "6px",
-  borderRadius: "4px",
-  fontWeight: "bold",
-  fontSize: "12px",
-};
-const rightCellStyle = { ...tdStyle, textAlign: "center" };
-const mobileInfoStyle = {
-  display: "none",
-  fontSize: "12px",
-  color: "#888",
-  marginTop: "4px",
-};
-
-/** (4) 메인 컴포넌트 (서버 컴포넌트) */
+///////////////////////////////////////////////
+// 2. 서버 컴포넌트
+///////////////////////////////////////////////
 export default async function PartnershipTable({
   searchParams,
   regionSlug,
@@ -129,7 +79,7 @@ export default async function PartnershipTable({
   // (A) 정렬 파라미터
   const sortParam = searchParams?.sort || "";
 
-  // (B) region/subregion 찾기
+  // (B) 지역 ID 탐색
   let regionId = null;
   let subRegionId = null;
 
@@ -159,7 +109,7 @@ export default async function PartnershipTable({
     }
   }
 
-  // (C) theme 찾기
+  // (C) 테마 ID 탐색
   let themeId = null;
   if (themeName && themeName !== "전체") {
     const { data: themeRow, error: themeErr } = await supabase
@@ -175,7 +125,7 @@ export default async function PartnershipTable({
     }
   }
 
-  // (D) partnershipsubmit 조회
+  // (D) DB 조회
   let query = supabase
     .from("partnershipsubmit")
     .select(`
@@ -215,150 +165,95 @@ export default async function PartnershipTable({
 
   if (!posts || posts.length === 0) {
     return (
-      <div style={{ marginTop: "1rem" }}>
-        <b>{regionSlug}</b> / <b>{subregionSlug}</b> / <b>{themeName}</b>
-        에 해당하는 업체가 없습니다.
+      <div className="mt-4">
+        <b>{regionSlug}</b> / <b>{subregionSlug}</b> / <b>{themeName}</b> 에 해당하는 업체가 없습니다.
       </div>
     );
   }
 
-  // (F) 정렬 링크 (가격 높은순, 조회수 낮은순 제거)
+  // (F) 정렬 링크
   const baseUrl = `/board/${regionSlug}/${subregionSlug}/${themeName}`;
 
+  // (G) 렌더링
   return (
-    <div className="w-full" style={{ marginTop: "1rem" }}>
-      <div
-        style={{
-          marginBottom: "1rem",
-          display: "flex",
-          gap: "16px",
-          fontSize: "14px",
-        }}
-      >
-        {/* 기본 */}
+    <div className="w-full mt-4">
+      {/* 정렬 옵션 링크 */}
+      <div className="mb-4 flex gap-4 text-sm">
         <Link
           href={baseUrl}
-          style={{
-            color: !sortParam ? "#000" : "#666",
-            fontWeight: !sortParam ? "bold" : "normal",
-          }}
+          className={!sortParam ? "font-bold text-black" : "text-gray-600"}
         >
           기본
         </Link>
-        <span style={{ color: "#ccc" }}>|</span>
+        <span className="text-gray-300">|</span>
 
-        {/* 가격 낮은 순 */}
         <Link
           href={`${baseUrl}?sort=priceAsc`}
-          style={{
-            color: sortParam === "priceAsc" ? "#000" : "#666",
-            fontWeight: sortParam === "priceAsc" ? "bold" : "normal",
-          }}
+          className={sortParam === "priceAsc" ? "font-bold text-black" : "text-gray-600"}
         >
           가격 낮은순
         </Link>
+        <span className="text-gray-300">|</span>
 
-        <span style={{ color: "#ccc" }}>|</span>
-
-        {/* 조회수 높은 순 */}
         <Link
           href={`${baseUrl}?sort=viewsDesc`}
-          style={{
-            color: sortParam === "viewsDesc" ? "#000" : "#666",
-            fontWeight: sortParam === "viewsDesc" ? "bold" : "normal",
-          }}
+          className={sortParam === "viewsDesc" ? "font-bold text-black" : "text-gray-600"}
         >
           조회수 높은순
         </Link>
       </div>
 
-      <table style={tableStyle} className="text-sm PartnershipTable">
+      {/* Tailwind 테이블 */}
+      <table className="table-fixed w-full text-sm border-collapse PartnershipTable">
+        <colgroup>
+          {/* 첫 칼럼: 55% */}
+          <col className="w-[55%]" />
+          {/* 나머지 3개 칼럼: 15%씩 */}
+          <col className="w-[15%]" />
+          <col className="w-[15%]" />
+          <col className="w-[15%]" />
+        </colgroup>
         <thead>
           <tr>
-            <th style={thStyle} className="desktop-only">
+            <th className="border border-gray-300 py-2 px-2 text-center whitespace-nowrap desktop-only">
               제목
             </th>
-            <th style={thStyle} className="desktop-only">
+            <th className="border border-gray-300 py-2 px-2 text-center whitespace-nowrap desktop-only">
               최저가
             </th>
-            <th style={thStyle} className="desktop-only">
+            <th className="border border-gray-300 py-2 px-2 text-center whitespace-nowrap desktop-only">
               조회수
             </th>
-            <th style={thStyle} className="desktop-only">
+            <th className="border border-gray-300 py-2 px-2 text-center whitespace-nowrap desktop-only">
               리뷰수
             </th>
           </tr>
         </thead>
         <tbody>
           {posts.map((item) => {
-            const isVIP = item.ad_type === "VIP" || item.ad_type === "VIP+";
-            const rowStyle = isVIP ? vipTrStyle : baseTrStyle;
-
+            // 한 줄씩 <PartnershipRow> (클라이언트 컴포넌트) 에 넘김
             const priceNum = getLowestPrice(item);
-            const displayPrice =
-              priceNum > 0 ? formatPrice(priceNum) : "가격 없음";
+            const displayPrice = priceNum > 0 ? formatPrice(priceNum) : "가격 없음";
 
-            const mobileInfo = `조회수 ${Number(
-              item.views || 0
-            ).toLocaleString()} / 리뷰 ${item.comment || 0} / 최저가 ${
-              displayPrice
-            }`;
-
+            const mobileInfo = `조회수 ${Number(item.views || 0).toLocaleString()} / 리뷰 ${
+              item.comment || 0
+            } / 최저가 ${displayPrice}`;
             const slug = createSlug(item.company_name);
 
             return (
-              <tr key={item.id} style={rowStyle}>
-                {/* 제목 셀 */}
-                <td style={titleCellStyle}>
-                  {isVIP ? (
-                    <span style={vipBadgeStyle} className="badge-desktop">
-                      VIP
-                    </span>
-                  ) : (
-                    <span style={normalBadgeStyle} className="badge-desktop">
-                      일반
-                    </span>
-                  )}
-                  <Link
-                    href={`/board/details/${item.id}-${slug}`}
-                    style={{
-                      display: "inline-block",
-                      color:
-                        isVIP && item.ad_type === "VIP+" ? "#0066cc" : "#333",
-                      maxWidth: "80%",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                      verticalAlign: "middle",
-                    }}
-                  >
-                    {item.post_title}
-                  </Link>
-                  <div className="mobile-info" style={mobileInfoStyle}>
-                    {mobileInfo}
-                  </div>
-                </td>
-
-                {/* 최저가 */}
-                <td style={rightCellStyle} className="desktop-only">
-                  {displayPrice}
-                </td>
-
-                {/* 조회수 */}
-                <td style={rightCellStyle} className="desktop-only">
-                  {Number(item.views || 0).toLocaleString()}
-                </td>
-
-                {/* 리뷰수 */}
-                <td style={rightCellStyle} className="desktop-only">
-                  {item.comment || 0}
-                </td>
-              </tr>
+              <PartnershipRow
+                key={item.id}
+                item={item}
+                displayPrice={displayPrice}
+                mobileInfo={mobileInfo}
+                slug={slug}
+              />
             );
           })}
         </tbody>
       </table>
 
+      {/* 애니메이션, 반응형 */}
       <style>{`
         @keyframes textBlink {
           0%, 100% { color: #fff; }
@@ -372,7 +267,7 @@ export default async function PartnershipTable({
             display: none !important;
           }
           .mobile-info {
-            display: block !important; 
+            display: block !important;
           }
         }
       `}</style>
