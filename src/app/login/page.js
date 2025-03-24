@@ -166,7 +166,7 @@ export default function LoginPage() {
               type="button"
               onClick={handleGoogleLogin}
               className="items-center space-x-1 rounded bg-white px-4 py-3
-                         text-base font-medium text-black hover:bg-blue-500 hover:text-white w-full flex justify-center border-[0.5px] border-blue-600 mb-3"
+                         text-base font-medium text-black hover:bg-blue-500 hover:text-white w-full flex justify-center border border-blue-600 mb-3"
             >
               <img src="/icons/google.svg" alt="" width={20} />
               <span>구글 로그인</span>

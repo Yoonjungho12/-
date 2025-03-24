@@ -13,7 +13,7 @@ export default function Footer() {
 
   // 2) /mypage, /all 라우팅이면 "모바일 푸터"만 숨기기
   //    => PC 푸터는 보임
-  const hideMobileFooterRoutes = ["mypage", "all"];
+  const hideMobileFooterRoutes = ["mypage", "all","messages"];
   const shouldHideMobileFooter = hideMobileFooterRoutes.includes(segments[0]);
 
   return (

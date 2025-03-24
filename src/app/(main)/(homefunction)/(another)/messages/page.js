@@ -181,7 +181,7 @@ export default function MessagesPage() {
 
       {/* 탭 메뉴 */}
       <div className="flex space-x-4 border-b border-gray-200 mb-4 text-sm">
-        {["전체", "안읽음", "즐겨찾기", "고용"].map((tab) => (
+        {["전체", "안읽음", ].map((tab) => (
           <button
             key={tab}
             onClick={() => handleTabClick(tab)}
