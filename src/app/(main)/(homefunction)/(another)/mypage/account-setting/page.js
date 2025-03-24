@@ -16,13 +16,11 @@ export default function AccountSettingPage() {
   const [isEditingNickname, setIsEditingNickname] = useState(false);
   const [editNicknameInput, setEditNicknameInput] = useState("");
 
-  // 비밀번호 재설정 메일 전송 박스 표시 여부
-  const [showPwBox, setShowPwBox] = useState(false);
+  // 탈퇴 모달 표시
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  // (1) 세션/프로필 로드
   useEffect(() => {
     async function init() {
-      // 1) 현재 세션 가져오기
       const {
         data: { session },
         error,
@@ -34,11 +32,9 @@ export default function AccountSettingPage() {
       setSession(session);
 
       if (session?.user) {
-        // provider 정보 확인 (email / google / etc.)
         const userProvider = session.user.app_metadata?.provider ?? "email";
         setProvider(userProvider);
 
-        // profiles 테이블에서 닉네임 가져오기
         try {
           const { data: profile, error: profileErr } = await supabase
             .from("profiles")
@@ -60,7 +56,7 @@ export default function AccountSettingPage() {
 
   const isLoggedIn = !!session?.user;
 
-  // (2) 로그아웃
+  // 로그아웃
   async function handleLogout() {
     const { error } = await supabase.auth.signOut();
     if (error) {
@@ -70,7 +66,7 @@ export default function AccountSettingPage() {
     router.push("/");
   }
 
-  // (3) 닉네임 수정 로직
+  // 닉네임 수정
   function handleEditNickname() {
     setEditNicknameInput(nickname);
     setIsEditingNickname(true);
@@ -108,50 +104,73 @@ export default function AccountSettingPage() {
     }
   }
 
-  // (4) 비밀번호 재설정 메일 전송
+  // 비밀번호 변경
   function handleChangePassword() {
-    if (provider !== "email") {
-      // 소셜 로그인인 경우
-      alert("소셜 로그인 회원은 비밀번호 변경이 불가능합니다.");
-      return;
-    }
-    // 일반 가입(이메일) 회원이면 전송 박스 표시
-    setShowPwBox(true);
+    router.push("/change-password");
   }
 
-  async function sendPasswordResetEmail() {
-    if (!session?.user?.email) {
-      alert("유효한 이메일 정보를 찾을 수 없습니다.");
+  // 모달 열기
+  function handleDeleteAccountClick() {
+    setShowDeleteModal(true);
+  }
+
+  // ★★ 탈퇴 + 세션 해제 로직 ★★
+  async function handleConfirmDelete() {
+    if (!session?.user) {
+      alert("로그인 상태가 아닙니다.");
       return;
     }
+
+    const userId = session.user.id;
+
     try {
-      // 원하는 리디렉트 경로로 수정하셔도 됩니다.
-      const { data, error } = await supabase.auth.resetPasswordForEmail(
-        session.user.email,
-        {
-          redirectTo: `${window.location.origin}/mypage/account-setting/reset-password`,
-        }
-      );
-      if (error) {
-        alert("비밀번호 재설정 이메일 전송 실패: " + error.message);
+      // 1) 서버 측으로 삭제 요청
+      const res = await fetch("/api/withdrawal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      });
+      const result = await res.json();
+
+      if (!res.ok) {
+        // 서버 에러
+        alert("회원 탈퇴 실패: " + (result.message || "Unknown Error"));
         return;
       }
-      alert("비밀번호 재설정 이메일을 보냈습니다!");
-      setShowPwBox(false);
+
+      // 2) 회원 삭제가 성공했으므로, 로컬 세션도 정리
+      await supabase.auth.signOut();
+
+      // 3) 알림 + 홈으로 이동
+      alert("계정 탈퇴가 완료되었습니다. 이용해주셔서 감사합니다!");
+      router.push("/");
     } catch (err) {
       alert("오류 발생: " + err.message);
+      console.error("회원 탈퇴 중 오류:", err);
     }
+  }
+
+  function handleCancelDelete() {
+    setShowDeleteModal(false);
+  }
+
+  // 모달 오버레이
+  function handleOverlayClick() {
+    setShowDeleteModal(false);
+  }
+  // 모달 내부 클릭
+  function handleModalContentClick(e) {
+    e.stopPropagation();
   }
 
   return (
-    <div className="max-w-[600px] mx-auto p-4 md:p-8">
+    <div className="max-w-[600px] mx-auto p-4 md:p-8 relative">
       <h1 className="text-2xl font-bold mb-8">계정 설정</h1>
 
       {!isLoggedIn ? (
         <p className="text-gray-600">로그인 상태가 아닙니다.</p>
       ) : (
         <div className="space-y-6">
-          {/* 아바타 + 카메라 아이콘 (임시) */}
           <div className="relative w-24 h-24 mx-auto">
             <div className="w-full h-full rounded-full bg-gray-300" />
             <div className="absolute bottom-0 right-0 bg-white rounded-full border p-1">
@@ -160,12 +179,24 @@ export default function AccountSettingPage() {
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >
-                <path d="M4 5a2 2 0 012-2h.172a2 2 0 001.414-.586l.828-.828A2 2 0 0110.828 1H12a2 2 0 012 2v1h2a2 2 0 012 2v6a2 2 0 01-2 2h-3v2a2 2 0 01-2 2H5a2 2 0 01-2-2v-2H1a2 2 0 01-2-2V6a2 2 0 012-2h3zM5 10a1 1 0 102 0 1 1 0 00-2 0z" />
+                <path d="M4 5a2 2 0 
+                012-2h.172a2 2 0 
+                001.414-.586l.828-.828A2 2 0 
+                0110.828 1H12a2 2 0 
+                012 2v1h2a2 2 0 
+                012 2v6a2 2 0 
+                01-2 2h-3v2a2 2 0 
+                01-2 2H5a2 2 0 
+                01-2-2v-2H1a2 2 0 
+                01-2-2V6a2 2 0 
+                012-2h3zM5 10a1 1 0 
+                102 0 1 1 0 
+                00-2 0z" />
               </svg>
             </div>
           </div>
 
-          {/* (A) 닉네임/이메일 표시 */}
+          {/* 닉네임/이메일 */}
           <div className="space-y-2">
             <label className="block text-gray-500">숨고 활동명</label>
             {!isEditingNickname ? (
@@ -211,7 +242,7 @@ export default function AccountSettingPage() {
             <p className="text-sm text-gray-600">{session.user.email}</p>
           </div>
 
-          {/* (B) 비밀번호 재설정 */}
+          {/* 비밀번호 변경 */}
           <div className="flex items-center justify-between">
             <span className="text-gray-500">비밀번호 변경</span>
             <button
@@ -222,31 +253,7 @@ export default function AccountSettingPage() {
             </button>
           </div>
 
-          {/* 비밀번호 재설정 메일 전송 박스 */}
-          {showPwBox && (
-            <div className="border border-gray-300 rounded bg-white p-4 shadow-md">
-              <h3 className="text-lg font-bold mb-2">비밀번호 재설정</h3>
-              <p className="text-sm text-gray-600 mb-4">
-                비밀번호 재설정 링크를 이메일로 보내드립니다.
-              </p>
-              <div className="flex justify-end space-x-2">
-                <button
-                  onClick={sendPasswordResetEmail}
-                  className="bg-purple-500 text-white px-3 py-1 rounded text-sm"
-                >
-                  비밀번호 재설정 메일 보내기
-                </button>
-                <button
-                  onClick={() => setShowPwBox(false)}
-                  className="bg-gray-300 px-3 py-1 rounded text-sm"
-                >
-                  취소
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* (C) 기타 정보 관리 */}
+          {/* 기타 정보 관리 */}
           <div className="pt-2 border-t border-gray-200 space-y-3 text-gray-600 text-sm">
             <button
               onClick={() => alert("개인 정보 관리 페이지로 이동")}
@@ -262,20 +269,65 @@ export default function AccountSettingPage() {
             </button>
           </div>
 
-          {/* (D) 하단: 로그아웃 | 계정 탈퇴 */}
+          {/* 하단: 로그아웃 | 회원 탈퇴 */}
           <div className="flex justify-between items-center mt-6 text-sm text-gray-400">
             <button onClick={handleLogout} className="hover:text-gray-600">
               로그아웃
             </button>
             <button
-              onClick={() => alert("계정 탈퇴 로직을 구현해주세요!")}
+              onClick={handleDeleteAccountClick}
               className="hover:text-gray-600"
             >
-              계정 탈퇴
+              회원 탈퇴
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* 회원 탈퇴 모달 + 오버레이 */}
+      {showDeleteModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          onClick={handleOverlayClick}
+        >
+          <div className="absolute inset-0 bg-black/50"></div>
+
+          <div
+            onClick={handleModalContentClick}
+            className="relative bg-white p-6 rounded shadow-md w-[300px]"
+          >
+            <h2 className="text-lg font-bold mb-3">
+              정말 여기닷을 떠나실 건가요?
+            </h2>
+            <p className="text-sm text-gray-700 mb-6">
+              계정 탈퇴 시 모든 개인정보가 삭제됩니다.
+            </p>
+            <div className="flex flex-col justify-end">
+              <button
+                onClick={handleCancelDelete}
+                className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-1 rounded mb-3"
+              >
+                다시 생각해볼게요
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className="bg-gray-300 hover:bg-gray-400 px-4 py-1 rounded"
+              >
+                계정 탈퇴
+              </button>
+            </div>
           </div>
         </div>
       )}
     </div>
   );
+}
+
+// 모달 밖 클릭 시 닫기
+function handleOverlayClick() {
+  setShowDeleteModal(false);
+}
+// 모달 내부 클릭은 막기
+function handleModalContentClick(e) {
+  e.stopPropagation();
 }

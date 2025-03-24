@@ -26,7 +26,7 @@ export default function SubLayout({ children }) {
           여기서는 그냥 children 출력. 
           스크롤 이슈나 헤더 높이 보정 용도로 pt-[56px] 등 사용 가능
       */}
-      <main className="pt-[56px] md:pt-[116px] flex-1">
+      <main className="pt-[56px] pb-[60px] md:pb-0 md:pt-[116px] flex-1">
         {children}
       </main>
 

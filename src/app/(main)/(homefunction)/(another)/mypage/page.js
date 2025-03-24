@@ -16,6 +16,7 @@ export default function MyMobileUI() {
 
   const [wishList, setWishList] = useState([]);
 
+  // (A) 초기 세션/프로필 로딩
   useEffect(() => {
     async function fetchUser() {
       const {
@@ -50,6 +51,7 @@ export default function MyMobileUI() {
 
   const isLoggedIn = !!session?.user;
 
+  // (B) 가고싶다 목록 로딩
   useEffect(() => {
     if (!isLoggedIn) {
       setWishList([]);
@@ -59,13 +61,13 @@ export default function MyMobileUI() {
       try {
         const { data, error } = await supabase
           .from("wantToGo")
-          .select(`
-            id,
-            partnershipsubmit_id,
-            partnershipsubmit:partnershipsubmit_id (
-              company_name
-            )
-          `)
+          .select(
+            `id,
+             partnershipsubmit_id,
+             partnershipsubmit:partnershipsubmit_id (
+               company_name
+             )`
+          )
           .eq("user_id", session.user.id);
 
         if (error) {
@@ -82,6 +84,7 @@ export default function MyMobileUI() {
     }
   }, [isLoggedIn, session]);
 
+  // (C) 로그아웃
   async function handleLogout() {
     const { error } = await supabase.auth.signOut();
     if (error) {
@@ -91,14 +94,15 @@ export default function MyMobileUI() {
     setSession(null);
   }
 
+  // (C-2) 로그인/회원가입 버튼 핸들러
   function handleLogin() {
     router.push("/login");
   }
-
   function handleSignup() {
     router.push("/signup");
   }
 
+  // (D) 가고싶다 목록 제거
   async function handleRemoveWish(id) {
     try {
       const { error } = await supabase.from("wantToGo").delete().eq("id", id);
@@ -112,11 +116,12 @@ export default function MyMobileUI() {
     }
   }
 
-  // ▼ 계정설정 버튼을 누르면 해당 페이지로 이동하도록 수정
+  // (E) 계정설정 버튼 -> /mypage/account-setting 이동
   function handleEditNickname() {
     router.push("/mypage/account-setting");
   }
 
+  // (F) 닉네임 수정(실제 로직은 account-setting 페이지에서 이뤄짐)
   async function handleUpdateNickname() {
     if (!session?.user?.id) {
       alert("로그인이 필요합니다.");
@@ -151,6 +156,7 @@ export default function MyMobileUI() {
     setEditNicknameInput("");
   }
 
+  // (G) 가고싶다 목록 -> 상세페이지 이동
   function handleWishClick(partnershipsubmitId) {
     router.push(`/board/details/${partnershipsubmitId}`);
   }
@@ -164,10 +170,10 @@ export default function MyMobileUI() {
 
       {/* 프로필 영역 */}
       <div className="flex items-center mb-6">
-        {/* 아바타: 원형, 오른쪽 마진 제거 */}
+        {/* 아바타 */}
         <div className="w-[60px] h-[60px] bg-gray-300 rounded-full" />
 
-        {/* 여유 공간 (만약 약간의 간격이 필요하면 ml-4 등으로 적절히 조정) */}
+        {/* 프로필 텍스트 */}
         <div className="ml-4 flex-1">
           {isLoggedIn ? (
             <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3">
@@ -193,8 +199,17 @@ export default function MyMobileUI() {
               </div>
             </div>
           ) : (
-            <div className="text-base font-bold text-gray-600">
-              로그인을 해주세요
+            // 로그인 안 됨 -> 안내 + "로그인" 버튼
+            <div className="flex justify-between space-x-2">
+              <div className="text-base font-bold text-gray-600">
+                로그인을 해주세요
+              </div>
+              <button
+                onClick={handleLogin}
+                className="bg-gray-200 text-sm px-3 py-1 rounded"
+              >
+                로그인
+              </button>
             </div>
           )}
         </div>
@@ -226,7 +241,7 @@ export default function MyMobileUI() {
 
       <hr className="border-t border-gray-300 mb-6" />
 
-      {/* (B) 메뉴 목록 (수직) */}
+      {/* 메뉴 목록 (수직) */}
       <div className="flex flex-col space-y-1">
         <MenuItem label="1:1 채팅" onClick={() => router.push("/messages")} />
         <MenuItem
@@ -242,7 +257,7 @@ export default function MyMobileUI() {
 
       <hr className="border-t border-gray-300 my-6" />
 
-      {/* (C) 가고싶다 목록 */}
+      {/* 가고싶다 목록 */}
       <div>
         <div className="font-bold text-lg mb-2 text-[#f9665e]">가고싶다</div>
         {wishList.length === 0 ? (
@@ -275,7 +290,7 @@ export default function MyMobileUI() {
 
       <hr className="border-t border-gray-300 my-6" />
 
-      {/* (D) 고객센터 */}
+      {/* 고객센터 */}
       <div>
         <div className="text-lg font-bold mb-2">고객센터</div>
         <div className="text-sm leading-5 text-gray-700">
@@ -288,9 +303,7 @@ export default function MyMobileUI() {
   );
 }
 
-/**
- * 공통 메뉴 아이템 컴포넌트
- */
+/** 공통 메뉴 아이템 컴포넌트 */
 function MenuItem({ label, onClick }) {
   return (
     <button

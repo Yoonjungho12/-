@@ -46,8 +46,7 @@ const styles = {
     left: 0,
     width: "100%",
     height: "4px",
-    // 우주끝급(!)으로 높여주는 zIndex
-    zIndex: 999999999,
+    zIndex: 9999,
     backgroundColor: "white",
     overflow: "hidden",
   },
