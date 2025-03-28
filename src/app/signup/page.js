@@ -1,31 +1,39 @@
 "use client";
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "../lib/supabaseF"; // 이미 설정된 Supabase 클라이언트
+import ReCAPTCHA from "react-google-recaptcha";
+import { supabase } from "../lib/supabaseF";
 
 export default function SignupPage() {
   // ─────────────────────────────────────────
   // (A) 상태값들
   // ─────────────────────────────────────────
-  const [userId, setUserId] = useState(""); // 이메일 (아이디)
+  const [userId, setUserId] = useState(""); // 이메일(아이디)
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
-  const [name, setName] = useState("");
-  const [nickname, setNickname] = useState("");
-  const [phone, setPhone] = useState("");
 
-  // 닉네임 중복확인 결과
-  const [nicknameAvailable, setNicknameAvailable] = useState(null); // true / false / null(미확인)
+  // 닉네임
+  const [nickname, setNickname] = useState("");
+  const [nicknameAvailable, setNicknameAvailable] = useState(null);
   const [nicknameCheckError, setNicknameCheckError] = useState("");
 
-  // 약관동의 (예시)
-  const [checkedTerm1, setCheckedTerm1] = useState(true);
-  const [checkedTerm2, setCheckedTerm2] = useState(true);
+  // 약관동의 체크
+  const [checkedTerm1, setCheckedTerm1] = useState(false);
+  const [checkedTerm2, setCheckedTerm2] = useState(false);
+  const [checkedTerm3, setCheckedTerm3] = useState(false);
+  const [checkedAll, setCheckedAll] = useState(false);
+
+  // reCAPTCHA 토큰
+  const [captchaToken, setCaptchaToken] = useState("");
+
+  // 소셜 로그인 에러메시지
+  const [errorMessage, setErrorMessage] = useState("");
 
   const router = useRouter();
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
   // ─────────────────────────────────────────
-  // (B) 닉네임 중복확인 - DB 조회
+  // (B) 닉네임 중복확인
   // ─────────────────────────────────────────
   async function handleCheckNickname() {
     if (!nickname.trim()) {
@@ -33,9 +41,7 @@ export default function SignupPage() {
       setNicknameCheckError("닉네임을 입력해주세요.");
       return;
     }
-
     try {
-      // 1) profiles 테이블에서 동일한 nickname 존재 여부 조회
       const { data, error } = await supabase
         .from("profiles")
         .select("user_id")
@@ -45,13 +51,10 @@ export default function SignupPage() {
       if (error) {
         throw new Error(error.message || "서버오류");
       }
-
       if (data) {
-        // 이미 동일 닉네임 존재
         setNicknameAvailable(false);
         setNicknameCheckError("이미 사용 중인 닉네임입니다.");
       } else {
-        // 사용 가능
         setNicknameAvailable(true);
         setNicknameCheckError("사용 가능한 닉네임입니다.");
       }
@@ -63,74 +66,138 @@ export default function SignupPage() {
   }
 
   // ─────────────────────────────────────────
-  // (C) 가입하기
+  // (C) 비밀번호 강도 로직
+  // ─────────────────────────────────────────
+  function getPasswordStrength(pw) {
+    let score = 0;
+    if (pw.length >= 8) score++;
+    if (/\d/.test(pw)) score++;
+    if (/[^a-zA-Z0-9]/.test(pw)) score++;
+    if (/[A-Z]/.test(pw)) score++;
+    return score; // 0~4
+  }
+
+  const passwordStrength = getPasswordStrength(password);
+
+  function getBarColor(strength, index) {
+    if (strength <= 0) return "bg-gray-200";
+
+    if (strength === 1) {
+      return index === 0 ? "bg-red-500" : "bg-gray-200";
+    }
+    if (strength === 2) {
+      return index < 2 ? "bg-yellow-400" : "bg-gray-200";
+    }
+    if (strength >= 3) {
+      return "bg-green-500";
+    }
+  }
+
+  // ─────────────────────────────────────────
+  // (D) reCAPTCHA 체크박스 완료 시 콜백
+  // ─────────────────────────────────────────
+  function handleRecaptchaChange(token) {
+    console.log("reCAPTCHA v2 token:", token);
+    setCaptchaToken(token);
+  }
+
+  // 민제님 이곳 수정했습니다: handleCheckAll / handleCheckTerm(N) 함수들 추가
+  function handleCheckAll() {
+    const newVal = !checkedAll;
+    setCheckedAll(newVal);
+    setCheckedTerm1(newVal);
+    setCheckedTerm2(newVal);
+    setCheckedTerm3(newVal);
+  }
+
+  function handleCheckTerm1() {
+    const newVal = !checkedTerm1;
+    setCheckedTerm1(newVal);
+    // 하위중 하나라도 false면 전체동의 false
+    if (newVal && checkedTerm2 && checkedTerm3) {
+      setCheckedAll(true);
+    } else {
+      setCheckedAll(false);
+    }
+  }
+
+  function handleCheckTerm2() {
+    const newVal = !checkedTerm2;
+    setCheckedTerm2(newVal);
+    if (checkedTerm1 && newVal && checkedTerm3) {
+      setCheckedAll(true);
+    } else {
+      setCheckedAll(false);
+    }
+  }
+
+  function handleCheckTerm3() {
+    const newVal = !checkedTerm3;
+    setCheckedTerm3(newVal);
+    if (checkedTerm1 && checkedTerm2 && newVal) {
+      setCheckedAll(true);
+    } else {
+      setCheckedAll(false);
+    }
+  }
+  // ─────────────────────────────────────────
+  // (E) 가입하기
   // ─────────────────────────────────────────
   async function handleSubmit(e) {
     e.preventDefault();
 
-    // 1) 비번 동일 여부
     if (password !== passwordConfirm) {
       alert("비밀번호가 일치하지 않습니다.");
       return;
     }
-    // 2) 닉네임 중복확인 (미확인, 또는 중복이면 막기)
     if (nicknameAvailable !== true) {
       alert("닉네임 중복확인을 해주세요!");
       return;
     }
-    // 3) 약관동의 체크 여부
-    if (!checkedTerm1 || !checkedTerm2) {
-      alert("약관에 동의해주셔야 가입 가능합니다!");
+     if (!checkedTerm1 || !checkedTerm2 || !checkedTerm3) {
+      alert("약관에 모두 동의해주셔야 가입 가능합니다!");
       return;
     }
-
-    // 4) Supabase Auth 가입
-    const { data, error } = await supabase.auth.signUp({
-      email: userId,
-      password: password,
-      options: {
-        data: {
-          display_name: name,
-        },
-      },
-    });
-
-    // ─────────── 에러 메시지 한글화 ───────────
-    if (error) {
-      if (error.message === "User already registered") {
-        alert("이미 가입된 이메일 주소입니다.");
-      } else {
-        alert(error.message); // 다른 오류는 그대로 표출
-      }
+    if (!captchaToken) {
+      alert("로봇이 아님을 인증해주세요.");
       return;
     }
-    // ────────────────────────────────────────
-
-    // 5) profiles 테이블에 추가 정보 (user_id, name, nickname, phone, etc.)
-    const user_id = data.user?.id;
-    if (!user_id) {
-      alert("가입 오류: user_id가 없습니다.");
-      return;
-    }
-
+    //로딩 시작
+    setIsSubmitting(true);
     try {
+      // (1) Supabase Auth 가입
+      const { data, error } = await supabase.auth.signUp({
+        email: userId,
+        password,
+      });
+      if (error) {
+        if (error.message === "User already registered") {
+          alert("이미 가입된 이메일 주소입니다.");
+        } else {
+          alert(error.message);
+        }
+        return;
+      }
+
+      const user_id = data.user?.id;
+      if (!user_id) {
+        alert("가입 오류: user_id가 없습니다.");
+        return;
+      }
+
+      // (2) profiles 테이블에 정보 저장
       const { error: insertError } = await supabase
         .from("profiles")
         .insert({
           user_id,
           email: userId,
-          name,
           nickname,
-          phone,
         });
       if (insertError) {
         throw new Error(insertError.message);
       }
 
-      // 가입 성공 시, 이메일만 로컬스토리지에 저장하기
       localStorage.setItem("pendingEmail", userId);
-
-      // 그리고 이메일 인증 안내 페이지로 이동
       router.push("/email-confirmation");
     } catch (err) {
       alert("프로필 저장 중 오류: " + err.message);
@@ -138,14 +205,11 @@ export default function SignupPage() {
   }
 
   // ─────────────────────────────────────────
-  // (D) 소셜 로그인 (예시: 구글, 카카오)
+  // (F) 소셜 로그인(구글, 카카오)
   // ─────────────────────────────────────────
-  const [errorMessage, setErrorMessage] = useState("");
-
   async function handleGoogleLogin() {
     setErrorMessage("");
     try {
-      // /api/social-login?provider=google → OAuth
       const res = await fetch(`/api/social-login?provider=google`);
       const { url, error } = await res.json();
       if (error || !url) {
@@ -176,36 +240,129 @@ export default function SignupPage() {
   }
 
   // ─────────────────────────────────────────
-  // (E) UI
+  // (G) 약관 모달
   // ─────────────────────────────────────────
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalContent, setModalContent] = useState("");
+
+  function openModal(content) {
+    setModalContent(content);
+    setIsModalOpen(true);
+  }
+  function closeModal() {
+    setIsModalOpen(false);
+  }
+
+  // 모달 배경 클릭 시 닫기
+  function handleBackdropClick(e) {
+    if (e.currentTarget === e.target) {
+      closeModal();
+    }
+  }
+
+  // 바 4칸
+  const bars = [0, 1, 2, 3];
+
+  // (H) 약관 전문 (이미 사용자가 제공한 긴 텍스트) - 여기서 필요한 부분만 삽입
+  const term1 = `제1조 (목적) 본 약관은 "여기닷(yeogidot.com)"(이하 "회사")가 제공하는 서비스의 이용 조건 및 절차, 이용자와 회사 간의 권리, 의무 및 책임사항을 규정하는 것을 목적으로 합니다.
+제2조 (용어의 정의)
+1. "서비스"란 회사가 제공하는 웹사이트 및 관련 제반 서비스를 의미합니다.
+2. "회원"이란 회사의 서비스에 접속하여 본 약관에 동의하고 회원가입을 완료한 자를 의미합니다.
+3. "비회원"이란 회원가입 없이 서비스를 이용하는 자를 의미합니다.
+4. "성인 회원"이란 본인인증을 통해 성인임을 확인받은 회원을 의미합니다.
+제3조 (약관의 게시 및 개정)
+1. 본 약관은 서비스 초기 화면 또는 연결화면을 통해 게시됩니다.
+2. 회사는 필요할 경우 관련 법령을 위배하지 않는 범위 내에서 본 약관을 개정할 수 있습니다.
+3. 개정 약관은 적용일자 이전에 공지하며, 회원이 명시적으로 거부 의사를 밝히지 않는 경우 동의한 것으로 간주합니다.
+제4조 (서비스 이용 및 접근 제한)
+1. 회원은 회사가 정한 절차에 따라 서비스를 이용할 수 있습니다.
+2. 성인 키워드 관련 서비스는 성인 인증을 완료한 성인 회원만 이용할 수 있습니다.
+3. 일반 키워드 관련 서비스는 회원 및 비회원 모두 접근할 수 있습니다.
+4. 회사는 서비스 운영상 필요한 경우 이용 시간 및 이용 범위를 제한할 수 있습니다.
+제5조 (회원의 의무)
+1. 회원은 서비스 이용 시 관련 법령 및 본 약관을 준수해야 합니다.
+2. 회원은 타인의 정보를 도용하거나 부정 사용해서는 안 됩니다.
+3. 회원은 성인 인증이 필요한 서비스 이용 시, 본인 인증을 거쳐야 하며 허위 정보 제공 시 이용이 제한될 수 있습니다.
+제6조 (서비스 제공의 중단)
+회사는 정기점검, 설비 장애 등의 사유로 서비스 제공을 일시적으로 중단할 수 있습니다.
+제7조 (면책 조항)
+1. 회사는 회원이 제공한 정보의 정확성에 대해 보증하지 않습니다.
+2. 회사는 천재지변 등 불가항력적 사유로 인한 서비스 제공 불가에 대해 책임을 지지 않습니다.
+`;
+  const term2 = `제1조 (목적)본 개인정보 처리 방침은 "여기닷(yeogidot.com)"이 회원의 개인정보를 어떻게 수집, 이용, 보호하는지를 설명하기 위함입니다.
+제2조 (수집하는 개인정보 항목)
+1. 필수 수집 정보: 이메일, 비밀번호, 닉네임
+2. 선택 수집 정보: 프로필 사진, 연락처
+3 .서비스 이용 과정에서 자동 수집되는 정보: 접속 로그, 쿠키, IP 주소
+4. 성인 인증을 위한 정보: 본인확인 인증 데이터 (예: 휴대폰 인증 정보)
+제3조 (개인정보의 이용 목적)
+1. 회원가입 및 서비스 이용을 위한 본인 확인
+2. 서비스 운영 및 개선
+3. 성인 인증이 필요한 서비스 이용 자격 확인
+4. 법적 의무 이행 및 분쟁 해결
+제4조 (개인정보의 보관 및 파기)
+1. 회원 탈퇴 시 관련 법령에 따른 보존 기간을 제외하고 즉시 파기합니다.
+2. 법령에 따라 일정 기간 보존이 필요한 경우 해당 법률을 따릅니다.
+제5조 (개인정보 제공 및 공유)
+1. 회사는 회원의 동의 없이 개인정보를 외부에 제공하지 않습니다.
+2. 단, 법적 요청이 있을 경우 예외로 합니다.
+제6조 (이용자의 권리)
+1. 회원은 자신의 개인정보를 열람, 수정 및 삭제할 수 있습니다.
+2. 성인 인증 정보는 회원 요청 시 삭제할 수 있으며, 삭제 후 성인 서비스 이용이 제한될 수 있습니다.
+3. 개인정보와 관련된 문의는 고객센터를 통해 가능합니다.
+제7조 (개인정보 보호 조치) 회사는 개인정보 보호를 위해 기술적, 관리적 조치를 취하고 있습니다.
+부칙 본 약관 및 개인정보 처리 방침은 2025년 4월 20일부터 시행됩니다.
+`;
+const term3 = `제1조 (목적)본 개인정보 처리 방침은 "여기닷(yeogidot.com)"이 회원의 개인정보를 어떻게 수집, 이용, 보호하는지를 설명하기 위함입니다.
+제2조 (수집하는 개인정보 항목)
+1. 필수 수집 정보: 이메일, 비밀번호, 닉네임
+2. 선택 수집 정보: 프로필 사진, 연락처
+3 .서비스 이용 과정에서 자동 수집되는 정보: 접속 로그, 쿠키, IP 주소
+4. 성인 인증을 위한 정보: 본인확인 인증 데이터 (예: 휴대폰 인증 정보)
+제3조 (개인정보의 이용 목적)
+1. 회원가입 및 서비스 이용을 위한 본인 확인
+2. 서비스 운영 및 개선
+3. 성인 인증이 필요한 서비스 이용 자격 확인
+4. 법적 의무 이행 및 분쟁 해결
+제4조 (개인정보의 보관 및 파기)
+1. 회원 탈퇴 시 관련 법령에 따른 보존 기간을 제외하고 즉시 파기합니다.
+2. 법령에 따라 일정 기간 보존이 필요한 경우 해당 법률을 따릅니다.
+제5조 (개인정보 제공 및 공유)
+1. 회사는 회원의 동의 없이 개인정보를 외부에 제공하지 않습니다.
+2. 단, 법적 요청이 있을 경우 예외로 합니다.
+제6조 (이용자의 권리)
+1. 회원은 자신의 개인정보를 열람, 수정 및 삭제할 수 있습니다.
+2. 성인 인증 정보는 회원 요청 시 삭제할 수 있으며, 삭제 후 성인 서비스 이용이 제한될 수 있습니다.
+3. 개인정보와 관련된 문의는 고객센터를 통해 가능합니다.
+제7조 (개인정보 보호 조치) 회사는 개인정보 보호를 위해 기술적, 관리적 조치를 취하고 있습니다.
+부칙 본 약관 및 개인정보 처리 방침은 2025년 4월 20일부터 시행됩니다.
+`;
+
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center px-4">
-      {/* 로고/상단 */}
       <div className="mb-6 text-center">
         <h1 className="text-2xl font-bold text-orange-500">여기닷</h1>
       </div>
 
-      {/* 흰색 컨테이너 */}
       <div className="w-full max-w-md rounded-md bg-white p-6 shadow">
         <h2 className="mb-4 text-xl font-semibold text-gray-700">간편 회원가입</h2>
 
-        {/* (1) 약관동의 */}
+        {/* 약관동의 */}
         <div className="mb-5 border border-gray-200">
+          {/* 민제님 이곳 수정했습니다: 전체동의 */}
           <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
             <div className="flex items-center space-x-2">
-              <svg
-                className="h-5 w-5 text-red-500"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              </svg>
+              <input
+                type="checkbox"
+                checked={checkedAll}
+                onChange={handleCheckAll} // 전체동의
+                className="h-4 w-4 rounded border-gray-300 text-red-500"
+              />
               <span className="text-sm font-medium text-gray-700">전체동의</span>
             </div>
           </div>
           <div className="px-4 py-3 space-y-2">
+            {/* 약관1 */}
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <input
@@ -214,12 +371,17 @@ export default function SignupPage() {
                   onChange={() => setCheckedTerm1(!checkedTerm1)}
                   className="h-4 w-4 rounded border-gray-300 text-red-500"
                 />
-                <span className="text-sm text-gray-700">
-                  회원가입약관의 내용에 동의 (필수)
-                </span>
+                <span className="text-sm text-gray-700">회원가입약관의 내용에 동의 (필수)</span>
               </div>
-              <button className="text-sm text-gray-500 hover:underline">보기</button>
+              <button
+                type="button"
+                onClick={() => openModal(term1)}
+                className="text-sm text-gray-500 hover:underline"
+              >
+                보기
+              </button>
             </div>
+            {/* 약관2 */}
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <input
@@ -232,12 +394,39 @@ export default function SignupPage() {
                   개인정보 이용 및 활용 동의 (필수)
                 </span>
               </div>
-              <button className="text-sm text-gray-500 hover:underline">보기</button>
+              <button
+                type="button"
+                onClick={() => openModal(term2)}
+                className="text-sm text-gray-500 hover:underline"
+              >
+                보기
+              </button>
+            </div>
+            {/* 약관3 */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={checkedTerm3}
+                  onChange={() => setCheckedTerm2(!checkedTerm3)}
+                  className="h-4 w-4 rounded border-gray-300 text-red-500"
+                />
+                <span className="text-sm text-gray-700">
+                  책임의 한계와 법적 고지 (필수)
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => openModal(term2)}
+                className="text-sm text-gray-500 hover:underline"
+              >
+                보기
+              </button>
             </div>
           </div>
         </div>
 
-        {/* (2) 가입 폼 */}
+        {/* 가입 폼 */}
         <form onSubmit={handleSubmit} className="space-y-3">
           {/* 이메일(아이디) */}
           <div>
@@ -248,7 +437,8 @@ export default function SignupPage() {
               type="text"
               value={userId}
               onChange={(e) => setUserId(e.target.value)}
-              className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+              className="w-full rounded border border-gray-300 px-3 py-2 text-sm 
+                         focus:outline-none focus:ring-2 focus:ring-orange-400"
               placeholder="예: user@example.com"
             />
           </div>
@@ -258,12 +448,25 @@ export default function SignupPage() {
             <label className="mb-1 block text-sm font-medium text-gray-600">
               비밀번호 <span className="text-red-500">*</span>
             </label>
+            {/* 비밀번호 강도 바 */}
+            <div className="mb-1 flex space-x-1">
+              {[0, 1, 2, 3].map((barIndex) => (
+                <div
+                  key={barIndex}
+                  className={`h-1 flex-1 transition-colors duration-300 ${getBarColor(
+                    passwordStrength,
+                    barIndex
+                  )}`}
+                />
+              ))}
+            </div>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-              placeholder="비밀번호"
+              className="w-full rounded border border-gray-300 px-3 py-2 text-sm 
+                         focus:outline-none focus:ring-2 focus:ring-orange-400"
+              placeholder="비밀번호 (8자 이상, 숫자/특수문자/대문자 포함 시 보안 강화)"
             />
           </div>
 
@@ -276,26 +479,13 @@ export default function SignupPage() {
               type="password"
               value={passwordConfirm}
               onChange={(e) => setPasswordConfirm(e.target.value)}
-              className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+              className="w-full rounded border border-gray-300 px-3 py-2 text-sm 
+                         focus:outline-none focus:ring-2 focus:ring-orange-400"
               placeholder="비밀번호 재입력"
             />
           </div>
 
-          {/* 이름 */}
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-600">
-              이름 <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-              placeholder="실명 입력"
-            />
-          </div>
-
-          {/* 닉네임 + 중복확인 버튼 */}
+          {/* 닉네임 + 중복확인 */}
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-600">
               닉네임 <span className="text-red-500">*</span>
@@ -334,37 +524,50 @@ export default function SignupPage() {
             )}
           </div>
 
-          {/* 휴대폰 번호 */}
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-600">
-              휴대폰 번호 <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-              placeholder="예: 010-1234-5678"
-            />
-          </div>
-
-          {/* 샘플로 캡차 or etc. */}
-          <div className="flex items-center space-x-2">
-            <img src="/images/captcha-sample.png" alt="captcha" className="h-10 w-20 border" />
-            <input
-              type="text"
-              className="flex-1 border border-gray-300 px-3 py-2 text-sm rounded focus:outline-none focus:ring-2 focus:ring-orange-400"
-              placeholder="캡차 입력"
+          {/* reCAPTCHA 체크박스 */}
+          <div className="mt-5 flex justify-center">
+            <ReCAPTCHA
+              sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}
+              onChange={handleRecaptchaChange}
             />
           </div>
 
           {/* 가입하기 버튼 */}
+                  {/* 가입하기 버튼 */}
           <button
             type="submit"
-            className="mt-3 w-full rounded bg-orange-400 py-2 text-base font-medium text-white
-                       hover:bg-orange-600"
+            disabled={isSubmitting} // 버튼 비활성화
+            className={`mt-3 w-full rounded py-2 text-base font-medium text-white 
+                       hover:bg-orange-600
+                       ${isSubmitting ? "bg-orange-300" : "bg-orange-400"} 
+                      `}
           >
-            가입하기
+            {isSubmitting ? (
+              <div className="flex items-center justify-center gap-2">
+                <svg
+                  className="animate-spin h-5 w-5 text-white"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    fill="none"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8v8z"
+                  />
+                </svg>
+                <span>가입 중...</span>
+              </div>
+            ) : (
+              "가입하기"
+            )}
           </button>
         </form>
 
@@ -391,13 +594,36 @@ export default function SignupPage() {
           </button>
         </div>
 
-        {/* 에러 메시지 */}
         {errorMessage && (
           <div className="mt-2 text-sm text-red-500 text-center">
             {errorMessage}
           </div>
         )}
       </div>
+
+      {/* (모달) */}
+      {isModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={handleBackdropClick}
+        >
+          <div
+            className="bg-white w-full max-w-md p-6 rounded shadow-lg relative 
+                       max-h-[90vh] overflow-auto"
+            onClick={(e) => e.stopPropagation()} // 내부 클릭 -> 모달 유지
+          >
+            {/* 닫기 버튼 */}
+            <button
+              className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+              onClick={closeModal}
+            >
+              ✕
+            </button>
+            <h3 className="text-lg font-semibold mb-2">이용 약관</h3>
+            <p className="text-sm whitespace-pre-wrap">{modalContent}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

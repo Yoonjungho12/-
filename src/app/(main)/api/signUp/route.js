@@ -15,9 +15,7 @@ export async function POST(request) {
       .from("profiles")
       .insert({
         user_id: user_id,
-        name: name,
         nickname: nickname,
-        phone: phone,
         email: email, // ← 여기에서 email 필드도 함께 저장
       })
       .single();

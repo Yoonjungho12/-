@@ -22,7 +22,7 @@ function createSlug(text) {
  */
 function loadKakaoMapScript(callback) {
   if (typeof window === "undefined") return;
-  const KAKAO_APP_KEY = process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY;
+  const KAKAO_APP_KEY = process.env.NEXT_PUBLIC_KAKAO_KEY;
   if (!KAKAO_APP_KEY) {
     console.error("카카오 지도 Key가 설정되지 않았습니다. .env 파일을 확인해주세요.");
     return;

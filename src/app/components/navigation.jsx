@@ -53,20 +53,36 @@ export default function NavBar() {
     };
   }, []);
 
-  async function fetchMyProfile(userId) {
-    try {
-      const { data } = await supabase
-        .from("profiles")
-        .select("nickname")
-        .eq("user_id", userId)
-        .single();
+async function fetchMyProfile(userId) {
+  try {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("nickname")
+      .eq("user_id", userId)
+      .single();
 
-      setMyNickname(data?.nickname || "(닉네임 없음)");
-    } catch (err) {
-      console.error("프로필 오류:", err);
-      setMyNickname("(오류)");
+    if (error) {
+      // (A) row 없음
+      if (error.details?.includes("0 rows")) {
+        console.log("프로필이 없음 -> /socialSignUp 이동");
+        router.push("/socialSignUp");
+        return;
+      }
+
+      // (B) 진짜 오류 → 로그 남김 or 사용자에게 안내
+      console.error("profiles 조회 에러:", error);
+      setErrorMsg("프로필 로딩 중 오류가 발생했습니다.");
+      return;
     }
+
+    // 닉네임 설정
+    setMyNickname(data?.nickname || "(닉네임 없음)");
+  } catch (err) {
+    // 예상치 못한 예외
+    console.error("예기치 않은 오류:", err);
+    setErrorMsg("알 수 없는 오류가 발생했습니다.");
   }
+}
 
   // --------------------------------------
   // (2) 로그아웃
@@ -390,10 +406,10 @@ export default function NavBar() {
               href="/today/전체/전체/전체"
               className="inline-block hover:text-orange-500 md:mx-5"
             >
-              실시간 인기 업체
+              실시간 인기 제휴점
             </Link>
             <Link href="/near-me" className="inline-block hover:text-orange-500 md:mx-5">
-              내 주변 업체 찾기
+              내 주변 제휴점 찾기
             </Link>
             <Link
               href="/club/전체/전체/전체"
@@ -580,11 +596,11 @@ export default function NavBar() {
 
               {/* (3) 내주변 */}
               <div>
-                <h2 className="mb-2 font-semibold text-orange-500">내 주변 업체 찾기</h2>
+                <h2 className="mb-2 font-semibold text-orange-500">내 주변 제휴점 찾기</h2>
                 <ul className="space-y-1 text-sm text-gray-700">
                   <li>
                     <Link href="/near-me" onClick={() => setShowMegaMenu(false)}>
-                      내 주변 업체 찾기
+                      내 주변 제휴점 찾기
                     </Link>
                   </li>
                 </ul>

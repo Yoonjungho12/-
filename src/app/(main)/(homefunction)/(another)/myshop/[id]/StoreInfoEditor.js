@@ -253,7 +253,7 @@ export default function StoreInfoEditor({ shopId, onClose }) {
     if (!window.kakao) {
       const script = document.createElement("script");
       script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${
-        process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY
+        process.env.NEXT_PUBLIC_KAKAO_KEY
       }&libraries=services&autoload=false`;
       script.onload = () => {
         window.kakao.maps.load(() => {

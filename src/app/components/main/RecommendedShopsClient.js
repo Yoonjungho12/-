@@ -108,12 +108,12 @@ export default function RecommendedShopsClient({ initialTag, initialShops }) {
           <div className="flex items-center justify-center mt-2 mb-4 w-[100%] mx-auto">
             <hr className="flex-grow border-[0.5px] border-white" />
             <h2 className="mx-3 text-xl md:text-2xl font-bold text-white  whitespace-nowrap px-3">
-              여기닷! 테마별 업체 추천
+              여기닷! 테마별 제휴점 추천
             </h2>
             <hr className="flex-grow border-[0.5px] border-white" />
           </div>
           <p className="text-white text-sm md:text-[16px] text-center">
-            회원님께서 필요한 업체를 테마별로 빠르게 찾아보세요!
+            회원님께서 필요한 제휴점를 테마별로 빠르게 찾아보세요!
           </p>
 
           {/* 태그 버튼들 */}

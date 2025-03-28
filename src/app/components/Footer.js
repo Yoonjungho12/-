@@ -72,9 +72,10 @@ export default function Footer() {
 
                   <div>
               <div className="text-sm">
-                <p>사이트명 : 여기닷</p>
-                <p>사업자등록번호 : 102-02-85309</p>
-                <p>이메일 : email@naver.com</p>
+                <p>사업자명 : 여기닷</p>
+                <p>대표자명 : 윤정호</p>
+                <p>사업자등록번호 : 476-14-02880</p>
+                <p>대표번호 (연락처): email@naver.com</p>
               </div>
 
               <div className="text-[13px] my-2">

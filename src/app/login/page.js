@@ -2,27 +2,39 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { supabase } from "@/lib/supabaseF"; // 클라이언트용 supabase 객체
+import { supabase } from "@/lib/supabaseF";
+import ReCAPTCHA from "react-google-recaptcha";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [captchaToken, setCaptchaToken] = useState(""); // 캡차 토큰 상태
   const router = useRouter();
 
-  console.log("NODE_ENV is:", process.env.NODE_ENV);
-  console.log("NEXT_PUBLIC_CALL_BACK_URL is:", process.env.NEXT_PUBLIC_CALL_BACK_URL);
+  // reCAPTCHA 체크 완료 시 콜백
+  const handleRecaptchaChange = (token) => {
+    console.log("Recaptcha value:", token);
+    setCaptchaToken(token);
+  };
 
-  // (A) 일반 이메일+비번 로그인
+  // (A) 이메일+비번 로그인
   const handleLogin = async () => {
     setErrorMessage("");
+
+    // 1) reCAPTCHA 토큰이 없는 경우 => 사용자에게 안내
+    if (!captchaToken) {
+      setErrorMessage("로봇이 아님을 인증해주세요.");
+      return;
+    }
+
     try {
+      // 실제 로그인 로직 (예: supabase)
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       if (error) {
-        // 에러 메시지를 한글로 매핑
         if (error.message === "Invalid login credentials") {
           setErrorMessage("아이디 또는 비밀번호가 일치하지 않습니다.");
         } else {
@@ -30,6 +42,7 @@ export default function LoginPage() {
         }
         return;
       }
+
       // 로그인 성공 → 홈으로 이동
       router.push("/");
     } catch (err) {
@@ -47,8 +60,6 @@ export default function LoginPage() {
   async function handleGoogleLogin() {
     setErrorMessage("");
     try {
-      // 클라이언트 → 서버 라우트로 요청
-      // /api/social-login?provider=google → 서버에서 signInWithOAuth + data.url 반환
       const res = await fetch(`/api/social-login?provider=google`);
       const { url, error } = await res.json();
 
@@ -58,7 +69,6 @@ export default function LoginPage() {
         return;
       }
 
-      // 서버가 준 OAuth 인증 URL로 이동
       window.location.href = url;
     } catch (err) {
       console.error("구글 로그인 중 오류가 발생했어요:", err);
@@ -70,7 +80,6 @@ export default function LoginPage() {
   const handleKakaoLogin = async () => {
     setErrorMessage("");
     try {
-      // 마찬가지로 /api/social-login?provider=kakao 호출
       const res = await fetch(`/api/social-login?provider=kakao`);
       const { url, error } = await res.json();
 
@@ -80,7 +89,6 @@ export default function LoginPage() {
         return;
       }
 
-      // 서버에서 받은 URL로 이동
       window.location.href = url;
     } catch (err) {
       console.error("카카오 로그인 중 오류가 발생했습니다:", err);
@@ -91,11 +99,9 @@ export default function LoginPage() {
   return (
     <div className="h-screen w-full bg-gray-100 flex items-center justify-center px-4">
       <div className="w-full max-w-md rounded-md bg-white p-6 shadow text-base">
-        {/* 로고 영역 */}
+        {/* 로고 */}
         <div className="mb-6 text-center">
-          <h1 className="text-2xl font-bold text-orange-500">
-            여기닷
-          </h1>
+          <h1 className="text-2xl font-bold text-orange-500">여기닷</h1>
         </div>
 
         {/* 입력 폼 */}
@@ -118,7 +124,7 @@ export default function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
           />
 
-          {/* 에러 메시지 표시 */}
+          {/* 에러 메시지 */}
           {errorMessage && (
             <div className="flex items-center text-sm text-red-500">
               <svg
@@ -151,17 +157,25 @@ export default function LoginPage() {
             </button>
           </div>
 
+          {/* reCAPTCHA 체크박스 */}
+          <div className="flex justify-center">
+            <ReCAPTCHA
+              sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY} 
+              // ↑ .env 파일 등에 넣어서 빌드 시 NEXT_PUBLIC_ 변수로 노출
+              onChange={handleRecaptchaChange}
+            />
+          </div>
+
           {/* 로그인 버튼 */}
           <div className="flex flex-col items-center justify-center">
-            {/* 로그인 버튼 */}
             <button
               type="submit"
-              className="w-full rounded bg-orange-400 py-3 text-base font-medium text-white hover:bg-orange-500 mb-3"
+              className="w-full rounded bg-orange-400 py-3 text-base font-medium text-white hover:bg-orange-500  mb-3"
             >
               로그인
             </button>
 
-            {/* (1) 구글 로그인 버튼 */}
+            {/* 구글 로그인 버튼 */}
             <button
               type="button"
               onClick={handleGoogleLogin}
@@ -172,7 +186,7 @@ export default function LoginPage() {
               <span>구글 로그인</span>
             </button>
 
-            {/* (2) 카카오 로그인 버튼 */}
+            {/* 카카오 로그인 버튼 */}
             <button
               type="button"
               onClick={handleKakaoLogin}
@@ -184,7 +198,7 @@ export default function LoginPage() {
             </button>
           </div>
 
-          {/* 간편 계정 가입 */}
+          {/* 계정 가입 */}
           <div className="mt-2 text-center">
             <Link href="/signup" className="text-base text-red-500 hover:underline">
               간편 계정 가입
