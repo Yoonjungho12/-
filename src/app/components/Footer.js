@@ -75,7 +75,7 @@ export default function Footer() {
                 <p>사업자명 : 여기닷</p>
                 <p>대표자명 : 윤정호</p>
                 <p>사업자등록번호 : 476-14-02880</p>
-                <p>대표번호 (연락처): email@naver.com</p>
+                <p>대표번호 : 010-2117-7392</p>
               </div>
 
               <div className="text-[13px] my-2">
