@@ -109,12 +109,15 @@ export default function ClientUI({ city, district, theme }) {
   }
 
   function handleSelectCity(cityName) {
-    // 시·도 선택 => 구·군,테마=전체
-    router.push(`/today/${cityName}/전체/전체`);
+    // theme이 undefined인 경우 "전체"로 설정
+    const currentTheme = theme || "전체";
+    router.push(`/today/${cityName}/전체/${currentTheme}`);
   }
 
   function handleSelectDistrict(districtName) {
-    router.push(`/today/${city}/${districtName}/전체`);
+    // theme이 undefined인 경우 "전체"로 설정
+    const currentTheme = theme || "전체";
+    router.push(`/today/${city}/${districtName}/${currentTheme}`);
   }
 
   function handleSelectTheme(themeName) {
