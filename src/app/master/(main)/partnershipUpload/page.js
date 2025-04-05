@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseF";
 import SubmitForm from "@/(main)/(homefunction)/(another)/partnership/components/SubmitForm";
 import SubmitList from "@/(main)/(homefunction)/(another)/partnership/components/SubmitList";
+import imageCompression from 'browser-image-compression';
+
 export default function NewListingPage() {
   const router = useRouter();
 
@@ -86,6 +88,29 @@ export default function NewListingPage() {
 
   // 디렉토리명 (ImageUpload.js에서 참고)
   const directory = "partnershipsubmit";
+
+  // 이미지 압축 옵션
+  const compressionOptions = {
+    maxSizeMB: 1,             // 최대 파일 크기 (1MB)
+    maxWidthOrHeight: 1920,   // 최대 너비/높이
+    useWebWorker: true,       // 웹 워커 사용
+    fileType: 'image/webp',   // WebP 포맷 사용
+    initialQuality: 0.8,      // 초기 품질 (0~1)
+    alwaysKeepResolution: true, // 해상도 유지
+    signal: undefined,        // 압축 중단을 위한 시그널
+    onProgress: undefined,    // 진행률 콜백
+  };
+
+  // 이미지 압축 함수
+  async function compressImage(file) {
+    try {
+      const compressedFile = await imageCompression(file, compressionOptions);
+      return compressedFile;
+    } catch (error) {
+      console.error('이미지 압축 실패:', error);
+      return file; // 압축 실패시 원본 반환
+    }
+  }
 
   // ─────────────────────────────────────────────
   // 5) 로그인 세션 & 내 신청서 로드
@@ -344,27 +369,45 @@ export default function NewListingPage() {
   // ─────────────────────────────────────────────
   // 10) 이미지 (썸네일 + 멀티) -> 미리보기 (프론트에서만)
   // ─────────────────────────────────────────────
-  function handleThumbnailChange(e) {
+  async function handleThumbnailChange(e) {
     const file = e.target.files?.[0];
     if (!file) return;
-    setThumbnailFile(file);
-    setThumbnailPreview(URL.createObjectURL(file));
+
+    try {
+      const compressedFile = await compressImage(file);
+      setThumbnailFile(compressedFile);
+      setThumbnailPreview(URL.createObjectURL(compressedFile));
+    } catch (error) {
+      console.error('썸네일 처리 실패:', error);
+      alert('이미지 처리 중 오류가 발생했습니다.');
+    }
   }
 
-  function handleMultiFilesChange(e) {
+  async function handleMultiFilesChange(e) {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
-    const allowedCount = 10 - multiFiles.length;
-    const addFiles = files.slice(0, allowedCount);
-    const newList = [...multiFiles, ...addFiles];
-    setMultiFiles(newList);
+    try {
+      const allowedCount = 10 - multiFiles.length;
+      const addFiles = files.slice(0, allowedCount);
+      
+      // 모든 파일 압축
+      const compressedFiles = await Promise.all(
+        addFiles.map(file => compressImage(file))
+      );
 
-    const newPreviews = newList.map((f) => ({
-      name: f.name,
-      url: URL.createObjectURL(f),
-    }));
-    setMultiPreviews(newPreviews);
+      const newList = [...multiFiles, ...compressedFiles];
+      setMultiFiles(newList);
+
+      const newPreviews = newList.map((f) => ({
+        name: f.name,
+        url: URL.createObjectURL(f),
+      }));
+      setMultiPreviews(newPreviews);
+    } catch (error) {
+      console.error('멀티 이미지 처리 실패:', error);
+      alert('이미지 처리 중 오류가 발생했습니다.');
+    }
   }
 
   // ─────────────────────────────────────────────
