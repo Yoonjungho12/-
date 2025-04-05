@@ -10,113 +10,13 @@ export default function NavBar() {
   const router = useRouter();
   const pathname = usePathname(); // ★ 현재 경로 확인
 
-  const [session, setSession] = useState(null);
-
-  // 내 닉네임
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [myNickname, setMyNickname] = useState("(닉네임 없음)");
-
-  // 메가메뉴 열리고 닫히는 상태
   const [showMegaMenu, setShowMegaMenu] = useState(false);
-
-  // 로그인 여부
-  const isLoggedIn = !!session;
-
-  // 스크롤 참조
+  const [unreadCount, setUnreadCount] = useState(0);
   const menuRef = useRef(null);
 
-  // ======= 읽지 않은 메시지 수 =======
-  const [unreadCount, setUnreadCount] = useState(0);
-
-  // --------------------------------------
-  // (1) 세션 & 프로필 로드
-  // --------------------------------------
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      if (data.session?.user) {
-        fetchMyProfile(data.session.user.id);
-      }
-    });
-
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      (_event, newSession) => {
-        setSession(newSession);
-        if (newSession?.user?.id) {
-          fetchMyProfile(newSession.user.id);
-        } else {
-          setMyNickname("");
-        }
-      }
-    );
-
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, []);
-
-async function fetchMyProfile(userId) {
-  try {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("nickname")
-      .eq("user_id", userId)
-      .single();
-
-    if (error) {
-      // (A) row 없음
-      if (error.details?.includes("0 rows")) {
-        console.log("프로필이 없음 -> /socialSignUp 이동");
-        router.push("/socialSignUp");
-        return;
-      }
-
-      // (B) 진짜 오류 → 로그 남김 or 사용자에게 안내
-      console.error("profiles 조회 에러:", error);
-      setErrorMsg("프로필 로딩 중 오류가 발생했습니다.");
-      return;
-    }
-
-    // 닉네임 설정
-    setMyNickname(data?.nickname || "(닉네임 없음)");
-  } catch (err) {
-    // 예상치 못한 예외
-    console.error("예기치 않은 오류:", err);
-    setErrorMsg("알 수 없는 오류가 발생했습니다.");
-  }
-}
-
-  // --------------------------------------
-  // (2) 로그아웃
-  // --------------------------------------
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-      localStorage.removeItem("user_id");
-      router.push("/");
-    } catch (err) {
-      console.error("로그아웃 실패:", err);
-    }
-  };
-
-  // "나의활동" 클릭
-  const handleMyActivityClick = () => {
-    if (!isLoggedIn) {
-      alert("로그인을 해주세요");
-      return;
-    }
-    router.push("/mypage");
-  };
-
-  // 검색 창 → Enter 시 이동
-  const handleSearchKeyDown = (e) => {
-    if (e.key === "Enter") {
-      const query = e.target.value.trim();
-      if (!query) return;
-      router.push(`/search?q=${encodeURIComponent(query)}`);
-    }
-  };
-
-  // 모바일 메뉴 스크롤 화살표
+  // 스크롤 참조
   const scrollLeft = () => {
     if (menuRef.current) {
       menuRef.current.scrollBy({ left: -200, behavior: "smooth" });
@@ -128,31 +28,186 @@ async function fetchMyProfile(userId) {
     }
   };
 
+  // --------------------------------------
+  // (1) 로그인 상태 & 프로필 로드
+  // --------------------------------------
+  useEffect(() => {
+    // 초기 로그인 상태 확인
+    const checkAuthStatus = async () => {
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error) throw error;
+        setIsLoggedIn(!!user);
+        if (user) {
+          fetchMyProfile(user.id);
+        }
+      } catch (err) {
+        console.error("Auth check error:", err);
+        setIsLoggedIn(false);
+      }
+    };
+
+    checkAuthStatus();
+
+    // 로그인 상태 변경 감지
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        const isAuthenticated = !!session?.user;
+        setIsLoggedIn(isAuthenticated);
+        
+        if (isAuthenticated) {
+          try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+              fetchMyProfile(user.id);
+            }
+          } catch (err) {
+            console.error("Auth state change error:", err);
+            setIsLoggedIn(false);
+          }
+        } else {
+          setMyNickname("");
+        }
+      }
+    );
+
+    return () => {
+      authListener?.subscription.unsubscribe();
+    };
+  }, []);
+
+  async function fetchMyProfile(userId) {
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("nickname")
+        .eq("user_id", userId)
+        .single();
+
+      if (error) {
+        // (A) row 없음
+        if (error.details?.includes("0 rows")) {
+          console.log("프로필이 없음 -> /socialSignUp 이동");
+          router.push("/socialSignUp");
+          return;
+        }
+
+        // (B) 진짜 오류 → 로그 남김 or 사용자에게 안내
+        console.error("profiles 조회 에러:", error);
+        setErrorMsg("프로필 로딩 중 오류가 발생했습니다.");
+        return;
+      }
+
+      // 닉네임 설정
+      setMyNickname(data?.nickname || "(닉네임 없음)");
+    } catch (err) {
+      // 예상치 못한 예외
+      console.error("예기치 않은 오류:", err);
+      setErrorMsg("알 수 없는 오류가 발생했습니다.");
+    }
+  }
+
+  // --------------------------------------
+  // (2) 로그아웃
+  // --------------------------------------
+  const handleLogout = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        await supabase.auth.signOut();
+      }
+    } catch (err) {
+      console.error("Logout error:", err);
+    } finally {
+      setIsLoggedIn(false);
+      router.push("/");
+    }
+  };
+
+  // "나의활동" 클릭
+  const handleMyActivityClick = async () => {
+    if (!isLoggedIn) {
+      alert("로그인을 해주세요");
+      return;
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setIsLoggedIn(false);
+        alert("로그인 상태를 확인할 수 없습니다. 다시 로그인해주세요.");
+        return;
+      }
+      router.push("/mypage");
+    } catch (err) {
+      console.error("Auth check error:", err);
+      setIsLoggedIn(false);
+      alert("로그인 상태를 확인할 수 없습니다. 다시 로그인해주세요.");
+    }
+  };
+
+  // 검색 창 → Enter 시 이동
+  const handleSearchKeyDown = (e) => {
+    if (e.key === "Enter") {
+      const query = e.target.value.trim();
+      if (!query) return;
+      router.push(`/search?q=${encodeURIComponent(query)}`);
+    }
+  };
+
   // 전체 카테고리 버튼
   const toggleMegaMenu = () => {
     setShowMegaMenu((prev) => !prev);
   };
 
   // 1:1 쪽지 아이콘
-  const handleMessagesClick = () => {
+  const handleMessagesClick = async () => {
     if (!isLoggedIn) {
       alert("로그인이 필요합니다.");
       return;
     }
-    router.push("/messages");
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setIsLoggedIn(false);
+        alert("로그인 상태를 확인할 수 없습니다. 다시 로그인해주세요.");
+        return;
+      }
+      router.push("/messages");
+    } catch (err) {
+      console.error("Auth check error:", err);
+      setIsLoggedIn(false);
+      alert("로그인 상태를 확인할 수 없습니다. 다시 로그인해주세요.");
+    }
   };
 
   // --------------------------------------
   // (3) 읽지 않은 메시지 수 + Realtime 구독
   // --------------------------------------
   useEffect(() => {
-    if (session?.user?.id) {
-      fetchUnreadCount(session.user.id);
-      subscribeMessages();
-    } else {
+    if (!isLoggedIn) {
       setUnreadCount(0);
+      return;
     }
-  }, [session?.user?.id]);
+
+    const setupMessages = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setIsLoggedIn(false);
+          return;
+        }
+        fetchUnreadCount(user.id);
+        subscribeMessages(user.id);
+      } catch (err) {
+        console.error("Message setup error:", err);
+        setIsLoggedIn(false);
+      }
+    };
+
+    setupMessages();
+  }, [isLoggedIn]);
 
   async function fetchUnreadCount(userId) {
     try {
@@ -162,31 +217,24 @@ async function fetchMyProfile(userId) {
         .eq("receiver_id", userId)
         .is("read_at", null);
 
-      if (error) {
-        console.error("읽지 않은 메시지 조회 오류:", error);
-        return;
-      }
+      if (error) throw error;
       setUnreadCount(count || 0);
     } catch (err) {
-      console.error("fetchUnreadCount() 에러:", err);
+      console.error("fetchUnreadCount error:", err);
+      setUnreadCount(0);
     }
   }
 
-  function subscribeMessages() {
+  function subscribeMessages(userId) {
     const channel = supabase.channel("messages-nav-realtime");
     channel.on(
       "postgres_changes",
       { event: "*", schema: "public", table: "messages" },
-      (payload) => {
-        console.log("NavBar Realtime 수신:", payload);
-        if (session?.user?.id) {
-          fetchUnreadCount(session.user.id);
-        }
+      () => {
+        fetchUnreadCount(userId);
       }
     );
     channel.subscribe();
-    // 언마운트 시 해제하려면:
-    // return () => supabase.removeChannel(channel);
   }
 
   // --------------------------------------
@@ -335,8 +383,6 @@ async function fetchMyProfile(userId) {
                   <img src="/icons/log-in.svg" alt="로그인 아이콘" width={30} />
                   <span className="text-sm mt-">로그인</span>
                 </Link>
-
-                {/* 비로그인 상태에서는 나의활동/쪽지 숨기기 */}
 
                 {/* 제휴문의 */}
                 <div className="flex cursor-pointer flex-col items-center text-gray-600 hover:text-orange-500">
