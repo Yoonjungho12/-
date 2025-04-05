@@ -1,49 +1,34 @@
 export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server';
-import { mokKeyManager } from '../../../../lib/mok/mok_Key_Manager_v1.0.3';
+import axios from 'axios';
 import urlencode from 'urlencode';
+
+// ✅ src/lib/mok 기준 상대경로 (현재 위치 기준: src/app/api/mok/mok_std_result)
+const mobileOK = require('../../../../lib/mok/mok_Key_Manager_v1.0.3.js');
+mobileOK.keyInit(process.cwd() + '/secure/mok_keyInfo.dat', 'thdwkd12!');
 
 export async function POST(request) {
   try {
-    const body = await request.json();
-    const { requestId, encryptedData } = body;
+    const body = await request.text();
+    const decoded = decodeURIComponent(JSON.parse(body).data);
+    const parsed = JSON.parse(decoded);
 
-    // 필수 파라미터 검증
-    if (!requestId || !encryptedData) {
-      return NextResponse.json(
-        { error: '필수 파라미터가 누락되었습니다.' },
-        { status: 400 }
-      );
-    }
+    const token = parsed.encryptMOKKeyToken;
+    if (!token) return NextResponse.json({ error: '토큰 없음' }, { status: 400 });
 
-    // 모크 키 매니저 초기화
-    const keyManager = new mokKeyManager();
-    await keyManager.initialize();
-
-    // 인증 결과 복호화
-    const decryptedResult = await keyManager.decryptResult({
-      requestId,
-      encryptedData,
-    });
-
-    // 인증 결과 검증
-    if (!decryptedResult || !decryptedResult.success) {
-      return NextResponse.json(
-        { error: '인증 결과가 유효하지 않습니다.' },
-        { status: 400 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      result: decryptedResult,
-    });
-  } catch (error) {
-    console.error('인증 결과 처리 중 오류:', error);
-    return NextResponse.json(
-      { error: '인증 결과 처리 중 오류가 발생했습니다.' },
-      { status: 500 }
+    const mokRes = await axios.post(
+      'https://scert.mobile-ok.com/gui/service/v1/result/request',
+      { encryptMOKKeyToken: token }
     );
+
+    const encrypted = mokRes.data.encryptMOKResult;
+    const decrypted = mobileOK.getResult(encrypted);
+    const user = JSON.parse(decrypted);
+
+    return NextResponse.json({ success: true, user });
+  } catch (err) {
+    console.error('복호화 실패:', err);
+    return NextResponse.json({ error: '복호화 실패' }, { status: 500 });
   }
 }
