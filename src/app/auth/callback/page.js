@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabaseF";
+import { supabase } from "@/lib/supabaseF"; // ★ 클라이언트 전용 Supabase 객체 (anon key)
 
 export default function AuthCallbackPage() {
   const [message, setMessage] = useState("처리 중입니다...");
@@ -9,86 +9,120 @@ export default function AuthCallbackPage() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    const debug = (msg) => {
-      console.log("🔍", msg);
-      setMessage(msg);
-    };
+    let timeoutId;
+    
+    const handleAuth = async () => {
+      try {
+        // 1) ?provider=google 등 파라미터 확인
+        const provider = searchParams.get("provider") || "unknown";
+        
+        // 2) 브라우저 URL에서 해시 부분(#access_token=...) 가져오기
+        const currentUrl = window.location.href;
+        const hashIndex = currentUrl.indexOf("#");
+        if (hashIndex < 0) {
+          console.log("해시(#) 파라미터가 전혀 없습니다.");
+          setMessage("해시 파라미터가 없습니다. 세션 설정 불가!");
+          router.push("/");
+          return;
+        }
 
-    const processCallback = async () => {
-      const provider = searchParams.get("provider") || "unknown";
-      debug(`provider: ${provider}`);
+        // 3) '#' 뒤 문자열만 파싱
+        const hashString = currentUrl.substring(hashIndex + 1); 
+        const params = new URLSearchParams(hashString);
+        const accessToken = params.get("access_token");
+        const refreshToken = params.get("refresh_token");
 
-      const currentUrl = window.location.href;
-      const hashIndex = currentUrl.indexOf("#");
-      if (hashIndex < 0) {
-        debug("❌ 해시(#) 파라미터 없음");
-        return;
-      }
+        if (!accessToken) {
+          setMessage("access_token이 없습니다. 세션 설정 불가!");
+          router.push("/");
+          return;
+        }
 
-      const hashString = currentUrl.substring(hashIndex + 1);
-      const params = new URLSearchParams(hashString);
-      const accessToken = params.get("access_token");
-      const refreshToken = params.get("refresh_token");
-      console.log("📦 accessToken:", accessToken);
-      console.log("📦 refreshToken:", refreshToken);
+        // 4) Supabase 세션 설정
+        const { data, error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
 
-      if (!accessToken) {
-        debug("❌ access_token 없음");
-        return;
-      }
+        if (error) {
+          console.error("setSession 에러:", error);
+          setMessage("세션 설정 에러: " + error.message);
+          router.push("/");
+          return;
+        }
 
-      // ✅ 기존 세션 초기화
-      await supabase.auth.signOut();
+        console.log("=== Supabase 세션 설정 완료 ===", data);
 
-      debug("✅ access_token 수신, 세션 설정 시도");
-      const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken,
-      });
+        // 5) 이제 유저 정보 조회
+        const { data: userData, error: userError } = await supabase.auth.getUser();
+        if (userError || !userData?.user) {
+          console.error("유저 조회 에러:", userError);
+          setMessage("유저 조회 실패: " + (userError?.message || "알 수 없는 오류"));
+          router.push("/");
+          return;
+        }
 
-      if (sessionError) {
-        debug("❌ setSession 에러: " + sessionError.message);
-        return;
-      }
-      debug("✅ setSession 완료");
+        const user = userData.user;
+        console.log("user 전체 정보:", user);
+        const userId = user.id;
+        const email = user.email || user.user_metadata?.email;
+        
+        // 6) provider별 닉네임 로직
+        let nickname = "(소셜 사용자)";
+        if (provider === "kakao") {
+          nickname = user.user_metadata?.nickname || "(카카오 사용자)";
+        } else if (provider === "google") {
+          nickname =
+            user.user_metadata?.name ||
+            user.user_metadata?.full_name ||
+            user.user_metadata?.given_name ||
+            "(구글 사용자)";
+        }
 
-      // ✅ 세션 적용을 기다림
-      await new Promise((r) => setTimeout(r, 300));
+        console.log("=== 로그인된 유저 ===");
+        console.log("User ID (UID):", userId);
+        console.log("이메일:", email);
+        console.log("닉네임:", nickname);
 
-      const { data: userData, error: userError } = await supabase.auth.getUser();
-      if (userError || !userData?.user) {
-        debug("❌ 유저 조회 실패: " + (userError?.message || "no user"));
-        return;
-      }
+        // 7) DB에 프로필이 있는지 확인
+        const { data: existingProfile, error: profileError } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("user_id", userId)
+          .maybeSingle();
 
-      const user = userData.user;
-      const userId = user.id;
-      debug(`✅ 유저 조회 완료: ${user.email || user.user_metadata?.email}`);
+        if (profileError) {
+          console.error("프로필 조회 에러:", profileError);
+          setMessage("프로필 조회 실패: " + profileError.message);
+          router.push("/");
+          return;
+        }
 
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", userId)
-        .maybeSingle();
-
-      if (profileError) {
-        debug("❌ 프로필 조회 실패: " + profileError.message);
-        return;
-      }
-
-      if (profile) {
-        debug("✅ 기존 프로필 있음 → /로 이동");
+        if (existingProfile) {
+          console.log("기존 프로필이 있음 -> 루트(/) 이동");
+          router.push("/");
+        } else {
+          console.log("기존 프로필이 없음 -> /socialSignUp 이동");
+          router.push("/socialSignUp");
+        }
+      } catch (error) {
+        console.error("인증 처리 중 에러:", error);
+        setMessage("인증 처리 중 에러가 발생했습니다.");
         router.push("/");
-      } else {
-        debug("ℹ️ 프로필 없음 → /socialSignUp 으로 이동");
-        router.push("/socialSignUp");
       }
     };
 
-    processCallback().catch((err) => {
-      console.error("🚨 콜백 처리 중 치명적 에러:", err);
-      setMessage("콜백 처리 중 예외 발생: " + err.message);
-    });
+    // 타임아웃 설정 (30초)
+    timeoutId = setTimeout(() => {
+      setMessage("인증 처리 시간이 초과되었습니다.");
+      router.push("/");
+    }, 30000);
+
+    handleAuth();
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [searchParams, router]);
 
   return (
@@ -107,15 +141,24 @@ export default function AuthCallbackPage() {
 
 const styles = {
   container: {
-    display: "flex", flexDirection: "column", alignItems: "center",
-    justifyContent: "center", height: "40vh", backgroundColor: "#fff",
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: '40vh',
+    backgroundColor: '#fff',
   },
   spinner: {
-    width: "50px", height: "50px", marginBottom: "16px",
-    border: "6px solid #f3f3f3", borderTop: "6px solid #3498db",
-    borderRadius: "50%", animation: "spin 1s linear infinite",
+    width: '50px',
+    height: '50px',
+    marginBottom: '16px',
+    border: '6px solid #f3f3f3',
+    borderTop: '6px solid #3498db',
+    borderRadius: '50%',
+    animation: 'spin 1s linear infinite',
   },
   text: {
-    fontSize: "14px", color: "#666",
+    fontSize: '14px',
+    color: '#666',
   },
 };

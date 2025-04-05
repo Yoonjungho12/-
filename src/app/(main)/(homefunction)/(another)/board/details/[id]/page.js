@@ -9,9 +9,7 @@ import DetailClientMobile from "./DetailClientMobile";
  * (1) 메타데이터 설정 함수 (generateMetadata)
  */
 export async function generateMetadata({ params:param }) {
-  const cookieStore = await cookies();
-  console.log("🍪 쿠키 목록:", [...cookieStore.getAll()]);
-  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const supabase = createServerComponentClient({ cookies: async () => await cookies() });
   const params = await param;
   const splitted = params.id?.split("-");
   const numericId = splitted?.[0];
@@ -43,8 +41,7 @@ export async function generateMetadata({ params:param }) {
  * (2) 실제 상세 페이지 컴포넌트
  */
 export default async function DetailPage({ params:param }) {
-  const cookieStore = await cookies();
-  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const supabase = createServerComponentClient({ cookies: async () => await cookies() });
   const requestHeaders = await headers();
   const params = await param;
   const splitted = params.id?.split("-");
