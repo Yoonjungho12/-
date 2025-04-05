@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation"; // ★ usePathname 추가
 import Link from "next/link";
+import Image from 'next/image';
 import { supabase } from "../lib/supabaseF";
 
 export default function NavBar() {
@@ -97,7 +98,7 @@ async function fetchMyProfile(userId) {
     }
   };
 
-  // “나의활동” 클릭
+  // "나의활동" 클릭
   const handleMyActivityClick = () => {
     if (!isLoggedIn) {
       alert("로그인을 해주세요");
@@ -198,12 +199,18 @@ async function fetchMyProfile(userId) {
           아니면 null → 마운트 안 함
        */}
       {pathname === "/" ? (
-        <div className="flex items-center px-4 py-3 md:hidden space-x-3">
-          {/* 로고 */}
-          <Link href="/">
-            <div className="flex items-center space-x-1 mr-10 ml-3 text-xl font-bold">
-              <span className="text-orange-500">여기닷</span>
-            </div>
+        <div className="flex items-center px-4 pt-3 pb-1 md:hidden space-x-3">
+          {/* 로고 (모바일) */}
+          <Link href="/" className="flex items-center h-fit">
+            <Image
+              src="/logo/logo.jpeg"
+              alt="여기닷 로고"
+              width={200}
+              height={141}
+              quality={100}
+              priority
+              className="w-[100px] h-auto -mt-3 md:w-[120px] md:-mt-2.5"
+            />
           </Link>
 
           {/* 검색창 (모바일) */}
@@ -230,14 +237,20 @@ async function fetchMyProfile(userId) {
       ) : null}
 
       {/* (B) PC 해상도 상단바 */}
-      <div className="mx-auto hidden w-full max-w-7xl px-6 py-3 md:flex">
+      <div className="mx-auto hidden w-full max-w-7xl px-6 pt-3 pb-1 md:flex">
         <div className="grid w-full grid-cols-3 items-center">
-          {/* 왼쪽: 로고 */}
+          {/* 왼쪽: 로고 (PC) */}
           <div className="flex justify-start">
-            <Link href="/">
-              <div className="flex items-center space-x-2 text-2xl font-bold text-orange-500">
-                <span>여기닷</span>
-              </div>
+            <Link href="/" className="flex items-center h-fit">
+              <Image
+                src="/logo/logo.jpeg"
+                alt="여기닷 로고"
+                width={200}
+                height={141}
+                quality={100}
+                priority
+                className="w-[120px] h-auto -mt-2.5"
+              />
             </Link>
           </div>
 

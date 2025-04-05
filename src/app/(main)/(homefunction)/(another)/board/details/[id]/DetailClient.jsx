@@ -454,6 +454,8 @@ export default function DetailClient({ row, images, numericId }) {
     // 1) userId 구하기
     const { data } = await supabase.auth.getUser();
     const userId = data?.user?.id;
+    console.log("🔍 인증 요청 직전 userId:", userId);
+    console.log("📦 body payload:", JSON.stringify({ userId }));
 
     if (!userId) {
       alert("로그인이 필요합니다.");
