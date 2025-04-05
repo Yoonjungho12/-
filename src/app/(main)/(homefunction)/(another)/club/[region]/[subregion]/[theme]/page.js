@@ -19,8 +19,8 @@ export async function generateMetadata({ params:a, searchParams:b}) {
   const themeDecoded = decodeURIComponent(theme);
 
   // 원하는 대로 메타 정보 생성
-  const pageTitle = `여기닷 ${regionDecoded} ${subregionDecoded} ${themeDecoded} 추천 및 마사지 정보`;
-  const pageDesc = `${regionDecoded} ${subregionDecoded} 지역의 ${themeDecoded} 업소 정보 및 리뷰를 확인하세요!`;
+  const pageTitle = `여기닷 ${regionDecoded} ${subregionDecoded} ${themeDecoded} 추천정보`;
+  const pageDesc = `${regionDecoded} ${subregionDecoded} 지역의 ${themeDecoded} 정보 및 리뷰를 확인하세요!`;
 
   return {
     title: pageTitle,

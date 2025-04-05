@@ -1,42 +1,42 @@
+// src/pages/index.js
 'use client'
+import { useEffect } from 'react';
 
-import { useEffect } from 'react'
-
-export default function MokTestPage() {
+export default function Home() {
   useEffect(() => {
-    const script = document.createElement('script')
-    script.src = 'https://scert.mobile-ok.com/resources/js/index.js'
-    script.async = true
-    document.body.appendChild(script)
+    const script = document.createElement('script');
+    script.src = 'https://scert.mobile-ok.com/resources/js/index.js'; // 개발용
+    script.async = true;
+    document.body.appendChild(script);
 
-    const callbackScript = document.createElement('script')
-    callbackScript.innerHTML = `
+    const resultScript = document.createElement('script');
+    resultScript.innerHTML = `
       function result(data) {
         try {
           const parsed = JSON.parse(data);
-          alert("인증 성공: " + JSON.stringify(parsed, null, 2));
+          alert("✅ 본인인증 성공\\n" + JSON.stringify(parsed, null, 2));
         } catch (e) {
-          alert("인증 결과 오류: " + data);
+          alert("❌ 인증 결과 파싱 실패: " + data);
         }
       }
-    `
-    document.body.appendChild(callbackScript)
-  }, [])
+    `;
+    document.body.appendChild(resultScript);
+  }, []);
 
-  const handleClick = () => {
+  const handleAuthClick = () => {
     window.MOBILEOK.process(
-      '/api/mok/mok_std_request',
+      'http://localhost:4000/mok/mok_std_request', // 📌 Express 서버 URL
       'WB',
       'result'
-    )
-  }
+    );
+  };
 
   return (
-    <div style={{ padding: 40 }}>
-      <h2>🔐 Mobile-OK 본인확인 테스트 (App Router)</h2>
-      <button onClick={handleClick} style={{ fontSize: 18 }}>
-        본인인증 시작
+    <main style={{ padding: '2rem' }}>
+      <h1>📲 본인확인 시작</h1>
+      <button onClick={handleAuthClick} style={{ fontSize: '1.2rem' }}>
+        본인인증 하러가기
       </button>
-    </div>
-  )
-} 
+    </main>
+  );
+}
