@@ -195,26 +195,62 @@ function NearbyShops({ currentShopId }) {
 export default function DetailClientMobile({ row, images, numericId }) {
   // 세션 관련
   const [session, setSession] = useState(null);
+  const [isAdultUser, setIsAdultUser] = useState(false);
+  const [isAdultContent, setIsAdultContent] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showBlur, setShowBlur] = useState(true);
   // "가고싶다" 여부
   const [isSaved, setIsSaved] = useState(false);
   // 조회수
   const [views, setViews] = useState(row.views || 0);
   const [hasCountedView, setHasCountedView] = useState(false);
 
-  // 세션 체크
+  // 세션 체크 및 성인 여부 확인
   useEffect(() => {
+    // 초기 세션 체크
     supabase.auth
       .getSession()
-      .then(({ data }) => {
-        setSession(data?.session || null);
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("[getSession error]:", error);
+        } else {
+          setSession(data.session || null);
+          if (data.session?.user) {
+            // 성인 여부 확인
+            supabase
+              .from('profiles')
+              .select('is_adult')
+              .eq('user_id', data.session.user.id)
+              .single()
+              .then(({ data: profile, error: profileError }) => {
+                if (profileError) {
+                  console.error("[profile error]:", profileError);
+                } else {
+                  setIsAdultUser(profile?.is_adult || false);
+                }
+              });
+          }
+        }
       })
-      .catch((e) => console.error("getSession error:", e));
+      .catch((err) => {
+        console.error("[getSession catch]:", err);
+      });
 
-    const { data: listener } = supabase.auth.onAuthStateChange(
+    // 세션 변경 감지
+    const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
         setSession(newSession);
-        // anon -> real merge
         if (event === "SIGNED_IN" && newSession?.user?.id) {
+          // 성인 여부 확인
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('is_adult')
+            .eq('user_id', newSession.user.id)
+            .single();
+          
+          setIsAdultUser(profile?.is_adult || false);
+
+          // 익명 사용자 처리
           const realId = newSession.user.id;
           const anonId = localStorage.getItem("anon_user_id");
           if (anonId && anonId !== realId) {
@@ -224,13 +260,64 @@ export default function DetailClientMobile({ row, images, numericId }) {
               .eq("user_id", anonId);
             localStorage.setItem("anon_user_id", realId);
           }
+        } else if (event === "SIGNED_OUT") {
+          setIsAdultUser(false);
         }
       }
     );
+
     return () => {
-      listener?.subscription.unsubscribe();
+      authListener?.subscription.unsubscribe();
     };
   }, []);
+
+  // 성인 컨텐츠 체크
+  useEffect(() => {
+    const checkAdultContent = async () => {
+      try {
+        const { data: themeRows, error: themeErr } = await supabase
+          .from("partnershipsubmit_themes")
+          .select(`
+            theme_id,
+            themes!inner (
+              adult_admitted
+            )
+          `)
+          .eq("submit_id", numericId);
+
+        if (themeErr) console.log('테마 조회 에러:', themeErr);
+
+        if (themeRows && themeRows.length > 0) {
+          const isAdult = themeRows.some((row) => {
+            return row.themes?.adult_admitted === true;
+          });
+          setIsAdultContent(isAdult);
+        } else {
+          setIsAdultContent(false);
+        }
+      } catch (error) {
+        console.error('성인 컨텐츠 체크 에러:', error);
+        setIsAdultContent(false);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkAdultContent();
+  }, [numericId]);
+
+  // 블러 처리 여부 결정
+  useEffect(() => {
+    if (!isLoading) {
+      if (!isAdultContent) {
+        setShowBlur(false);
+      } else if (session && isAdultUser) {
+        setShowBlur(false);
+      } else {
+        setShowBlur(true);
+      }
+    }
+  }, [isLoading, isAdultContent, session, isAdultUser]);
 
   // (2) userId 결정 + 조회수
   let userId = null;
@@ -287,7 +374,7 @@ export default function DetailClientMobile({ row, images, numericId }) {
     })();
   }, [userId, numericId, hasCountedView]);
 
-  // (3) “가고싶다” 여부 체크
+  // (3) "가고싶다" 여부 체크
   useEffect(() => {
     if (!session?.user?.id || !numericId) return;
     supabase
@@ -551,8 +638,89 @@ export default function DetailClientMobile({ row, images, numericId }) {
     }
   }
 
+  // 본인인증 스크립트 로드
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://scert.mobile-ok.com/resources/js/index.js';
+    script.async = true;
+    document.body.appendChild(script);
+
+    const resultScript = document.createElement('script');
+    resultScript.innerHTML = `
+      function result(data) {
+        try {
+          const parsed = JSON.parse(data);
+          // 성인 인증 성공 시 프로필 업데이트
+          if (parsed) {
+            supabase
+              .from('profiles')
+              .update({ is_adult: true })
+              .eq('user_id', '${session?.user?.id}')
+              .then(({ error }) => {
+                if (!error) {
+                  setIsAdultUser(true);
+                  setShowBlur(false);
+                }
+              });
+          }
+        } catch (e) {
+          console.error("인증 결과 파싱 실패:", e);
+        }
+      }
+    `;
+    document.body.appendChild(resultScript);
+
+    return () => {
+      document.body.removeChild(script);
+      document.body.removeChild(resultScript);
+    };
+  }, [session?.user?.id]);
+
+  const handleAuthClick = () => {
+    window.MOBILEOK.process(
+      'https://www.yeogidot.com/mok/mok_std_request',
+      'WB',
+      'result'
+    );
+  };
+
   return (
     <div className="relative max-w-md mx-auto bg-white">
+      {/* 블러 오버레이 */}
+      {showBlur && (
+        <div className="fixed inset-0 bg-white/80 backdrop-blur-sm z-10 flex items-center justify-center">
+          <div className="text-center p-4">
+            <p className="text-xl font-bold mb-2">
+              {!session ? "로그인이 필요한 컨텐츠입니다" : "성인 인증이 필요한 컨텐츠입니다"}
+            </p>
+            <p className="text-gray-600 mb-4">
+              {!session 
+                ? "로그인 후 이용해주세요" 
+                : "성인 인증 후 이용해주세요"}
+            </p>
+            {!session ? (
+              <a 
+                href="/login" 
+                className="inline-block px-6 py-3 rounded-lg text-white font-medium
+                  bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700
+                  transition-all duration-200 transform hover:scale-105 shadow-lg"
+              >
+                로그인 하기
+              </a>
+            ) : (
+              <button 
+                onClick={handleAuthClick}
+                className="inline-block px-6 py-3 rounded-lg text-white font-medium
+                  bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700
+                  transition-all duration-200 transform hover:scale-105 shadow-lg"
+              >
+                성인 인증 하기
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* 이미지 슬라이드 영역 */}
       <div
         className="relative w-full overflow-hidden"
@@ -649,7 +817,7 @@ export default function DetailClientMobile({ row, images, numericId }) {
             </div>
           )}
 
-          {/* “가고싶다” 버튼 */}
+          {/* "가고싶다" 버튼 */}
           <button
             onClick={handleSave}
             className={`absolute top-2 right-2 w-8 h-8 bg-black/60 rounded-full

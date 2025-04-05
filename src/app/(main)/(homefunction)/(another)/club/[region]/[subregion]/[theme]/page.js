@@ -2,6 +2,7 @@
 
 import RegionSelectorSSR from "./RegionSelector";
 import PartnershipTable from "./PartnershipTable";
+import { supabase } from "@/lib/supabaseF";
 
 /**
  * (1) 메타데이터를 동적으로 생성
@@ -48,6 +49,20 @@ export default async function BoardPage({ params:a, searchParams:b }) {
   const subregionDecoded = decodeURIComponent(subregion);
   const themeDecoded = decodeURIComponent(theme);
 
+  // 성인 인증 여부 확인
+  const { data: { session } } = await supabase.auth.getSession();
+  let isAdult = false;
+  
+  if (session?.user?.id) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('isAdult')
+      .eq('user_id', session.user.id)
+      .single();
+      
+    isAdult = profile?.isAdult || false;
+  }
+
   // 디버그 로그 (서버 콘솔)
 
   // (A) 상단 헤더
@@ -67,6 +82,15 @@ export default async function BoardPage({ params:a, searchParams:b }) {
         </h2>
       </div>
 
+      {/* 성인 인증 상태 표시 */}
+      <div className="mb-4 p-4 bg-gray-100 rounded-lg">
+        {isAdult ? (
+          <p className="text-green-600">성인 인증이 완료되었습니다.</p>
+        ) : (
+          <p className="text-red-600">성인 인증이 필요합니다.</p>
+        )}
+      </div>
+
       {/* (B) SSR 지역/테마 표 */}
       <RegionSelectorSSR
         regionSlug={regionDecoded}
@@ -76,7 +100,7 @@ export default async function BoardPage({ params:a, searchParams:b }) {
 
       {/* (C) 파트너십 테이블에 searchParams 포함하여 전달 */}
       <PartnershipTable
-        searchParams={searchParams}        // 추가!
+        searchParams={searchParams}
         regionSlug={regionDecoded}
         subregionSlug={subregionDecoded}
         themeName={themeDecoded}

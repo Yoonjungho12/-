@@ -7,7 +7,7 @@ import DetailClientMobile from "./DetailClientMobile";
 
 /**
  * (1) 메타데이터 설정 함수 (generateMetadata)
- *  ...
+ *  기존 내용 그대로 유지하면서, 필요 없는 부분은 없으니 그대로 둡니다.
  */
 export async function generateMetadata({ params: Paramas }) {
   // (기존 내용 동일)
@@ -16,7 +16,7 @@ export async function generateMetadata({ params: Paramas }) {
   const splitted = params.id.split("-");
   const numericId = splitted[0];
   if (!numericId) return {};
-  
+
   const { data: row, error } = await supabase
     .from("partnershipsubmit")
     .select("*")
@@ -25,8 +25,8 @@ export async function generateMetadata({ params: Paramas }) {
   if (error || !row) return {};
 
   const companyName = row.company_name || "상세 페이지";
-  const pageTitle  = `${companyName.trim()} - 여기닷`;
-  const description= `${companyName.trim()} 가장 인기있는 웨이터를 찾고 계신가요!? 여기닷을 방문하시면~~~`;
+  const pageTitle = `${companyName.trim()} - 여기닷`;
+  const description = `${companyName.trim()} 가장 인기있는 웨이터를 찾고 계신가요!? 여기닷을 방문하시면~~~`;
 
   return {
     title: pageTitle,
@@ -70,7 +70,7 @@ export default async function DetailPage({ params: Params }) {
     .eq("submit_id", numericId);
 
   // D. Headers - user-agent (여기가 중요)
-  //   => 반드시 await headers() 
+  //   => 반드시 await headers()
   const requestHeaders = await headers();
   const userAgent = requestHeaders.get("user-agent") || "";
 
