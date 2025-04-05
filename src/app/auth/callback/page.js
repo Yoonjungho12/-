@@ -27,7 +27,6 @@ export default function AuthCallbackPage() {
 
       const hashString = currentUrl.substring(hashIndex + 1);
       const params = new URLSearchParams(hashString);
-
       const accessToken = params.get("access_token");
       const refreshToken = params.get("refresh_token");
       console.log("📦 accessToken:", accessToken);
@@ -38,22 +37,23 @@ export default function AuthCallbackPage() {
         return;
       }
 
+      // ✅ 기존 세션 초기화
+      await supabase.auth.signOut();
+
       debug("✅ access_token 수신, 세션 설정 시도");
       const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
         access_token: accessToken,
         refresh_token: refreshToken,
       });
-      debug("✅ setSession 완료", result); // 여기 안 뜨면 진짜 여기서 멈춘 거임
-      await supabase.auth.refreshSession(); 
-      debug("✅ refreshSession 완료");
-      
+
       if (sessionError) {
         debug("❌ setSession 에러: " + sessionError.message);
         return;
       }
-      document.cookie = `sb-zuxdcurogblcfkedqgvy-auth-token=${accessToken}; Path=/; Secure; SameSite=Lax`;
-      debug("✅ 세션 설정 완료 → 유저 조회");
-      await new Promise((r) => setTimeout(r, 500)); // 세션 적용 대기
+      debug("✅ setSession 완료");
+
+      // ✅ 세션 적용을 기다림
+      await new Promise((r) => setTimeout(r, 300));
 
       const { data: userData, error: userError } = await supabase.auth.getUser();
       if (userError || !userData?.user) {
