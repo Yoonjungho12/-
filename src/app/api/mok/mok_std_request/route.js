@@ -1,13 +1,15 @@
-export const runtime = 'nodejs';
+export const runtime = 'nodejs'; // ✅ 필수!
 
 import { NextResponse } from 'next/server';
-import { getCurrentDate } from '../../../../lib/utils';
 import { v4 as uuidv4 } from 'uuid';
-
-const mobileOK = require('../../../../lib/mok/mok_Key_Manager_v1.0.3.js');
-mobileOK.keyInit(process.cwd() + '/secure/mok_keyInfo.dat', 'thdwkd12!');
+import { getCurrentDate } from '@/lib/utils';
 
 export async function POST() {
+  // ✅ 핵심 포인트: 여기서만 require! (import ❌)
+  const mobileOK = require('@/lib/mok/mok_Key_Manager_v1.0.3.js');
+
+  mobileOK.keyInit(process.cwd() + '/secure/mok_keyInfo.dat', 'thdwkd12!');
+
   const clientTxId = 'LINKUP' + uuidv4().replace(/-/g, '') + '|' + getCurrentDate();
   const encClientTxId = mobileOK.RSAEncrypt(clientTxId);
 
@@ -21,4 +23,4 @@ export async function POST() {
   };
 
   return NextResponse.json(payload);
-} 
+}
