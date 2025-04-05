@@ -55,7 +55,7 @@ export default function MainoneClient({ initialRegion, initialData }) {
   const [shopList, setShopList] = useState(initialData || []);
   const [isLoading, setIsLoading] = useState(false);
 
-  // 4) “가로 스크롤”에 사용할 Ref를 **미리** 선언
+  // 4) "가로 스크롤"에 사용할 Ref를 **미리** 선언
   const ulRef = useRef(null);
 
   // 5) Supabase에서 데이터 가져오기
@@ -280,6 +280,9 @@ export default function MainoneClient({ initialRegion, initialData }) {
               const imageUrl =
                 process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL +'/'+
                 item.thumbnail_url;
+              console.log('Generated Image URL:', imageUrl);
+              console.log('Storage URL:', process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL);
+              console.log('Thumbnail URL:', item.thumbnail_url);
               const detailUrl = `/board/details/${item.id}`;
 
               return (
@@ -370,7 +373,10 @@ export default function MainoneClient({ initialRegion, initialData }) {
            const imageUrl =
                 process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL +'/'+
                 item.thumbnail_url;
-              const detailUrl = `/board/details/${item.id}`;
+            console.log('Generated Image URL:', imageUrl);
+            console.log('Storage URL:', process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL);
+            console.log('Thumbnail URL:', item.thumbnail_url);
+            const detailUrl = `/board/details/${item.id}`;
 
             return (
               <Link
