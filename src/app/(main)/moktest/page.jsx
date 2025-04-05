@@ -24,8 +24,7 @@ export default function Home() {
   }, []);
 
   const handleAuthClick = () => {
-    console.log("🔍 인증 요청 직전 userId:", userId);
-console.log("📦 body payload:", JSON.stringify({ userId }));
+
     window.MOBILEOK.process(
       'https://www.yeogidot.com/mok/mok_std_request', // 📌 Express 서버 URL
       'WB',

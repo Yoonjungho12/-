@@ -10,11 +10,11 @@ const nextConfig = {
     return [
       {
         source: '/mok/mok_std_request',
-        destination: 'https://dreamsecurity.onrender.com/mok/mok_std_request',
+        destination: 'https://dream-security.fly.dev//mok/mok_std_request',
       },
       {
         source: '/mok/mok_std_result',
-        destination: 'https://dreamsecurity.onrender.com/mok/mok_std_result',
+        destination: 'https://dream-security.fly.dev//mok/mok_std_result',
       },
     ];
   },
