@@ -209,7 +209,7 @@ async function fetchMyProfile(userId) {
               height={141}
               quality={100}
               priority
-              className="w-[107px] h-auto -mt-3 md:w-[115px] md:-mt-3.5"
+              className="w-[80px] h-auto -mt-3 md:w-[90px] md:-mt-3.5"
             />
           </Link>
 
@@ -249,7 +249,7 @@ async function fetchMyProfile(userId) {
                 height={141}
                 quality={100}
                 priority
-                className="w-[115px] h-auto -mt-3.5"
+                className="w-[90px] h-auto -mt-3.5"
               />
             </Link>
           </div>
