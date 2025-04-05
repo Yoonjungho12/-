@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabaseF";
 import CommentsUI from "./comment";
 import MapKakao from "./MapKakao";
 import { MegaphoneIcon } from "@heroicons/react/24/outline";
+import { useRouter } from "next/navigation";
 const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL;
 
 /** (A) 비로그인 시 localStorage 익명 UUID */
@@ -51,20 +52,16 @@ function formatPrice(num) {
  *  images: partnershipsubmit_images[]
  *  numericId: partnershipsubmit.id
  */
-export default function DetailClient({ row, images, numericId }) {
-  // ─────────────────────────────────────────────────────────
-  // 1) session, 조회수, 가고싶다
-  // ─────────────────────────────────────────────────────────
+export default function DetailClient({ row, images, numericId, showBlurDefault }) {
+  const router = useRouter();
   const [session, setSession] = useState(null);
   const [isSaved, setIsSaved] = useState(false);
   const [views, setViews] = useState(row.views || 0);
   const [hasCountedView, setHasCountedView] = useState(false);
-  const [isAdultContent, setIsAdultContent] = useState(false);
-  const [isAdultUser, setIsAdultUser] = useState(false);
+  const [showBlur, setShowBlur] = useState(showBlurDefault);
   const [isLoading, setIsLoading] = useState(true);
-  const [showBlur, setShowBlur] = useState(true);
 
-  // (A) 세션 체크 + 성인 여부
+  // (A) 세션 체크
   useEffect(() => {
     supabase.auth
       .getSession()
@@ -73,21 +70,6 @@ export default function DetailClient({ row, images, numericId }) {
           console.error("[getSession error]:", error);
         } else {
           setSession(data.session || null);
-          if (data.session?.user) {
-            // 성인 여부
-            supabase
-              .from("profiles")
-              .select("is_adult")
-              .eq("user_id", data.session.user.id)
-              .single()
-              .then(({ data: profile, error: profileError }) => {
-                if (profileError) {
-                  console.error("[profile error]:", profileError);
-                } else {
-                  setIsAdultUser(profile?.is_adult || false);
-                }
-              });
-          }
         }
       })
       .catch((err) => console.error("[getSession catch]:", err));
@@ -95,27 +77,6 @@ export default function DetailClient({ row, images, numericId }) {
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
         setSession(newSession);
-        if (event === "SIGNED_IN" && newSession?.user?.id) {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("is_adult")
-            .eq("user_id", newSession.user.id)
-            .single();
-          setIsAdultUser(profile?.is_adult || false);
-
-          // 익명 -> 실제유저
-          const realId = newSession.user.id;
-          const anonId = localStorage.getItem("anon_user_id");
-          if (anonId && anonId !== realId) {
-            await supabase
-              .from("partnershipsubmit_views_log")
-              .update({ user_id: realId })
-              .eq("user_id", anonId);
-            localStorage.setItem("anon_user_id", realId);
-          }
-        } else if (event === "SIGNED_OUT") {
-          setIsAdultUser(false);
-        }
       }
     );
 
@@ -361,44 +322,7 @@ export default function DetailClient({ row, images, numericId }) {
     "bg-yellow-50 text-yellow-500",
   ];
 
-  // (H) 성인 컨텐츠 체크
-  useEffect(() => {
-    const checkAdultContent = async () => {
-      try {
-        const { data: themeRows } = await supabase
-          .from("partnershipsubmit_themes")
-          .select(`theme_id, themes!inner (adult_admitted)`)
-          .eq("submit_id", numericId);
-
-        if (themeRows && themeRows.length > 0) {
-          const isAdult = themeRows.some((t) => t.themes?.adult_admitted === true);
-          setIsAdultContent(isAdult);
-        } else {
-          setIsAdultContent(false);
-        }
-      } catch (err) {
-        console.error('성인 컨텐츠 체크 에러:', err);
-        setIsAdultContent(false);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    checkAdultContent();
-  }, [numericId]);
-
-  useEffect(() => {
-    if (!isLoading) {
-      if (!isAdultContent) {
-        setShowBlur(false);
-      } else if (session && isAdultUser) {
-        setShowBlur(false);
-      } else {
-        setShowBlur(true);
-      }
-    }
-  }, [isLoading, isAdultContent, session, isAdultUser]);
-
-  // (I) 본인인증 스크립트
+  // (H) 본인인증 스크립트
   useEffect(() => {
     const script = document.createElement('script');
     script.src = 'https://scert.mobile-ok.com/resources/js/index.js';
@@ -426,30 +350,7 @@ export default function DetailClient({ row, images, numericId }) {
     };
   }, []);
 
-  useEffect(() => {
-    function handleAuthSuccess(event) {
-      if (event.data?.type === "MOK_AUTH_SUCCESS") {
-        if (session?.user?.id) {
-          supabase
-            .from("profiles")
-            .select("is_adult")
-            .eq("user_id", session.user.id)
-            .single()
-            .then(({ data: profile }) => {
-              if (profile?.is_adult) {
-                setIsAdultUser(true);
-                setShowBlur(false);
-              }
-            });
-        }
-      }
-    }
-
-    window.addEventListener("message", handleAuthSuccess);
-    return () => window.removeEventListener("message", handleAuthSuccess);
-  }, [session?.user?.id]);
-
-  // (J) handleAuthClick - 수정된 로직
+  // (I) handleAuthClick - 수정된 로직
   async function handleAuthClick() {
     // 1) userId 구하기
     const { data } = await supabase.auth.getUser();
@@ -485,6 +386,46 @@ export default function DetailClient({ row, images, numericId }) {
       "result"
     );
   }
+
+  useEffect(() => {
+    // 클라이언트 사이드에서 성인 인증 상태 확인
+    const checkAdultStatus = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user?.id) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("is_adult")
+            .eq("user_id", user.id)
+            .single();
+          
+          if (profile?.is_adult) {
+            setShowBlur(false);
+          }
+        }
+      } catch (error) {
+        console.error("[⚠️ 성인 인증 상태 확인 실패]", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    // 초기 상태 확인
+    checkAdultStatus();
+
+    // 인증 상태 변경 감지
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === "SIGNED_IN") {
+        await checkAdultStatus();
+      } else if (event === "SIGNED_OUT") {
+        setShowBlur(showBlurDefault);
+      }
+    });
+
+    return () => {
+      subscription?.unsubscribe();
+    };
+  }, [showBlurDefault]);
 
   // ─────────────────────────────────────────────────────────
   // 최종 렌더링

@@ -1,28 +1,29 @@
 "use server";
-import { headers } from "next/headers";
+import { headers, cookies } from "next/headers";
 import { notFound } from "next/navigation";
-import { supabase } from "@/lib/supabaseE"; // 혹은 supabaseF
+import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import DetailClient from "./DetailClient";
 import DetailClientMobile from "./DetailClientMobile";
 
 /**
  * (1) 메타데이터 설정 함수 (generateMetadata)
- *  기존 내용 그대로 유지하면서, 필요 없는 부분은 없으니 그대로 둡니다.
  */
-export async function generateMetadata({ params: Paramas }) {
-  // (기존 내용 동일)
-  const params = await Paramas;
-  if (!params?.id) return {};
-  const splitted = params.id.split("-");
-  const numericId = splitted[0];
+export async function generateMetadata({ params:param }) {
+  const cookieStore = await cookies();
+  console.log("🍪 쿠키 목록:", [...cookieStore.getAll()]);
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const params = await param;
+  const splitted = params.id?.split("-");
+  const numericId = splitted?.[0];
   if (!numericId) return {};
 
-  const { data: row, error } = await supabase
+  const { data: row } = await supabase
     .from("partnershipsubmit")
     .select("*")
     .eq("id", numericId)
     .single();
-  if (error || !row) return {};
+
+  if (!row) return {};
 
   const companyName = row.company_name || "상세 페이지";
   const pageTitle = `${companyName.trim()} - 여기닷`;
@@ -41,60 +42,69 @@ export async function generateMetadata({ params: Paramas }) {
 /**
  * (2) 실제 상세 페이지 컴포넌트
  */
-export default async function DetailPage({ params: Params }) {
-  // A. 파라미터 검사
-  const params = await Params;
-  if (!params?.id) {
-    notFound();
-  }
-  const splitted = params.id.split("-");
-  const numericId = splitted[0];
-  if (!numericId) {
-    notFound();
-  }
+export default async function DetailPage({ params:param }) {
+  const cookieStore = await cookies();
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const requestHeaders = await headers();
+  const params = await param;
+  const splitted = params.id?.split("-");
+  const numericId = splitted?.[0];
+  if (!numericId) notFound();
 
-  // B. DB에서 partnershipsubmit 단일 조회
-  const { data: row, error: rowErr } = await supabase
+  const { data: row } = await supabase
     .from("partnershipsubmit")
     .select("*")
     .eq("id", numericId)
     .single();
-  if (rowErr || !row) {
-    notFound();
-  }
+  if (!row) notFound();
 
-  // C. 이미지 목록 조회
-  const { data: images, error: imgErr } = await supabase
+  const { data: images } = await supabase
     .from("partnershipsubmit_images")
     .select("image_url")
     .eq("submit_id", numericId);
 
-  // D. Headers - user-agent (여기가 중요)
-  //   => 반드시 await headers()
-  const requestHeaders = await headers();
   const userAgent = requestHeaders.get("user-agent") || "";
+  const isMobile = /Mobile|Android|iP(hone|od)|IEMobile|BlackBerry/i.test(userAgent);
 
-  function isMobileUserAgent(ua) {
-    return /Mobile|Android|iP(hone|od)|IEMobile|BlackBerry/i.test(ua);
-  }
-  const isMobile = isMobileUserAgent(userAgent);
+  const { data: themeRows } = await supabase
+    .from("partnershipsubmit_themes")
+    .select(`theme_id, themes!inner (adult_admitted)`)
+    .eq("submit_id", numericId);
 
-  // E. 모바일/PC 분기 렌더링
-  if (isMobile) {
-    return (
-      <DetailClientMobile
-        row={row}
-        images={images || []}
-        numericId={numericId}
-      />
-    );
-  } else {
-    return (
-      <DetailClient
-        row={row}
-        images={images || []}
-        numericId={numericId}
-      />
-    );
+  const isAdultContent = themeRows?.some(t => t.themes?.adult_admitted) || false;
+
+  let isAdultUser = false;
+  let showBlurDefault = false;
+
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    console.log("[🔐 user 정보]", user);
+
+    if (user?.id) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("is_adult")
+        .eq("user_id", user.id)
+        .single();
+      isAdultUser = profile?.is_adult || false;
+    } else {
+      console.warn("[⚠️ 로그인되지 않은 사용자]");
+    }
+  } catch (error) {
+    console.error("[❌ Supabase getUser 에러]", error);
   }
+
+  showBlurDefault = isAdultContent && !isAdultUser;
+  console.log("[🧩 블러 적용 여부] isAdultContent:", isAdultContent, "| isAdultUser:", isAdultUser, "| showBlurDefault:", showBlurDefault);
+
+  const Component = isMobile ? DetailClientMobile : DetailClient;
+
+  return (
+    <Component
+      row={row}
+      images={images || []}
+      numericId={numericId}
+      showBlurDefault={showBlurDefault}
+    />
+  );
 }
