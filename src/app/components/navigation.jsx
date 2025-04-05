@@ -203,7 +203,7 @@ async function fetchMyProfile(userId) {
           {/* 로고 (모바일) */}
           <Link href="/" className="flex items-center h-fit">
             <Image
-              src="/logo/logo.jpeg"
+              src="/logo/logo.png"
               alt="여기닷 로고"
               width={200}
               height={141}
@@ -243,7 +243,7 @@ async function fetchMyProfile(userId) {
           <div className="flex justify-start">
             <Link href="/" className="flex items-center h-fit">
               <Image
-                src="/logo/logo.jpeg"
+                src="/logo/logo.png"
                 alt="여기닷 로고"
                 width={200}
                 height={141}
