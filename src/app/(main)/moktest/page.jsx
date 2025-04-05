@@ -25,7 +25,7 @@ export default function Home() {
 
   const handleAuthClick = () => {
     window.MOBILEOK.process(
-      'http://localhost:4000/mok/mok_std_request', // 📌 Express 서버 URL
+      'https://www.yeogidot.com/mok/mok_std_request', // 📌 Express 서버 URL
       'WB',
       'result'
     );
