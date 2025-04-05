@@ -1,3 +1,5 @@
+export const runtime = 'nodejs';
+
 import { NextResponse } from 'next/server';
 import { mokKeyManager } from '../../../../lib/mok/mok_Key_Manager_v1.0.3';
 
