@@ -199,9 +199,9 @@ async function fetchMyProfile(userId) {
           아니면 null → 마운트 안 함
        */}
       {pathname === "/" ? (
-        <div className="flex items-center pl-0 pr-4 pt-3 pb-3 md:hidden space-x-3">
+        <div className="flex items-center pl-4 pr-4 pt-4 pb-3 md:hidden space-x-3">
           {/* 로고 (모바일) */}
-          <Link href="/" className="flex items-center h-fit">
+          <Link href="/" className="flex items-center h-fit w-[98px] md:w-auto">
             <Image
               src="/logo/logo.png"
               alt="여기닷 로고"
@@ -209,7 +209,7 @@ async function fetchMyProfile(userId) {
               height={141}
               quality={100}
               priority
-              className="w-[80px] h-auto -mt-3 md:w-[90px] md:-mt-3.5"
+              className="w-[67px] h-auto -mt-4 md:w-[90px] md:-mt-6"
             />
           </Link>
 
@@ -237,7 +237,7 @@ async function fetchMyProfile(userId) {
       ) : null}
 
       {/* (B) PC 해상도 상단바 */}
-      <div className="mx-auto hidden w-full max-w-7xl px-6 pt-6 pb-1 md:flex">
+      <div className="mx-auto hidden w-full max-w-7xl px-6 pt-8 pb-4 md:flex">
         <div className="grid w-full grid-cols-3 items-center">
           {/* 왼쪽: 로고 (PC) */}
           <div className="flex justify-start">
@@ -249,7 +249,7 @@ async function fetchMyProfile(userId) {
                 height={141}
                 quality={100}
                 priority
-                className="w-[90px] h-auto -mt-3.5"
+                className="w-[90px] h-auto -mt-5.5"
               />
             </Link>
           </div>
