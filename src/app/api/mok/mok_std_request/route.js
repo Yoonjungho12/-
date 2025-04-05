@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { getCurrentDate } from '@/lib/utils';
+import { getCurrentDate } from '../../../../lib/utils';
 import { v4 as uuidv4 } from 'uuid';
 
-const mobileOK = require('@/lib/mok_Key_Manager_v1.0.3.js');
+const mobileOK = require('../../../../lib/mok_Key_Manager_v1.0.3.js');
 mobileOK.keyInit(process.cwd() + '/secure/mok_keyInfo.dat', 'thdwkd12!');
 
 export async function POST() {
