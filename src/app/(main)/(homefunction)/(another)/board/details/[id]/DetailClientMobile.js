@@ -650,18 +650,8 @@ export default function DetailClientMobile({ row, images, numericId }) {
       function result(data) {
         try {
           const parsed = JSON.parse(data);
-          // 성인 인증 성공 시 프로필 업데이트
           if (parsed) {
-            supabase
-              .from('profiles')
-              .update({ is_adult: true })
-              .eq('user_id', '${session?.user?.id}')
-              .then(({ error }) => {
-                if (!error) {
-                  setIsAdultUser(true);
-                  setShowBlur(false);
-                }
-              });
+            window.postMessage({ type: "MOK_AUTH_SUCCESS", payload: parsed }, "*");
           }
         } catch (e) {
           console.error("인증 결과 파싱 실패:", e);
@@ -674,6 +664,29 @@ export default function DetailClientMobile({ row, images, numericId }) {
       document.body.removeChild(script);
       document.body.removeChild(resultScript);
     };
+  }, []);
+
+  useEffect(() => {
+    function handleAuthSuccess(event) {
+      if (event.data?.type === "MOK_AUTH_SUCCESS") {
+        if (session?.user?.id) {
+          supabase
+            .from("profiles")
+            .select("is_adult")
+            .eq("user_id", session.user.id)
+            .single()
+            .then(({ data: profile }) => {
+              if (profile?.is_adult) {
+                setIsAdultUser(true);
+                setShowBlur(false);
+              }
+            });
+        }
+      }
+    }
+
+    window.addEventListener("message", handleAuthSuccess);
+    return () => window.removeEventListener("message", handleAuthSuccess);
   }, [session?.user?.id]);
 
   const handleAuthClick = () => {
