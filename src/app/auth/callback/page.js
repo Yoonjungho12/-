@@ -48,7 +48,7 @@ export default function AuthCallbackPage() {
         debug("❌ setSession 에러: " + sessionError.message);
         return;
       }
-
+      document.cookie = `sb-zuxdcurogblcfkedqgvy-auth-token=${accessToken}; Path=/; Secure; SameSite=Lax`;
       debug("✅ 세션 설정 완료 → 유저 조회");
       await new Promise((r) => setTimeout(r, 500)); // 세션 적용 대기
 
