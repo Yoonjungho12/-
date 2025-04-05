@@ -4,7 +4,7 @@ const { getCurrentDate } = require('../../../../lib/utils');
 const path = require('path');
 
 const runtime = 'nodejs';
-
+const a = 'adsfafds';
 // ✅ 대표님의 실제 서비스 ID
 const SERVICE_ID = '275c0d3b-57a8-44df-a659-f0eba1da319c';
 
@@ -12,11 +12,11 @@ async function POST() {
   const mobileOK = require(path.join(process.cwd(), 'lib/mok/mok_Key_Manager_v1.0.3.js'));
   mobileOK.keyInit(process.cwd() + '/secure/mok_keyInfo.dat', 'thdwkd12!');
 
-  const clientTxId = 'YEOGI' + uuidv4().replace(/-/g, '') + '|' + getCurrentDate();
+  const clientTxId = 'YEOGIDOT' + uuidv4().replace(/-/g, '') + '|' + getCurrentDate();
   const encClientTxId = mobileOK.RSAEncrypt(clientTxId);
 
   return NextResponse.json({
-    usageCode: '01001',
+    usageCode: '01006',
     serviceId: SERVICE_ID, // ✅ 여기로 고정
     encryptReqClientInfo: encClientTxId,
     serviceType: 'telcoAuth',
@@ -26,4 +26,4 @@ async function POST() {
 }
 
 module.exports = { POST, runtime };
-//sdddfsafad
+
