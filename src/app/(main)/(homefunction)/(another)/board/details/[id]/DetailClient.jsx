@@ -7,6 +7,7 @@ import CommentsUI from "./comment";
 import MapKakao from "./MapKakao";
 import { MegaphoneIcon } from "@heroicons/react/24/outline";
 const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL;
+
 /** (A) 비로그인 시 localStorage 익명 UUID */
 function generateAnonUuid() {
   return crypto.randomUUID();
@@ -63,9 +64,8 @@ export default function DetailClient({ row, images, numericId }) {
   const [isLoading, setIsLoading] = useState(true);
   const [showBlur, setShowBlur] = useState(true);
 
-  // 세션 체크 및 성인 여부 확인
+  // (A) 세션 체크 + 성인 여부
   useEffect(() => {
-    // 초기 세션 체크
     supabase.auth
       .getSession()
       .then(({ data, error }) => {
@@ -74,11 +74,11 @@ export default function DetailClient({ row, images, numericId }) {
         } else {
           setSession(data.session || null);
           if (data.session?.user) {
-            // 성인 여부 확인
+            // 성인 여부
             supabase
-              .from('profiles')
-              .select('is_adult')
-              .eq('user_id', data.session.user.id)
+              .from("profiles")
+              .select("is_adult")
+              .eq("user_id", data.session.user.id)
               .single()
               .then(({ data: profile, error: profileError }) => {
                 if (profileError) {
@@ -90,25 +90,20 @@ export default function DetailClient({ row, images, numericId }) {
           }
         }
       })
-      .catch((err) => {
-        console.error("[getSession catch]:", err);
-      });
+      .catch((err) => console.error("[getSession catch]:", err));
 
-    // 세션 변경 감지
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
         setSession(newSession);
         if (event === "SIGNED_IN" && newSession?.user?.id) {
-          // 성인 여부 확인
           const { data: profile } = await supabase
-            .from('profiles')
-            .select('is_adult')
-            .eq('user_id', newSession.user.id)
+            .from("profiles")
+            .select("is_adult")
+            .eq("user_id", newSession.user.id)
             .single();
-          
           setIsAdultUser(profile?.is_adult || false);
 
-          // 익명 사용자 처리
+          // 익명 -> 실제유저
           const realId = newSession.user.id;
           const anonId = localStorage.getItem("anon_user_id");
           if (anonId && anonId !== realId) {
@@ -129,7 +124,7 @@ export default function DetailClient({ row, images, numericId }) {
     };
   }, []);
 
-  // userId 결정
+  // (B) userId 결정
   let userId = null;
   if (session?.user?.id) {
     userId = session.user.id;
@@ -137,9 +132,7 @@ export default function DetailClient({ row, images, numericId }) {
     userId = getOrCreateAnonUuid();
   }
 
-  // ─────────────────────────────────────────────────────────
-  // 2) 조회수 (24시간 중복 방지)
-  // ─────────────────────────────────────────────────────────
+  // (C) 조회수
   useEffect(() => {
     if (!userId || !numericId || hasCountedView) return;
     (async () => {
@@ -153,7 +146,6 @@ export default function DetailClient({ row, images, numericId }) {
           .gt("last_viewed_at", _24hAgo);
 
         if (!logs || logs.length === 0) {
-          // 기존 views 가져오기
           const { data: oldRow } = await supabase
             .from("partnershipsubmit")
             .select("views")
@@ -163,24 +155,21 @@ export default function DetailClient({ row, images, numericId }) {
           const currViews = oldRow?.views || 0;
           const newViews = currViews + 1;
 
-          // views 업데이트
           const { data: updated } = await supabase
             .from("partnershipsubmit")
             .update({ views: newViews })
             .eq("id", numericId)
             .select("views")
             .single();
+          if (updated) setViews(updated.views);
 
-          if (updated) {
-            setViews(updated.views);
-          }
-
-          // 로그 upsert
-          await supabase.from("partnershipsubmit_views_log").upsert({
-            user_id: userId,
-            partnershipsubmit_id: numericId,
-            last_viewed_at: new Date().toISOString(),
-          });
+          await supabase
+            .from("partnershipsubmit_views_log")
+            .upsert({
+              user_id: userId,
+              partnershipsubmit_id: numericId,
+              last_viewed_at: new Date().toISOString(),
+            });
         }
       } catch (err) {
         console.error("조회수 증가 로직 오류:", err);
@@ -189,9 +178,7 @@ export default function DetailClient({ row, images, numericId }) {
     })();
   }, [userId, numericId, hasCountedView]);
 
-  // ─────────────────────────────────────────────────────────
-  // 3) "가고싶다" 여부 체크
-  // ─────────────────────────────────────────────────────────
+  // (D) "가고싶다"
   useEffect(() => {
     if (!session?.user?.id || !numericId) return;
     supabase
@@ -201,14 +188,11 @@ export default function DetailClient({ row, images, numericId }) {
       .eq("partnershipsubmit_id", numericId)
       .single()
       .then(({ data, error }) => {
-        if (!error && data) {
-          setIsSaved(true);
-        }
+        if (!error && data) setIsSaved(true);
       })
-      .catch((err) => console.error("wantToGo check error:", err));
+      .catch(console.error);
   }, [session, numericId]);
 
-  // "가고싶다" 토글 로직
   async function handleSave() {
     if (!session?.user?.id) {
       alert("로그인 먼저 해주세요!");
@@ -226,37 +210,33 @@ export default function DetailClient({ row, images, numericId }) {
           setIsSaved(false);
           alert("가고싶다 해제되었습니다!");
         } else {
-          console.error("가고싶다 해제 오류:", error);
           alert("가고싶다 해제 오류!");
         }
       } catch (err) {
-        console.error("handleSave delete error:", err);
         alert("가고싶다 해제 오류!");
       }
       return;
     }
 
     try {
-      const { error } = await supabase.from("wantToGo").insert({
-        user_id: session.user.id,
-        partnershipsubmit_id: numericId,
-      });
+      const { error } = await supabase
+        .from("wantToGo")
+        .insert({
+          user_id: session.user.id,
+          partnershipsubmit_id: numericId,
+        });
       if (!error) {
         setIsSaved(true);
         alert("가고싶다 목록에 저장됨!");
       } else {
-        console.error("가고싶다 저장 오류:", error);
         alert("가고싶다 저장 오류");
       }
     } catch (err) {
-      console.error("handleSave insert error:", err);
       alert("가고싶다 저장 오류");
     }
   }
 
-  // ─────────────────────────────────────────────────────────
-  // 4) 이미지 배열 (썸네일 + 상세 이미지)
-  // ─────────────────────────────────────────────────────────
+  // (E) 이미지
   const allImages = [];
   if (row.thumbnail_url) {
     allImages.push(buildPublicImageUrl(row.thumbnail_url));
@@ -266,12 +246,9 @@ export default function DetailClient({ row, images, numericId }) {
       allImages.push(buildPublicImageUrl(imgObj.image_url));
     });
   }
-
-  // 세부 이미지 존재 여부
   const hasDetailImages = images && images.length > 0;
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // 3초 자동전환
   useEffect(() => {
     if (allImages.length <= 1) return;
     const timer = setInterval(() => {
@@ -284,9 +261,7 @@ export default function DetailClient({ row, images, numericId }) {
     setCurrentIndex(idx);
   }
 
-  // ─────────────────────────────────────────────────────────
-  // 5) 섹션/코스 + 최저가
-  // ─────────────────────────────────────────────────────────
+  // (F) 섹션/코스
   const [sectionsData, setSectionsData] = useState([]);
   const [loadingSections, setLoadingSections] = useState(true);
   const [lowestPrice, setLowestPrice] = useState(0);
@@ -303,7 +278,6 @@ export default function DetailClient({ row, images, numericId }) {
           .select("*")
           .eq("post_id", numericId)
           .order("display_order", { ascending: true });
-
         if (!secRows || secRows.length === 0) {
           setSectionsData([]);
           setLoadingSections(false);
@@ -318,14 +292,12 @@ export default function DetailClient({ row, images, numericId }) {
           .order("display_order", { ascending: true });
 
         const merged = secRows.map((sec) => {
-          const relatedCourses = (couRows || []).filter(
-            (c) => c.section_id === sec.id
-          );
+          const rel = (couRows || []).filter((c) => c.section_id === sec.id);
           return {
             id: sec.id,
             title: sec.section_title,
             isOpen: true,
-            courses: relatedCourses.map((c) => ({
+            courses: rel.map((c) => ({
               id: c.id,
               course_name: c.course_name,
               duration: c.duration || "",
@@ -338,9 +310,7 @@ export default function DetailClient({ row, images, numericId }) {
 
         let minP = Infinity;
         (couRows || []).forEach((co) => {
-          if (co.price && co.price < minP) {
-            minP = co.price;
-          }
+          if (co.price && co.price < minP) minP = co.price;
         });
         if (minP === Infinity) minP = 0;
         setLowestPrice(minP);
@@ -358,9 +328,7 @@ export default function DetailClient({ row, images, numericId }) {
     );
   }
 
-  // ─────────────────────────────────────────────────────────
-  // 6) 출근부(멤버) 로드
-  // ─────────────────────────────────────────────────────────
+  // (G) 출근부(멤버)
   const [members, setMembers] = useState([]);
   const [loadingMembers, setLoadingMembers] = useState(true);
 
@@ -371,13 +339,11 @@ export default function DetailClient({ row, images, numericId }) {
     }
     (async () => {
       try {
-        const { data: regRows, error } = await supabase
+        const { data: memRows } = await supabase
           .from("register")
           .select("member")
           .eq("partnershipsubmit_id", numericId);
-        if (error) throw error;
-
-        setMembers(regRows || []);
+        setMembers(memRows || []);
       } catch (err) {
         console.error("멤버 로드 오류:", err);
       } finally {
@@ -395,42 +361,31 @@ export default function DetailClient({ row, images, numericId }) {
     "bg-yellow-50 text-yellow-500",
   ];
 
-  // 성인 컨텐츠 체크
+  // (H) 성인 컨텐츠 체크
   useEffect(() => {
     const checkAdultContent = async () => {
       try {
-        const { data: themeRows, error: themeErr } = await supabase
+        const { data: themeRows } = await supabase
           .from("partnershipsubmit_themes")
-          .select(`
-            theme_id,
-            themes!inner (
-              adult_admitted
-            )
-          `)
+          .select(`theme_id, themes!inner (adult_admitted)`)
           .eq("submit_id", numericId);
 
-        if (themeErr) console.log('테마 조회 에러:', themeErr);
-
         if (themeRows && themeRows.length > 0) {
-          const isAdult = themeRows.some((row) => {
-            return row.themes?.adult_admitted === true;
-          });
+          const isAdult = themeRows.some((t) => t.themes?.adult_admitted === true);
           setIsAdultContent(isAdult);
         } else {
           setIsAdultContent(false);
         }
-      } catch (error) {
-        console.error('성인 컨텐츠 체크 에러:', error);
+      } catch (err) {
+        console.error('성인 컨텐츠 체크 에러:', err);
         setIsAdultContent(false);
       } finally {
         setIsLoading(false);
       }
     };
-
     checkAdultContent();
   }, [numericId]);
 
-  // 블러 처리 여부 결정
   useEffect(() => {
     if (!isLoading) {
       if (!isAdultContent) {
@@ -443,14 +398,14 @@ export default function DetailClient({ row, images, numericId }) {
     }
   }, [isLoading, isAdultContent, session, isAdultUser]);
 
-  // 본인인증 스크립트 로드
+  // (I) 본인인증 스크립트
   useEffect(() => {
-    const script = document.createElement('script');
-    script.src = 'https://scert.mobile-ok.com/resources/js/index.js';
+    const script = document.createElement("script");
+    script.src = "https://scert.mobile-ok.com/resources/js/index.js";
     script.async = true;
     document.body.appendChild(script);
 
-    const resultScript = document.createElement('script');
+    const resultScript = document.createElement("script");
     resultScript.innerHTML = `
       function result(data) {
         try {
@@ -481,24 +436,47 @@ export default function DetailClient({ row, images, numericId }) {
     };
   }, [session?.user?.id]);
 
-  const handleAuthClick = () => {
-    const isMobile = /Mobile|Android|iP(hone|od)|BlackBerry|IEMobile|Silk/i.test(navigator.userAgent);
+  // (J) handleAuthClick - 수정된 로직
+  async function handleAuthClick() {
+    // 1) userId 구하기
+    const { data } = await supabase.auth.getUser();
+    const userId = data?.user?.id;
+
+    if (!userId) {
+      alert("로그인이 필요합니다.");
+      return;
+    }
+
+    // 2) 서버로 userId 전달
+    const response = await fetch("/mok/mok_std_request", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId }),
+    });
+    const payload = await response.json();
+    if (payload.error) {
+      alert("인증 요청 에러: " + payload.error);
+      return;
+    }
+
+    // 3) 표준창 호출
+    const isMobile = /Mobile|Android|iP(hone|od)|BlackBerry|IEMobile|Silk/i.test(
+      navigator.userAgent
+    );
     const popupType = isMobile ? "MB" : "WB";
     window.MOBILEOK.process(
-      'https://www.yeogidot.com/mok/mok_std_request',
+      "https://www.yeogidot.com/mok/mok_std_request",
       popupType,
-      'result'
+      "result"
     );
-  };
+  }
 
   // ─────────────────────────────────────────────────────────
   // 최종 렌더링
-  // ─────────────────────────────────────────────────────────
   return (
     <div className="max-w-7xl mx-auto px-4 py-6 flex gap-6">
       {/* (A) 왼쪽 영역 */}
       <div className="flex-[7] relative">
-        {/* 블러 오버레이 */}
         {showBlur && (
           <div className="fixed inset-0 bg-white/80 backdrop-blur-sm z-10 flex items-center justify-center">
             <div className="text-center">
@@ -506,13 +484,11 @@ export default function DetailClient({ row, images, numericId }) {
                 {!session ? "로그인이 필요한 컨텐츠입니다" : "성인 인증이 필요한 컨텐츠입니다"}
               </p>
               <p className="text-gray-600 mb-4">
-                {!session 
-                  ? "로그인 후 이용해주세요" 
-                  : "성인 인증 후 이용해주세요"}
+                {!session ? "로그인 후 이용해주세요" : "성인 인증 후 이용해주세요"}
               </p>
               {!session ? (
-                <a 
-                  href="/login" 
+                <a
+                  href="/login"
                   className="inline-block px-6 py-3 rounded-lg text-white font-medium
                     bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700
                     transition-all duration-200 transform hover:scale-105 shadow-lg"
@@ -520,7 +496,7 @@ export default function DetailClient({ row, images, numericId }) {
                   로그인 하기
                 </a>
               ) : (
-                <button 
+                <button
                   onClick={handleAuthClick}
                   className="inline-block px-6 py-3 rounded-lg text-white font-medium
                     bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700
@@ -533,7 +509,7 @@ export default function DetailClient({ row, images, numericId }) {
           </div>
         )}
 
-        {/* (A-1) 사진 영역 */}
+        {/* 사진 영역 */}
         <div className="flex gap-4">
           {/* 메인 이미지 */}
           <div
@@ -573,12 +549,11 @@ export default function DetailClient({ row, images, numericId }) {
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      d="M12 21l-1.45-1.342C5.4
-                         15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5
-                         3c1.74 0 3.41.81 4.5
-                         2.09A5.987 5.987 0 0 1
-                         16.5 3C19.58 3 22 5.42
-                         22 8.5c0 3.78-3.4
+                      d="M12 21l-1.45-1.342C5.4 15.36
+                         2 12.28 2 8.5 2 5.42 4.42 3 7.5
+                         3c1.74 0 3.41.81 4.5 2.09A5.987
+                         5.987 0 0 1 16.5 3C19.58 3
+                         22 5.42 22 8.5c0 3.78-3.4
                          6.86-8.55 11.158L12 21z"
                     />
                   </svg>
@@ -591,7 +566,7 @@ export default function DetailClient({ row, images, numericId }) {
             )}
           </div>
 
-          {/* 오른쪽 썸네일 (190x113) */}
+          {/* 오른쪽 썸네일 */}
           <div
             className="flex flex-col gap-2 overflow-y-auto"
             style={{ height: 390, width: "190px" }}
@@ -609,15 +584,14 @@ export default function DetailClient({ row, images, numericId }) {
                     <Image src={imgUrl} alt={`썸네일 ${idx}`} fill className="object-cover" />
                   </div>
                 ))
-              : // 세부 이미지가 없고 썸네일만 있을 경우
-                row.thumbnail_url && (
+              : row.thumbnail_url && (
                   <div
                     className="relative cursor-pointer border border-red-500"
                     style={{ width: "190px", height: "113px" }}
                   >
                     <Image
                       src={buildPublicImageUrl(row.thumbnail_url)}
-                      alt="썸네일 이미지"
+                      alt="썸네일"
                       fill
                       className="object-cover"
                     />
@@ -626,34 +600,22 @@ export default function DetailClient({ row, images, numericId }) {
           </div>
         </div>
 
-        {/* (A-2) 기본 정보 */}
+        {/* 기본 정보 */}
         <div className="mt-6 bg-white p-4 rounded">
           <div className="flex flex-col">
             <h1 className="text-3xl font-bold mb-2">{row.company_name}</h1>
-
-            {/* 조회수, 댓글 */}
             <div className="flex items-center gap-6 ml-1 text-gray-500">
               <div className="flex items-center gap-1">
-                <img
-                  src="/icons/views.svg"
-                  alt="조회수"
-                  style={{ width: "18px", height: "16px" }}
-                />
+                <img src="/icons/views.svg" alt="조회수" style={{ width: "18px", height: "16px" }} />
                 <span>{views.toLocaleString()}</span>
               </div>
               <div className="flex items-center gap-1">
-                <img
-                  src="/icons/man.svg"
-                  alt="댓글수"
-                  style={{ width: "18px", height: "14px" }}
-                />
+                <img src="/icons/man.svg" alt="댓글수" style={{ width: "18px", height: "14px" }} />
                 <span>{row.comment || 0}</span>
               </div>
             </div>
           </div>
 
-        
-          {/* 필드 */}
           <DetailRow label="업체소개" value={row.greeting} />
           <DetailRow label="오시는 길" value={row.address_street} />
           <DetailRow label="전화번호" value={row.phone_number} />
@@ -661,20 +623,16 @@ export default function DetailClient({ row, images, numericId }) {
             label="연락방법"
             value={
               row.contact_method
-                ? `${row.contact_method}${
-                    row.near_building ? ` / ${row.near_building}` : ""
-                  }`
+                ? `${row.contact_method}${row.near_building ? ` / ${row.near_building}` : ""}`
                 : row.near_building || ""
             }
           />
           <DetailRow label="영업시간" value={row.open_hours} />
-          {/* 최저가 */}
           {lowestPrice > 0 && (
             <DetailRow label="최저가" value={`${formatPrice(lowestPrice)}원 ~`} />
           )}
           <DetailRow label="휴무일" value={row.holiday} />
           <DetailRow label="주차안내" value={row.parking_type} />
-
 
           {/* 출근부 */}
           {loadingMembers ? (
@@ -704,7 +662,7 @@ export default function DetailClient({ row, images, numericId }) {
 
         <div className="border-[0.5px] border-gray-300"></div>
 
-        {/* (A-3) 이벤트 */}
+        {/* 이벤트 */}
         {row.event_info?.trim() && (
           <div className="flex flex-col mt-5 mb-5 bg-white p-4 rounded">
             <span className="font-semibold text-xl mb-2">이벤트</span>
@@ -714,56 +672,36 @@ export default function DetailClient({ row, images, numericId }) {
 
         <div className="border-[0.5px] border-gray-300"></div>
 
-        {/* (A-4) 코스 안내 */}
-        {/* 
-          여기서 변경! 
-          로딩 중이면 "로딩중...", 
-          로딩 끝났는데 sectionsData.length===0면 전체 안보이게 
-        */}
+        {/* 코스안내 */}
         {loadingSections ? (
           <div className="py-4">로딩중...</div>
         ) : sectionsData.length > 0 && (
           <div className="mt-6">
             <h2 className="text-xl font-bold mb-4">코스안내</h2>
-            <p className="text-sm text-gray-500 mb-2">
-              {row.program_info || "코스 정보 없음"}
-            </p>
+            <p className="text-sm text-gray-500 mb-2">{row.program_info || "코스 정보 없음"}</p>
             <div className="space-y-4">
               {sectionsData.map((sec) => (
-                <div
-                  key={sec.id}
-                  className="border border-gray-200 rounded overflow-hidden"
-                >
+                <div key={sec.id} className="border border-gray-200 rounded overflow-hidden">
                   <button
                     onClick={() => toggleSectionOpen(sec.id)}
                     className="w-full flex items-center justify-between bg-gray-100 px-4 py-3 focus:outline-none text-left"
                   >
-                    <span className="font-semibold text-gray-700">
-                      {sec.title}
-                    </span>
-                    <span className="text-sm text-gray-400">
-                      {sec.isOpen ? "▲" : "▼"}
-                    </span>
+                    <span className="font-semibold text-gray-700">{sec.title}</span>
+                    <span className="text-sm text-gray-400">{sec.isOpen ? "▲" : "▼"}</span>
                   </button>
                   {sec.isOpen && (
                     <div className="px-4 py-3">
                       {sec.courses.length === 0 ? (
-                        <div className="text-sm text-gray-500">
-                          코스가 없습니다.
-                        </div>
+                        <div className="text-sm text-gray-500">코스가 없습니다.</div>
                       ) : (
                         <ul className="space-y-2">
                           {sec.courses.map((c) => (
                             <li key={c.id}>
                               <div className="flex items-center justify-between">
                                 <div>
-                                  <span className="font-semibold text-gray-800">
-                                    {c.course_name}
-                                  </span>
+                                  <span className="font-semibold text-gray-800">{c.course_name}</span>
                                   {c.duration && (
-                                    <span className="text-sm text-gray-600 ml-1">
-                                      : {c.duration}
-                                    </span>
+                                    <span className="text-sm text-gray-600 ml-1">: {c.duration}</span>
                                   )}
                                 </div>
                                 {c.price > 0 && (
@@ -773,9 +711,7 @@ export default function DetailClient({ row, images, numericId }) {
                                 )}
                               </div>
                               {c.etc_info?.trim() && (
-                                <div className="mt-1 text-sm text-gray-500">
-                                  {c.etc_info}
-                                </div>
+                                <div className="mt-1 text-sm text-gray-500">{c.etc_info}</div>
                               )}
                             </li>
                           ))}
@@ -789,7 +725,7 @@ export default function DetailClient({ row, images, numericId }) {
           </div>
         )}
 
-        {/* (A-5) 댓글 */}
+        {/* 댓글 */}
         <div className="mt-6 bg-white rounded">
           <CommentsUI company_name={row.company_name} id={row.id} />
         </div>
