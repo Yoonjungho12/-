@@ -5,6 +5,7 @@ const path = require('path');
 
 const runtime = 'nodejs';
 const a = 'adsfafds';
+
 // ✅ 대표님의 실제 서비스 ID
 const SERVICE_ID = '275c0d3b-57a8-44df-a659-f0eba1da319c';
 
@@ -16,7 +17,7 @@ async function POST() {
   const encClientTxId = mobileOK.RSAEncrypt(clientTxId);
 
   return NextResponse.json({
-    usageCode: '01006',
+    usageCode: '01005',
     serviceId: SERVICE_ID, // ✅ 여기로 고정
     encryptReqClientInfo: encClientTxId,
     serviceType: 'telcoAuth',
