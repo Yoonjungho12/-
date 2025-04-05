@@ -703,7 +703,7 @@ export default function DetailClientMobile({ row, images, numericId }) {
     <div className="relative max-w-md mx-auto bg-white">
       {/* 블러 오버레이 */}
       {showBlur && (
-        <div className="fixed inset-0 bg-white/80 backdrop-blur-sm z-10 flex items-center justify-center">
+        <div className="fixed inset-0 bg-white/80 backdrop-blur-sm z-20 flex items-center justify-center">
           <div className="text-center p-4">
             <p className="text-xl font-bold mb-2">
               {!session ? "로그인이 필요한 컨텐츠입니다" : "성인 인증이 필요한 컨텐츠입니다"}

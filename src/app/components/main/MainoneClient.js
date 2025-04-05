@@ -149,7 +149,9 @@ export default function MainoneClient({ initialRegion, initialData }) {
       {/* 상단 타이틀 */}
       <div className="w-full px-4 pt-8">
         <h2 className="text-center text-xl md:text-2xl font-bold">
-          안녕하세욘
+          
+여기닷 제휴파트너 실시간 인기순위
+
         </h2>
         <p className="mt-2 text-center text-gray-500">
           실시간 많은 회원들이 보고 있어요!
