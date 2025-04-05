@@ -2,7 +2,7 @@ export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
-import { getCurrentDate } from '@/lib/utils'; // utils는 @/lib에 위치하므로 이건 유지 OK
+import { getCurrentDate } from '../../../../lib/utils';
 
 const mobileOK = require('../../../../lib/mok/mok_Key_Manager_v1.0.3.js');
 mobileOK.keyInit(process.cwd() + '/secure/mok_keyInfo.dat', 'thdwkd12!');
