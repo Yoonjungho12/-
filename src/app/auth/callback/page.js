@@ -27,6 +27,8 @@ export default function AuthCallbackPage() {
 
       const hashString = currentUrl.substring(hashIndex + 1);
       const params = new URLSearchParams(hashString);
+      console.log("📦 accessToken:", accessToken);
+console.log("📦 refreshToken:", refreshToken);
       const accessToken = params.get("access_token");
       const refreshToken = params.get("refresh_token");
 
