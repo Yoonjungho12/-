@@ -677,9 +677,11 @@ export default function DetailClientMobile({ row, images, numericId }) {
   }, [session?.user?.id]);
 
   const handleAuthClick = () => {
+    const isMobile = /Mobile|Android|iP(hone|od)|BlackBerry|IEMobile|Silk/i.test(navigator.userAgent);
+    const popupType = isMobile ? "MB" : "WB";
     window.MOBILEOK.process(
       'https://www.yeogidot.com/mok/mok_std_request',
-      'WB',
+      popupType,
       'result'
     );
   };
