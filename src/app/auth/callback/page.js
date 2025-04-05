@@ -43,7 +43,10 @@ export default function AuthCallbackPage() {
         access_token: accessToken,
         refresh_token: refreshToken,
       });
-
+      debug("✅ setSession 완료", result); // 여기 안 뜨면 진짜 여기서 멈춘 거임
+      await supabase.auth.refreshSession(); 
+      debug("✅ refreshSession 완료");
+      
       if (sessionError) {
         debug("❌ setSession 에러: " + sessionError.message);
         return;
