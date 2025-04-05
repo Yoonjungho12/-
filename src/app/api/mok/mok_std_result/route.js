@@ -4,11 +4,11 @@ import { NextResponse } from 'next/server';
 import axios from 'axios';
 import urlencode from 'urlencode';
 
-// ✅ src/lib/mok 기준 상대경로 (현재 위치 기준: src/app/api/mok/mok_std_result)
-const mobileOK = require('../../../../lib/mok/mok_Key_Manager_v1.0.3.js');
-mobileOK.keyInit(process.cwd() + '/secure/mok_keyInfo.dat', 'thdwkd12!');
-
 export async function POST(request) {
+  // ✅ 여기서만 require 해야 됨
+  const mobileOK = require('../../../../lib/mok/mok_Key_Manager_v1.0.3.js');
+  mobileOK.keyInit(process.cwd() + '/secure/mok_keyInfo.dat', 'thdwkd12!');
+
   try {
     const body = await request.text();
     const decoded = decodeURIComponent(JSON.parse(body).data);
