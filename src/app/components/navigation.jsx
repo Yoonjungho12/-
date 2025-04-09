@@ -285,7 +285,7 @@ export default function NavBar() {
       ) : null}
 
       {/* (B) PC 해상도 상단바 */}
-      <div className="mx-auto hidden w-full max-w-7xl px-6 pt-8 pb-4 md:flex">
+      <div className="mx-auto hidden w-full max-w-7xl px-6 pt-4 pb-4 md:flex">
         <div className="grid w-full grid-cols-3 items-center">
           {/* 왼쪽: 로고 (PC) */}
           <div className="flex justify-start">
@@ -293,11 +293,11 @@ export default function NavBar() {
               <Image
                 src="/logo/logo.png"
                 alt="여기닷 로고"
-                width={200}
-                height={141}
+                width={600}
+                height={341}
                 quality={100}
                 priority
-                className="w-[90px] h-auto -mt-5.5"
+                className="w-[100px] h-auto -mt-0"
               />
             </Link>
           </div>

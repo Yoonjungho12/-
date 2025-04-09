@@ -6,39 +6,38 @@ import NewArrivalsSection from "@/components/main/newbie";
 import MainoneServer from "@/components/main/MainoneServer";
 import RootLayout from "./layout";
 
-
-
 export default function Home() {
   return (
-
-    <div className="container mx-auto pt-15 md:pt-[0px]">
-      <div
-        className="relative w-full overflow-hidden md:hidden"
-        style={{ aspectRatio: "1250 / 450" }}
-      >
+    <>
+      <div className="hidden md:block w-full relative">
         <Image
-          src="https://cdn.vipgunma.com/assets/banner/1675135222banner2.jpg"
-          alt="Banner-Mobile"
-          fill
-          style={{ objectFit: "cover" }}
-        />
-      </div>
-      <div className="hidden md:block">
-        <Image
-          src="https://cdn.vipgunma.com/assets/banner/1675135222banner2.jpg"
+          src="/logo/banner1.gif"
           alt="Banner-Desktop"
-          width={1250}
-          height={450}
-          style={{ width: "100%", height: "auto" }}
+          width={1920}
+          height={550}
+          priority
+          className="w-full h-auto"
         />
       </div>
+      
+      <div className="container mx-auto pt-15 md:pt-[24px]">
+        <div
+          className="relative w-full overflow-hidden md:hidden"
+          style={{ aspectRatio: "1250 / 450" }}
+        >
+          <Image
+            src="/logo/banner1.gif"
+            alt="Banner-Mobile"
+            fill
+            style={{ objectFit: "cover" }}
+          />
+        </div>
 
-     <MainoneServer />
-     <RecommendedShopsServer />
-      <NewArrivalsSection />
-
-    </div>
-   
+        <MainoneServer />
+        <RecommendedShopsServer />
+        <NewArrivalsSection />
+      </div>
+    </>
   );
 }
 
