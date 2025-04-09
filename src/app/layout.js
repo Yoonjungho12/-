@@ -7,6 +7,9 @@ export const metadata = {
   title: "여기닷",
   description: "여기닷 info..",
   viewport: "initial-scale=1.0, user-scalable=no, maximum-scale=1, width=device-width, viewport-fit=cover",
+  icons: {
+    icon: "/logo/favicon.ico",
+  },
 };
 
 export default function RootLayout({ children }) {

@@ -9,6 +9,9 @@ import { supabase } from "../lib/supabaseF";
 export default function NavBar() {
   const router = useRouter();
   const pathname = usePathname(); // ★ 현재 경로 확인
+  const [showPopup, setShowPopup] = useState(false); // 초기값을 false로 변경
+  const [dontShowForWeek, setDontShowForWeek] = useState(false);
+  const modalRef = useRef(null);
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [myNickname, setMyNickname] = useState("(닉네임 없음)");
@@ -27,6 +30,40 @@ export default function NavBar() {
       menuRef.current.scrollBy({ left: 200, behavior: "smooth" });
     }
   };
+
+  // 팝업 표시 여부 확인
+  useEffect(() => {
+    const popupHideUntil = localStorage.getItem('popupHideUntil');
+    if (popupHideUntil) {
+      const hideUntilDate = new Date(popupHideUntil);
+      if (new Date() < hideUntilDate) {
+        setShowPopup(false);
+      } else {
+        setShowPopup(true);
+      }
+    } else {
+      setShowPopup(true);
+    }
+  }, []);
+
+  // 모달 외부 클릭 처리
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (modalRef.current && !modalRef.current.contains(event.target)) {
+        if (dontShowForWeek) {
+          const nextWeek = new Date();
+          nextWeek.setDate(nextWeek.getDate() + 7);
+          localStorage.setItem('popupHideUntil', nextWeek.toISOString());
+        }
+        setShowPopup(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [dontShowForWeek]);
 
   // --------------------------------------
   // (1) 로그인 상태 & 프로필 로드
@@ -240,81 +277,84 @@ export default function NavBar() {
   // --------------------------------------
   // (4) UI: 모바일은 "/" 경로일 때만 상단바 표시
   // --------------------------------------
-  return (
-    <header className="w-full bg-white fixed mt-0 z-50">
-      {/* (A) 모바일 전용 상단바:
-          pathname === "/" 이면 렌더링,
-          아니면 null → 마운트 안 함
-       */}
-      {pathname === "/" ? (
-        <div className="flex items-center pl-4 pr-4 pt-4 pb-3 md:hidden space-x-3">
-          {/* 로고 (모바일) */}
-          <Link href="/" className="flex items-center h-fit w-[98px] md:w-auto">
-            <Image
-              src="/logo/logo.png"
-              alt="여기닷 로고"
-              width={200}
-              height={141}
-              quality={100}
-              priority
-              className="w-[67px] h-auto -mt-4 md:w-[90px] md:-mt-6"
-            />
-          </Link>
 
-          {/* 검색창 (모바일) */}
-          <div className="relative flex-1">
-            <input
-              type="text"
-              placeholder="검색"
-              className="w-full rounded-full border border-orange-500 py-3 pl-4 pr-9 text-base
-                         focus:outline-none focus:ring-1 focus:ring-red-400"
-              onKeyDown={handleSearchKeyDown}
-            />
-            <svg
-              className="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-red-400"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
+  return (
+    <>
+      {/* 팝업 모달 */}
+      {showPopup && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50">
+          <div ref={modalRef} className="relative bg-white rounded-lg overflow-hidden">
+            <button
+              onClick={() => {
+                if (dontShowForWeek) {
+                  const nextWeek = new Date();
+                  nextWeek.setDate(nextWeek.getDate() + 7);
+                  localStorage.setItem('popupHideUntil', nextWeek.toISOString());
+                }
+                setShowPopup(false);
+              }}
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
             >
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <Image
+              src="/logo/popup.jpeg"
+              alt="팝업 이미지"
+              width={0}
+              height={0}
+              sizes="(max-width: 768px) 90vw, 500px"
+              className="w-full h-auto max-w-[100%] md:max-w-[500px]"
+              priority
+            />
+            <div className="p-2 flex items-center">
+              <input
+                type="checkbox"
+                id="dontShowForWeek"
+                checked={dontShowForWeek}
+                onChange={(e) => setDontShowForWeek(e.target.checked)}
+                className="w-4 h-4 text-orange-500 border-gray-300 rounded focus:ring-orange-500"
+              />
+              <label htmlFor="dontShowForWeek" className="ml-2 text-sm text-gray-700">
+                일주일 동안 보지 않기
+              </label>
+            </div>
           </div>
         </div>
-      ) : null}
+      )}
 
-      {/* (B) PC 해상도 상단바 */}
-      <div className="mx-auto hidden w-full max-w-7xl px-6 pt-4 pb-4 md:flex">
-        <div className="grid w-full grid-cols-3 items-center">
-          {/* 왼쪽: 로고 (PC) */}
-          <div className="flex justify-start">
-            <Link href="/" className="flex items-center h-fit">
+      <header className="w-full bg-white fixed mt-0 z-50">
+        {/* (A) 모바일 전용 상단바:
+            pathname === "/" 이면 렌더링,
+            아니면 null → 마운트 안 함
+         */}
+        {pathname === "/" ? (
+          <div className="flex items-center pl-4 pr-4 pt-4 pb-3 md:hidden space-x-3">
+            {/* 로고 (모바일) */}
+            <Link href="/" className="flex items-center h-fit w-[98px] md:w-auto">
               <Image
                 src="/logo/logo.png"
                 alt="여기닷 로고"
-                width={600}
-                height={341}
+                width={200}
+                height={141}
                 quality={100}
                 priority
-                className="w-[100px] h-auto -mt-0"
+                className="w-[67px] h-auto -mt-1 md:w-[90px] md:-mt-6"
               />
             </Link>
-          </div>
 
-          {/* 가운데: 검색창 (PC) */}
-          <div className="flex justify-center">
-            <div className="relative w-full max-w-md">
+            {/* 검색창 (모바일) */}
+            <div className="relative flex-1">
               <input
                 type="text"
-                placeholder="지역, 업종, 상호명을 검색하세요"
-                className="w-full rounded-full border border-orange-500
-                           py-3 pl-6 pr-14 text-base focus:outline-none
-                           focus:ring-2 focus:ring-red-400"
+                placeholder="검색"
+                className="w-full rounded-full border border-orange-500 py-3 pl-4 pr-9 text-base
+                           focus:outline-none focus:ring-1 focus:ring-red-400"
                 onKeyDown={handleSearchKeyDown}
               />
               <svg
-                className="absolute right-4 top-1/2 h-6 w-6 -translate-y-1/2 text-red-400"
+                className="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-red-400"
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2"
@@ -325,429 +365,473 @@ export default function NavBar() {
               </svg>
             </div>
           </div>
+        ) : null}
 
-          {/* 오른쪽 아이콘들 */}
-          <div className="flex justify-end items-center space-x-7">
-            {isLoggedIn ? (
-              <>
-                {/* 로그아웃 */}
-                <div
-                  className="flex cursor-pointer flex-col items-center text-gray-600 hover:text-orange-500"
-                  onClick={handleLogout}
+        {/* (B) PC 해상도 상단바 */}
+        <div className="mx-auto hidden w-full max-w-7xl px-6 pt-4 pb-4 md:flex">
+          <div className="grid w-full grid-cols-3 items-center">
+            {/* 왼쪽: 로고 (PC) */}
+            <div className="flex justify-start">
+              <Link href="/" className="flex items-center h-fit">
+                <Image
+                  src="/logo/logo.png"
+                  alt="여기닷 로고"
+                  width={600}
+                  height={341}
+                  quality={100}
+                  priority
+                  className="w-[100px] h-auto -mt-0"
+                />
+              </Link>
+            </div>
+
+            {/* 가운데: 검색창 (PC) */}
+            <div className="flex justify-center">
+              <div className="relative w-full max-w-md">
+                <input
+                  type="text"
+                  placeholder="지역, 업종, 상호명을 검색하세요"
+                  className="w-full rounded-full border border-orange-500
+                             py-3 pl-6 pr-14 text-base focus:outline-none
+                             focus:ring-2 focus:ring-red-400"
+                  onKeyDown={handleSearchKeyDown}
+                />
+                <svg
+                  className="absolute right-4 top-1/2 h-6 w-6 -translate-y-1/2 text-red-400"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
                 >
-                  <img src="/icons/logout.svg" width={30} alt="로그인 아이콘" />
-                  <span className="text-sm mt-">로그아웃</span>
-                </div>
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+              </div>
+            </div>
 
-                {/* 나의활동 */}
-                <div
-                  className="flex cursor-pointer flex-col items-center text-gray-600 hover:text-orange-500"
-                  onClick={handleMyActivityClick}
-                >
-                  <img src="/icons/history.svg" width={30} alt="로그인 아이콘" />
-                  <span className="text-sm mt-">마이페이지</span>
-                </div>
+            {/* 오른쪽 아이콘들 */}
+            <div className="flex justify-end items-center space-x-7">
+              {isLoggedIn ? (
+                <>
+                  {/* 로그아웃 */}
+                  <div
+                    className="flex cursor-pointer flex-col items-center text-gray-600 hover:text-orange-500"
+                    onClick={handleLogout}
+                  >
+                    <img src="/icons/logout.svg" width={30} alt="로그인 아이콘" />
+                    <span className="text-sm mt-">로그아웃</span>
+                  </div>
 
-                {/* 1:1 쪽지 */}
-                <div
-                  className="relative flex cursor-pointer flex-col items-center text-gray-600 hover:text-orange-500"
-                  onClick={handleMessagesClick}
-                >
-                  <img src="/icons/chat.svg" width={30} alt="쪽지함 아이콘" />
-                  {unreadCount > 0 && (
-                    <span
-                      className="absolute -top-1 -right-2 bg-red-500 text-white 
-                                 text-xs rounded-full w-5 h-5 flex items-center justify-center"
-                    >
-                      {unreadCount}
-                    </span>
-                  )}
-                  <span className="text-sm mt-">1:1 쪽지</span>
-                </div>
+                  {/* 나의활동 */}
+                  <div
+                    className="flex cursor-pointer flex-col items-center text-gray-600 hover:text-orange-500"
+                    onClick={handleMyActivityClick}
+                  >
+                    <img src="/icons/history.svg" width={30} alt="로그인 아이콘" />
+                    <span className="text-sm mt-">마이페이지</span>
+                  </div>
 
-                {/* 제휴문의 */}
-                <div className="flex cursor-pointer flex-col items-center text-gray-600 hover:text-orange-500">
-                  <Link href="/partnership" className="flex flex-col items-center">
-                    <img src="/icons/paper.svg" width={30} alt="로그인 아이콘" />
-                    <span className="text-sm mt-">제휴문의</span>
+                  {/* 1:1 쪽지 */}
+                  <div
+                    className="relative flex cursor-pointer flex-col items-center text-gray-600 hover:text-orange-500"
+                    onClick={handleMessagesClick}
+                  >
+                    <img src="/icons/chat.svg" width={30} alt="쪽지함 아이콘" />
+                    {unreadCount > 0 && (
+                      <span
+                        className="absolute -top-1 -right-2 bg-red-500 text-white 
+                                   text-xs rounded-full w-5 h-5 flex items-center justify-center"
+                      >
+                        {unreadCount}
+                      </span>
+                    )}
+                    <span className="text-sm mt-">1:1 쪽지</span>
+                  </div>
+
+                  {/* 제휴문의 */}
+                  <div className="flex cursor-pointer flex-col items-center text-gray-600 hover:text-orange-500">
+                    <Link href="/partnership" className="flex flex-col items-center">
+                      <img src="/icons/paper.svg" width={30} alt="로그인 아이콘" />
+                      <span className="text-sm mt-">제휴문의</span>
+                    </Link>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* 비로그인 */}
+                  <Link
+                    href="/login"
+                    className="flex cursor-pointer flex-col items-center text-gray-600 hover:text-orange-500"
+                  >
+                    <img src="/icons/log-in.svg" alt="로그인 아이콘" width={30} />
+                    <span className="text-sm mt-">로그인</span>
                   </Link>
-                </div>
-              </>
-            ) : (
-              <>
-                {/* 비로그인 */}
-                <Link
-                  href="/login"
-                  className="flex cursor-pointer flex-col items-center text-gray-600 hover:text-orange-500"
-                >
-                  <img src="/icons/log-in.svg" alt="로그인 아이콘" width={30} />
-                  <span className="text-sm mt-">로그인</span>
-                </Link>
 
-                {/* 제휴문의 */}
-                <div className="flex cursor-pointer flex-col items-center text-gray-600 hover:text-orange-500">
-                  <Link href="/partnership" className="flex flex-col items-center">
-                    <img src="/icons/paper.svg" width={30} alt="로그인 아이콘" />
-                    <span className="text-sm mt-">제휴문의</span>
-                  </Link>
-                </div>
-              </>
-            )}
+                  {/* 제휴문의 */}
+                  <div className="flex cursor-pointer flex-col items-center text-gray-600 hover:text-orange-500">
+                    <Link href="/partnership" className="flex flex-col items-center">
+                      <img src="/icons/paper.svg" width={30} alt="로그인 아이콘" />
+                      <span className="text-sm mt-">제휴문의</span>
+                    </Link>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* (C) 하단 바 (카테고리 메뉴) */}
-      <div className="relative rounded-t-xl border-t border-b border-gray-200">
-        <div className="relative mx-auto max-w-7xl px-6 text-zinc-700">
-          {/* (C-0) 모바일 화살표 */}
-          <button
-            className="absolute left-[0px] top-1/2 z-10 -translate-y-1/2 md:hidden"
-            onClick={scrollLeft}
-            aria-label="스크롤 왼쪽"
-          >
-            <svg
-              className="h-6 w-6 text-gray-600"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <button
-            className="absolute right-[0px] top-1/2 z-10 -translate-y-1/2 md:hidden"
-            onClick={scrollRight}
-            aria-label="스크롤 오른쪽"
-          >
-            <svg
-              className="h-6 w-6 text-gray-600"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-
-          {/* (C-1) 수평 스크롤 메뉴 */}
-          <div
-            ref={menuRef}
-            className="hide-scrollbar flex items-center space-x-4 overflow-x-auto py-2 whitespace-nowrap"
-          >
+        {/* (C) 하단 바 (카테고리 메뉴) */}
+        <div className="relative rounded-t-xl border-t border-b border-gray-200">
+          <div className="relative mx-auto max-w-7xl px-6 text-zinc-700">
+            {/* (C-0) 모바일 화살표 */}
             <button
-              className="hidden md:flex items-center space-x-1 hover:text-orange-500"
-              onClick={toggleMegaMenu}
+              className="absolute left-[0px] top-1/2 z-10 -translate-y-1/2 md:hidden"
+              onClick={scrollLeft}
+              aria-label="스크롤 왼쪽"
             >
-              <span className="font-sm">전체 카테고리</span>
               <svg
-                className={`h-4 w-4 transition-transform ${
-                  showMegaMenu ? "rotate-180" : ""
-                }`}
+                className="h-6 w-6 text-gray-600"
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2"
                 viewBox="0 0 24 24"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <button
+              className="absolute right-[0px] top-1/2 z-10 -translate-y-1/2 md:hidden"
+              onClick={scrollRight}
+              aria-label="스크롤 오른쪽"
+            >
+              <svg
+                className="h-6 w-6 text-gray-600"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
             </button>
 
-            <Link
-              href="/board/전체/전체/전체"
-              className="inline-block hover:text-orange-500 md:mx-5"
+            {/* (C-1) 수평 스크롤 메뉴 */}
+            <div
+              ref={menuRef}
+              className="hide-scrollbar flex items-center space-x-4 overflow-x-auto py-2 whitespace-nowrap"
             >
-              지역별 검색
-            </Link>
-            <Link
-              href="/today/전체/전체/전체"
-              className="inline-block hover:text-orange-500 md:mx-5"
+              <button
+                className="hidden md:flex items-center space-x-1 hover:text-orange-500"
+                onClick={toggleMegaMenu}
+              >
+                <span className="font-sm">전체 카테고리</span>
+                <svg
+                  className={`h-4 w-4 transition-transform ${
+                    showMegaMenu ? "rotate-180" : ""
+                  }`}
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              <Link
+                href="/board/전체/전체/전체"
+                className="inline-block hover:text-orange-500 md:mx-5"
+              >
+                지역별 검색
+              </Link>
+              <Link
+                href="/today/전체/전체/전체"
+                className="inline-block hover:text-orange-500 md:mx-5"
+              >
+                실시간 인기 제휴점
+              </Link>
+              <Link href="/near-me" className="inline-block hover:text-orange-500 md:mx-5">
+                내 주변 제휴점 찾기
+              </Link>
+              <Link
+                href="/club/전체/전체/전체"
+                className="inline-block hover:text-orange-500 md:mx-5"
+              >
+                나이트/클럽
+              </Link>
+              <Link href="/community" className="inline-block hover:text-orange-500 md:mx-5">
+                커뮤니티
+              </Link>
+            </div>
+
+            {/* MegaMenu (PC) */}
+            <div
+              className={`
+                absolute left-0 top-full z-50 w-full border border-gray-200 bg-white shadow-xl rounded-b-xl
+                transform transition-all duration-300 ease-in-out origin-top
+                ${
+                  showMegaMenu
+                    ? "opacity-100 scale-100 pointer-events-auto translate-y-0"
+                    : "opacity-0 scale-95 pointer-events-none -translate-y-2"
+                }
+              `}
             >
-              실시간 인기 제휴점
-            </Link>
-            <Link href="/near-me" className="inline-block hover:text-orange-500 md:mx-5">
-              내 주변 제휴점 찾기
-            </Link>
-            <Link
-              href="/club/전체/전체/전체"
-              className="inline-block hover:text-orange-500 md:mx-5"
-            >
-              나이트/클럽
-            </Link>
-            <Link href="/community" className="inline-block hover:text-orange-500 md:mx-5">
-              커뮤니티
-            </Link>
-          </div>
+              <div className="mx-auto grid max-w-7xl grid-cols-4 gap-4 px-6 py-4">
+                {/* (1) 테마 선택 */}
+                <div>
+                  <h2 className="mb-2 font-semibold text-orange-500">테마 선택</h2>
+                  <ul className="space-y-1 text-sm text-gray-700">
+                    <li>
+                      <Link href="/board/전체/전체/바" onClick={() => setShowMegaMenu(false)}>
+                        바
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/board/전체/전체/클럽" onClick={() => setShowMegaMenu(false)}>
+                        클럽
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/board/전체/전체/라운지바"
+                        onClick={() => setShowMegaMenu(false)}
+                      >
+                        라운지바
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/board/전체/전체/헌팅포차"
+                        onClick={() => setShowMegaMenu(false)}
+                      >
+                        헌팅포차
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/board/전체/전체/감성주점"
+                        onClick={() => setShowMegaMenu(false)}
+                      >
+                        감성주점
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/board/전체/전체/나이트클럽"
+                        onClick={() => setShowMegaMenu(false)}
+                      >
+                        나이트클럽
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/board/전체/전체/성인용품"
+                        onClick={() => setShowMegaMenu(false)}
+                      >
+                        성인용품
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/board/전체/전체/룸카페"
+                        onClick={() => setShowMegaMenu(false)}
+                      >
+                        룸카페
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/board/전체/전체/눈썹문신"
+                        onClick={() => setShowMegaMenu(false)}
+                      >
+                        눈썹문신
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/board/전체/전체/네일샵" onClick={() => setShowMegaMenu(false)}>
+                        네일샵
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/board/전체/전체/태닝샵" onClick={() => setShowMegaMenu(false)}>
+                        태닝샵
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/board/전체/전체/왁싱샵" onClick={() => setShowMegaMenu(false)}>
+                        왁싱샵
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/board/전체/전체/사주" onClick={() => setShowMegaMenu(false)}>
+                        사주
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/board/전체/전체/타로" onClick={() => setShowMegaMenu(false)}>
+                        타로
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/board/전체/전체/애견펜션"
+                        onClick={() => setShowMegaMenu(false)}
+                      >
+                        애견펜션
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/board/전체/전체/애견미용"
+                        onClick={() => setShowMegaMenu(false)}
+                      >
+                        애견미용
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/board/전체/전체/아이폰-스냅"
+                        onClick={() => setShowMegaMenu(false)}
+                      >
+                        아이폰-스냅
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/board/전체/전체/웨딩플래너"
+                        onClick={() => setShowMegaMenu(false)}
+                      >
+                        웨딩플래너
+                      </Link>
+                    </li>
+                  </ul>
+                </div>
 
-          {/* MegaMenu (PC) */}
-          <div
-            className={`
-              absolute left-0 top-full z-50 w-full border border-gray-200 bg-white shadow-xl rounded-b-xl
-              transform transition-all duration-300 ease-in-out origin-top
-              ${
-                showMegaMenu
-                  ? "opacity-100 scale-100 pointer-events-auto translate-y-0"
-                  : "opacity-0 scale-95 pointer-events-none -translate-y-2"
-              }
-            `}
-          >
-            <div className="mx-auto grid max-w-7xl grid-cols-4 gap-4 px-6 py-4">
-              {/* (1) 테마 선택 */}
-              <div>
-                <h2 className="mb-2 font-semibold text-orange-500">테마 선택</h2>
-                <ul className="space-y-1 text-sm text-gray-700">
-                  <li>
-                    <Link href="/board/전체/전체/바" onClick={() => setShowMegaMenu(false)}>
-                      바
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="/board/전체/전체/클럽" onClick={() => setShowMegaMenu(false)}>
-                      클럽
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      href="/board/전체/전체/라운지바"
-                      onClick={() => setShowMegaMenu(false)}
-                    >
-                      라운지바
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      href="/board/전체/전체/헌팅포차"
-                      onClick={() => setShowMegaMenu(false)}
-                    >
-                      헌팅포차
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      href="/board/전체/전체/감성주점"
-                      onClick={() => setShowMegaMenu(false)}
-                    >
-                      감성주점
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      href="/board/전체/전체/나이트클럽"
-                      onClick={() => setShowMegaMenu(false)}
-                    >
-                      나이트클럽
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      href="/board/전체/전체/성인용품"
-                      onClick={() => setShowMegaMenu(false)}
-                    >
-                      성인용품
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      href="/board/전체/전체/룸카페"
-                      onClick={() => setShowMegaMenu(false)}
-                    >
-                      룸카페
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      href="/board/전체/전체/눈썹문신"
-                      onClick={() => setShowMegaMenu(false)}
-                    >
-                      눈썹문신
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="/board/전체/전체/네일샵" onClick={() => setShowMegaMenu(false)}>
-                      네일샵
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="/board/전체/전체/태닝샵" onClick={() => setShowMegaMenu(false)}>
-                      태닝샵
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="/board/전체/전체/왁싱샵" onClick={() => setShowMegaMenu(false)}>
-                      왁싱샵
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="/board/전체/전체/사주" onClick={() => setShowMegaMenu(false)}>
-                      사주
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="/board/전체/전체/타로" onClick={() => setShowMegaMenu(false)}>
-                      타로
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      href="/board/전체/전체/애견펜션"
-                      onClick={() => setShowMegaMenu(false)}
-                    >
-                      애견펜션
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      href="/board/전체/전체/애견미용"
-                      onClick={() => setShowMegaMenu(false)}
-                    >
-                      애견미용
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      href="/board/전체/전체/아이폰-스냅"
-                      onClick={() => setShowMegaMenu(false)}
-                    >
-                      아이폰-스냅
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      href="/board/전체/전체/웨딩플래너"
-                      onClick={() => setShowMegaMenu(false)}
-                    >
-                      웨딩플래너
-                    </Link>
-                  </li>
-                </ul>
-              </div>
+                {/* (2) 지역 */}
+                <div>
+                  <h2 className="mb-2 font-semibold text-orange-500">지역</h2>
+                  <ul className="space-y-1 text-sm text-gray-700">
+                    <li>
+                      <Link href="/today" onClick={() => setShowMegaMenu(false)}>
+                        전체
+                      </Link>
+                    </li>
+                    <li>경기</li>
+                    <li>서울</li>
+                    <li>강원</li>
+                    <li>인천</li>
+                    <li>충북</li>
+                    <li>대전</li>
+                    <li>충남</li>
+                    <li>세종</li>
+                    <li>전북</li>
+                    <li>광주</li>
+                    <li>전남</li>
+                    <li>대구</li>
+                    <li>경북</li>
+                    <li>울산</li>
+                    <li>경남</li>
+                    <li>부산</li>
+                    <li>제주</li>
+                  </ul>
+                </div>
 
-              {/* (2) 지역 */}
-              <div>
-                <h2 className="mb-2 font-semibold text-orange-500">지역</h2>
-                <ul className="space-y-1 text-sm text-gray-700">
-                  <li>
-                    <Link href="/today" onClick={() => setShowMegaMenu(false)}>
-                      전체
-                    </Link>
-                  </li>
-                  <li>경기</li>
-                  <li>서울</li>
-                  <li>강원</li>
-                  <li>인천</li>
-                  <li>충북</li>
-                  <li>대전</li>
-                  <li>충남</li>
-                  <li>세종</li>
-                  <li>전북</li>
-                  <li>광주</li>
-                  <li>전남</li>
-                  <li>대구</li>
-                  <li>경북</li>
-                  <li>울산</li>
-                  <li>경남</li>
-                  <li>부산</li>
-                  <li>제주</li>
-                </ul>
-              </div>
+                {/* (3) 내주변 */}
+                <div>
+                  <h2 className="mb-2 font-semibold text-orange-500">내 주변 제휴점 찾기</h2>
+                  <ul className="space-y-1 text-sm text-gray-700">
+                    <li>
+                      <Link href="/near-me" onClick={() => setShowMegaMenu(false)}>
+                        내 주변 제휴점 찾기
+                      </Link>
+                    </li>
+                  </ul>
+                </div>
 
-              {/* (3) 내주변 */}
-              <div>
-                <h2 className="mb-2 font-semibold text-orange-500">내 주변 제휴점 찾기</h2>
-                <ul className="space-y-1 text-sm text-gray-700">
-                  <li>
-                    <Link href="/near-me" onClick={() => setShowMegaMenu(false)}>
-                      내 주변 제휴점 찾기
-                    </Link>
-                  </li>
-                </ul>
-              </div>
-
-              {/* (4) 커뮤니티 */}
-              <div>
-                <h2 className="mb-2 font-semibold text-orange-500">커뮤니티</h2>
-                <ul className="space-y-1 text-sm text-gray-700">
-                  <li>
-                    <Link href="/community/board/공지사항" onClick={() => setShowMegaMenu(false)}>
-                      공지사항
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="/community/board/가입인사" onClick={() => setShowMegaMenu(false)}>
-                      가입인사
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="/community/board/방문후기" onClick={() => setShowMegaMenu(false)}>
-                      방문후기
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      href="/community/board/유머게시판"
-                      onClick={() => setShowMegaMenu(false)}
-                    >
-                      유머게시판
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      href="/community/board/자유게시판"
-                      onClick={() => setShowMegaMenu(false)}
-                    >
-                      자유게시판
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="/community/board/질문답변" onClick={() => setShowMegaMenu(false)}>
-                      질문답변
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      href="/community/board/제휴업체 SNS 홍보"
-                      onClick={() => setShowMegaMenu(false)}
-                    >
-                      제휴업체 SNS 홍보
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      href="/community/board/맛집-핫플-데이트 코스 공유"
-                      onClick={() => setShowMegaMenu(false)}
-                    >
-                      맛집/핫플/데이트 코스 공유
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="/community/board/패션 꿀팁" onClick={() => setShowMegaMenu(false)}>
-                      패션 꿀팁
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      href="/community/board/여성 조각 모임 (나이트&클럽&라운지)"
-                      onClick={() => setShowMegaMenu(false)}
-                    >
-                      여성 조각 모임 (나이트&클럽&라운지)
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      href="/community/board/남성 조각 모임 (나이트&클럽&라운지)"
-                      onClick={() => setShowMegaMenu(false)}
-                    >
-                      남성 조각 모임 (나이트&클럽&라운지)
-                    </Link>
-                  </li>
-                </ul>
+                {/* (4) 커뮤니티 */}
+                <div>
+                  <h2 className="mb-2 font-semibold text-orange-500">커뮤니티</h2>
+                  <ul className="space-y-1 text-sm text-gray-700">
+                    <li>
+                      <Link href="/community/board/공지사항" onClick={() => setShowMegaMenu(false)}>
+                        공지사항
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/community/board/가입인사" onClick={() => setShowMegaMenu(false)}>
+                        가입인사
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/community/board/방문후기" onClick={() => setShowMegaMenu(false)}>
+                        방문후기
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/community/board/유머게시판"
+                        onClick={() => setShowMegaMenu(false)}
+                      >
+                        유머게시판
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/community/board/자유게시판"
+                        onClick={() => setShowMegaMenu(false)}
+                      >
+                        자유게시판
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/community/board/질문답변" onClick={() => setShowMegaMenu(false)}>
+                        질문답변
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/community/board/제휴업체 SNS 홍보"
+                        onClick={() => setShowMegaMenu(false)}
+                      >
+                        제휴업체 SNS 홍보
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/community/board/맛집-핫플-데이트 코스 공유"
+                        onClick={() => setShowMegaMenu(false)}
+                      >
+                        맛집/핫플/데이트 코스 공유
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/community/board/패션 꿀팁" onClick={() => setShowMegaMenu(false)}>
+                        패션 꿀팁
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/community/board/여성 조각 모임 (나이트&클럽&라운지)"
+                        onClick={() => setShowMegaMenu(false)}
+                      >
+                        여성 조각 모임 (나이트&클럽&라운지)
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/community/board/남성 조각 모임 (나이트&클럽&라운지)"
+                        onClick={() => setShowMegaMenu(false)}
+                      >
+                        남성 조각 모임 (나이트&클럽&라운지)
+                      </Link>
+                    </li>
+                  </ul>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </header>
+      </header>
+    </>
   );
 }
