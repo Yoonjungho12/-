@@ -60,6 +60,7 @@ export default function DetailClient({ row, images, numericId, showBlurDefault }
   const [hasCountedView, setHasCountedView] = useState(false);
   const [showBlur, setShowBlur] = useState(showBlurDefault);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadingPopup, setLoadingPopup] = useState(false);
 
   // (A) 세션 체크
   useEffect(() => {
@@ -352,6 +353,7 @@ export default function DetailClient({ row, images, numericId, showBlurDefault }
 
   // (I) handleAuthClick - 수정된 로직
   async function handleAuthClick() {
+    setLoadingPopup(true);
     // 1) userId 구하기
     const { data } = await supabase.auth.getUser();
     const userId = data?.user?.id;
@@ -376,6 +378,7 @@ export default function DetailClient({ row, images, numericId, showBlurDefault }
     }
 
     // 3) 표준창 호출
+    setTimeout(() => setLoadingPopup(false), 2000);
     const isMobile = /Mobile|Android|iP(hone|od)|BlackBerry|IEMobile|Silk/i.test(
       navigator.userAgent
     );
@@ -488,7 +491,17 @@ export default function DetailClient({ row, images, numericId, showBlurDefault }
                     bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700
                     transition-all duration-200 transform hover:scale-105 shadow-lg"
                 >
-                  성인 인증 하기
+                  {loadingPopup ? (
+                    <div className="flex items-center gap-2">
+                      <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                      </svg>
+                      <span>열리는 중...</span>
+                    </div>
+                  ) : (
+                    "성인 인증 하기"
+                  )}
                 </button>
               )}
             </div>
