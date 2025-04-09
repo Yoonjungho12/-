@@ -427,6 +427,36 @@ export default function DetailClient({ row, images, numericId, showBlurDefault }
     };
   }, [showBlurDefault]);
 
+  useEffect(() => {
+    const listener = (event) => {
+      if (event.data?.type === "MOK_AUTH_SUCCESS") {
+        console.log("✅ 드림시큐리티 인증 완료 메시지 수신됨!");
+        // 인증 완료 후 DB에서 다시 성인 여부 확인
+        const recheckAdultStatus = async () => {
+          try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user?.id) {
+              const { data: profile } = await supabase
+                .from("profiles")
+                .select("is_adult")
+                .eq("user_id", user.id)
+                .single();
+              
+              if (profile?.is_adult) {
+                setShowBlur(false); // 🔓 블러 제거!
+              }
+            }
+          } catch (error) {
+            console.error("[⚠️ 인증 후 is_adult 재확인 실패]", error);
+          }
+        };
+        recheckAdultStatus();
+      }
+    };
+    window.addEventListener("message", listener);
+    return () => window.removeEventListener("message", listener);
+  }, []);
+
   // ─────────────────────────────────────────────────────────
   // 최종 렌더링
   return (
