@@ -1,5 +1,3 @@
-// app/community/board/[board_id]/[post_id]/page.js
-
 import React from 'react';
 import { supabase } from '@/lib/supabaseE'; // Supabase 인스턴스
 import CommentForm from './CommentForm';
@@ -56,6 +54,12 @@ export default async function PostDetailPage({ params: ParamsPromise }) {
     return <div>존재하지 않는 게시글입니다.</div>;
   }
 
+  // 댓글 수 조회
+  const { count: commentCount } = await supabase
+    .from('post_comments')
+    .select('*', { count: 'exact' })
+    .eq('post_id', postId);
+
   // 2) 조회수 1 증가 (중복 방지 없음: 모든 접속 시 +1)
   const currentViews = postData.views || 0;
   const { data: updatedPost, error: updateError } = await supabase
@@ -103,7 +107,7 @@ export default async function PostDetailPage({ params: ParamsPromise }) {
   }
 
   // 4) 동일 board의 다른 글 목록 (자기 자신 제외)
-  const { data: boardPosts } = await supabase
+  const { data: boardPosts, count: totalPosts } = await supabase
     .from('posts')
     .select(`
       id,
@@ -111,41 +115,76 @@ export default async function PostDetailPage({ params: ParamsPromise }) {
       created_at,
       user_id,
       profiles(nickname)
-    `)
+    `, { count: 'exact' })
     .eq('board_id', boardId)
+    .eq('is_admitted', true)
     .neq('id', postId)
     .order('created_at', { ascending: false })
-    .limit(10);
+    .limit(20);
+
+  // 페이지네이션 계산
+  const totalPages = Math.ceil(totalPosts / 20);
+  const currentPage = 1;
+  const pageNumbers = [];
+  const maxPageDisplay = 5;
+  
+  let startPage = Math.max(1, currentPage - Math.floor(maxPageDisplay / 2));
+  let endPage = Math.min(totalPages, startPage + maxPageDisplay - 1);
+  
+  if (endPage - startPage + 1 < maxPageDisplay) {
+    startPage = Math.max(1, endPage - maxPageDisplay + 1);
+  }
+
+  for (let i = startPage; i <= endPage; i++) {
+    pageNumbers.push(i);
+  }
 
   return (
-    <div className="max-w-4xl mx-auto p-4">
-      {/* 경로 */}
-      <p className="mb-3 text-gray-500 text-sm">
-        커뮤니티 &gt; {boardName}
-      </p>
-
-      {/* 글 제목 + 작성 정보 */}
-      <h1 className="text-xl font-bold mb-1">{postData.title}</h1>
-      <div className="bg-gray-50 p-2 mb-4 border-t-[0.5px] border-b-[0.5px] border-black flex justify-between items-center">
-        <div className="text-sm text-gray-600">
-          글쓴이: {nickname}&nbsp;&nbsp;    | &nbsp;&nbsp;  작성일: {dateStr}&nbsp;&nbsp;   | &nbsp;&nbsp;  조회: {finalViews}
+    <div className="max-w-6xl mx-auto py-8 px-4">
+      {/* 네비게이션 */}
+      <div className="mb-6">
+        <div className="text-sm text-gray-600 mb-6">
+          <Link href="/community" className="hover:text-orange-500">커뮤니티</Link>
+          <span className="mx-2">›</span>
+          <span className="text-orange-500 font-medium">{boardName}</span>
         </div>
       </div>
 
-      {/* 본문 */}
-      <div className="mb-8 leading-relaxed whitespace-pre-wrap mt-5">
-        {postData.content}
+      {/* 게시글 */}
+      <div className="border-t-3 border-orange-500 border-black">
+        <div className="border-t border-t-2 border-orange-500 py-3 px-4 border-b border-b-1 border-b-gray-300">
+          <h1 className="font-bold mb-2">{postData.title}</h1>
+          <div className="text-sm flex justify-between items-center">
+            <div>
+              <span className=''>{nickname}</span>
+              <span className="mx-2 text-gray-300">|</span>
+              <span>{dateStr}</span>
+            </div>
+            <div>
+              <span>조회 {finalViews}</span>
+            </div>
+          </div>
+        </div>
+        <div
+          className="prose max-w-none prose-img:float-right prose-img:ml-4 prose-img:block prose-img:max-w-full prose-img:h-auto px-4 py-8"
+          dangerouslySetInnerHTML={{ __html: postData.content }}
+        />
       </div>
 
-      {/* 댓글 (공지사항이면 X) */}
+      {/* 댓글 */}
       {boardInfo.id !== 1 && (
         <>
-          <section className="mb-6">
-            <h2 className="text-lg font-bold mb-3">댓글</h2>
+          <div className="mt-10">
+            <h3 className="border-b-1 border-black border-gray-300 py-2">
+              <span>전체 댓글</span>
+              <span className="text-orange-500 ml-2">{commentCount}</span>
+            </h3>
             {!commentList || commentList.length === 0 ? (
-              <p className="text-sm text-gray-500">등록된 댓글이 없습니다.</p>
+              <div className="py-4 text-center text-gray-500">
+                등록된 댓글이 없습니다.
+              </div>
             ) : (
-              <div className="space-y-4">
+              <div>
                 {commentList.map((comment) => {
                   const cNick = comment.profiles?.nickname || '익명';
                   const cDateObj = new Date(comment.created_at);
@@ -156,46 +195,44 @@ export default async function PostDetailPage({ params: ParamsPromise }) {
                     .toString()
                     .padStart(2, '0')}`;
                   return (
-                    <div
-                      key={comment.id}
-                      className="bg-white rounded-lg shadow-lg p-4"
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-semibold text-orange-400 text-sm">
-                          {cNick}
-                        </span>
-                        <span className="text-xs text-gray-400">{cDateStr}</span>
+                    <div key={comment.id} className="border-b border-b-1 border-gray-300 py-4">
+                      <div className="flex justify-between text-sm mb-2">
+                        <span>{cNick}</span>
+                        <span className="text-gray-500">{cDateStr}</span>
                       </div>
-                      <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                        {comment.content}
-                      </p>
+                      <p>{comment.content}</p>
                     </div>
                   );
                 })}
               </div>
             )}
-          </section>
-          <CommentForm postId={postData.id} />
+          </div>
+          <div className="mt-4">
+            <CommentForm postId={postData.id} />
+          </div>
         </>
       )}
 
-      {/* 하단 목록 (동일 board, 자기 글 제외) */}
-      <section className="mt-10">
-        <h2 className="text-lg font-bold mb-3">글 목록</h2>
-        {!boardPosts || boardPosts.length === 0 ? (
-          <p className="text-sm text-gray-500">게시물이 없습니다.</p>
-        ) : (
-          <table className="w-full text-sm border border-gray-300">
-            <thead className="bg-gray-100">
+      {/* 목록 */}
+      <div className="mt-10">
+        <table className="w-full border-t border-gray-200">
+          <thead>
+            <tr className="bg-gray-50">
+              <th className="py-1.5 w-16 text-center text-xs text-gray-500 border-b border-gray-200">번호</th>
+              <th className="py-1.5 text-left text-xs text-gray-500 border-b border-gray-200">제목</th>
+              <th className="py-1.5 w-24 text-center text-xs text-gray-500 border-b border-gray-200">글쓴이</th>
+              <th className="py-1.5 w-20 text-center text-xs text-gray-500 border-b border-gray-200">날짜</th>
+            </tr>
+          </thead>
+          <tbody>
+            {!boardPosts || boardPosts.length === 0 ? (
               <tr>
-                <th className="p-2 w-16 border-b border-gray-300 text-center">번호</th>
-                <th className="p-2 border-b border-gray-300 text-left">제목</th>
-                <th className="p-2 w-28 border-b border-gray-300 text-center">글쓴이</th>
-                <th className="p-2 w-28 border-b border-gray-300 text-center">날짜</th>
+                <td colSpan="4" className="text-center py-4 text-sm text-gray-500">
+                  게시물이 없습니다.
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {(boardPosts || []).map((bp) => {
+            ) : (
+              boardPosts.map((bp, index) => {
                 const bNick = bp.profiles?.nickname || '익명';
                 const bDate = new Date(bp.created_at);
                 const bDateStr = `${(bDate.getMonth()+1).toString().padStart(2,'0')}-${bDate
@@ -203,25 +240,33 @@ export default async function PostDetailPage({ params: ParamsPromise }) {
                   .toString()
                   .padStart(2,'0')}`;
                 return (
-                  <tr key={bp.id} className="border-b border-gray-200">
-                    <td className="p-2 text-center">{bp.id}</td>
-                    <td className="p-2">
-                      <Link
-                        href={`/community/board/${boardId}/${bp.id}`}
-                        className="text-blue-600 hover:underline"
+                  <tr key={bp.id} className="border-b border-gray-100 hover:bg-gray-50">
+                    <td className="py-1.5 text-center text-xs text-gray-600">{totalPosts - index}</td>
+                    <td className="py-1.5">
+                      <Link 
+                        href={`/community/board/detail/${boardId}/${bp.id}`}
+                        className="text-xs text-gray-900 hover:text-orange-500"
                       >
                         {bp.title}
                       </Link>
                     </td>
-                    <td className="p-2 text-center">{bNick}</td>
-                    <td className="p-2 text-center">{bDateStr}</td>
+                    <td className="py-1.5 text-center text-xs text-gray-600">{bNick}</td>
+                    <td className="py-1.5 text-center text-xs text-gray-500">{bDateStr}</td>
                   </tr>
                 );
-              })}
-            </tbody>
-          </table>
-        )}
-      </section>
+              })
+            )}
+          </tbody>
+        </table>
+        {/* 페이지네이션 */}
+        <div className="mt-10">
+          <div className="flex justify-center space-x-2">
+            <button className="px-3 py-1 text-xs text-gray-600 hover:text-orange-500">이전</button>
+            <button className="px-3 py-1 text-xs bg-orange-500 text-white rounded">1</button>
+            <button className="px-3 py-1 text-xs text-gray-600 hover:text-orange-500">다음</button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

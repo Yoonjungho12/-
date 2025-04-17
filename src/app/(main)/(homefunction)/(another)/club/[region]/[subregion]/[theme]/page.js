@@ -2,7 +2,6 @@
 
 import RegionSelectorSSR from "./RegionSelector";
 import PartnershipTable from "./PartnershipTable";
-import { supabase } from "@/lib/supabaseF";
 
 /**
  * (1) 메타데이터를 동적으로 생성
@@ -49,23 +48,6 @@ export default async function BoardPage({ params:a, searchParams:b }) {
   const subregionDecoded = decodeURIComponent(subregion);
   const themeDecoded = decodeURIComponent(theme);
 
-  // 성인 인증 여부 확인
-  const { data: { session } } = await supabase.auth.getSession();
-  let isAdult = false;
-  
-  if (session?.user?.id) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('isAdult')
-      .eq('user_id', session.user.id)
-      .single();
-      
-    isAdult = profile?.isAdult || false;
-  }
-
-  // 디버그 로그 (서버 콘솔)
-
-  // (A) 상단 헤더
   return (
     <div className="mx-auto w-full max-w-7xl md:px-4">
       <div className="flex items-center mt-5 mb-3">
@@ -80,15 +62,6 @@ export default async function BoardPage({ params:a, searchParams:b }) {
         <h2 className="text-base font-bold text-gray-700">
           지역별 샵 &gt; {regionDecoded} &gt; {subregionDecoded}
         </h2>
-      </div>
-
-      {/* 성인 인증 상태 표시 */}
-      <div className="mb-4 p-4 bg-gray-100 rounded-lg">
-        {isAdult ? (
-          <p className="text-green-600">성인 인증이 완료되었습니다.</p>
-        ) : (
-          <p className="text-red-600">성인 인증이 필요합니다.</p>
-        )}
       </div>
 
       {/* (B) SSR 지역/테마 표 */}

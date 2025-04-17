@@ -26,7 +26,7 @@ const THEMES = [
   { id: 36, name: "감성주점",   sort_order: 36 },
 ];
 
-export default function TrRow({ post, boardInfo }) {
+export default function TrRow({ post, boardInfo, number }) {
   const router = useRouter();
 
   // 행 클릭 시 상세 페이지로 이동
@@ -52,28 +52,27 @@ export default function TrRow({ post, boardInfo }) {
 
   return (
     <tr
-      className="border-b border-gray-200 cursor-pointer hover:bg-gray-50"
+      className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
       onClick={handleRowClick}
     >
-      <td className="p-2 text-center">{post.id}</td>
-      <td className="p-2">
-        {post.title}
-        {commentCount > 0 && (
-          <span className="text-orange-500 text-xs ml-2">{commentCount}</span>
-        )}
-        {/* 방문후기면 theme_id 표시 */}
-        {boardInfo.name === "방문후기" && post.theme_id ? (
-          <span className="ml-2 text-xs text-gray-500">
-            {`[${
-              THEMES.find((t) => t.id === post.theme_id)?.name ||
-              "기타"
-            }]`}
-          </span>
-        ) : null}
+      <td className="py-1.5 text-center text-xs text-gray-600">{number}</td>
+      <td className="py-1.5">
+        <div className="flex items-center gap-1">
+          <span className="text-xs text-gray-900">{post.title}</span>
+          {commentCount > 0 && (
+            <span className="text-[11px] text-blue-600 font-medium">[{commentCount}]</span>
+          )}
+          {/* 방문후기면 theme_id 표시 */}
+          {boardInfo.name === "방문후기" && post.theme_id ? (
+            <span className="text-[11px] text-gray-500">
+              [{THEMES.find((t) => t.id === post.theme_id)?.name || "기타"}]
+            </span>
+          ) : null}
+        </div>
       </td>
-      <td className="p-2 text-center">{nickname}</td>
-      <td className="p-2 text-center">{formattedDate}</td>
-      <td className="p-2 text-center">{views}</td>
+      <td className="py-1.5 text-center text-xs text-gray-600">{nickname}</td>
+      <td className="py-1.5 text-center text-xs text-gray-500">{formattedDate}</td>
+      <td className="py-1.5 text-center text-xs text-gray-500">{views}</td>
     </tr>
   );
 }

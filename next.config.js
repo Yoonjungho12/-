@@ -3,7 +3,8 @@ const nextConfig = {
   images: {
     domains: [
       'cdn.vipgunma.com',
-      'zuxdcurogblcfkedqgvy.supabase.co'
+      'zuxdcurogblcfkedqgvy.supabase.co',
+      'vejthvawsbsitttyiwzv.supabase.co'
     ]
   },
   async rewrites() {

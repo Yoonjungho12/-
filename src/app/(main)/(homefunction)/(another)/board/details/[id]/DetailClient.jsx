@@ -600,22 +600,22 @@ export default function DetailClient({ row, images, numericId, showBlurDefault }
         </div>
 
         {/* 기본 정보 */}
-        <div className="mt-6 bg-white p-4 rounded">
-          <div className="flex flex-col">
+        <div className="mt-3 bg-white p-4 rounded">
+          <div className="flex flex-col ">
             <h1 className="text-3xl font-bold mb-2">{row.company_name}</h1>
-            <div className="flex items-center gap-6 ml-1 text-gray-500">
-              <div className="flex items-center gap-1">
+            <div className="flex items-center gap-6 ml-1 text-gray-500 mt-">
+              <div className="flex items-center gap-1 mt-2 mb-3">
                 <img src="/icons/views.svg" alt="조회수" style={{ width: "18px", height: "16px" }} />
                 <span>{views.toLocaleString()}</span>
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 mt-2 mb-3">
                 <img src="/icons/man.svg" alt="댓글수" style={{ width: "18px", height: "14px" }} />
                 <span>{row.comment || 0}</span>
               </div>
             </div>
           </div>
 
-          <DetailRow label="업체소개" value={row.greeting} />
+          <DetailRow label="제휴사소개" value={row.greeting} />
           <DetailRow label="오시는 길" value={row.address_street} />
           <DetailRow label="전화번호" value={row.phone_number} />
           <DetailRow

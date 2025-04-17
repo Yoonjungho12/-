@@ -71,24 +71,40 @@ export default function MapKakao({ address, id }) {
     script.src =
       `//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_KEY}&libraries=services&autoload=false`;
     script.onload = () => {
+      console.log("[카카오맵] 스크립트 로드됨:", address);
       window.kakao.maps.load(() => {
-        const container = mapRef.current;
-        const options = {
-          center: new window.kakao.maps.LatLng(37.5665, 126.9780), // 초기 좌표 (서울시청)
-          level: 3,
-        };
-        const map = new window.kakao.maps.Map(container, options);
-
-        const geocoder = new window.kakao.maps.services.Geocoder();
-        geocoder.addressSearch(address, (result, status) => {
-          if (status === window.kakao.maps.services.Status.OK) {
-            const coords = new window.kakao.maps.LatLng(result[0].y, result[0].x);
-            map.setCenter(coords);
-            new window.kakao.maps.Marker({ map, position: coords });
-            setMapCenter({ lat: result[0].y, lng: result[0].x });
-          } else {
-            console.warn("주소를 찾을 수 없습니다:", address);
+        requestAnimationFrame(() => {
+          const container = mapRef.current;
+          if (!container) {
+            console.warn("[카카오맵] container(mapRef.current)가 null입니다. 지도 렌더링 스킵");
+            return;
           }
+          const options = {
+            center: new window.kakao.maps.LatLng(37.5665, 126.9780), // 초기 좌표 (서울시청)
+            level: 3,
+          };
+          const map = new window.kakao.maps.Map(container, options);
+
+          const geocoder = new window.kakao.maps.services.Geocoder();
+          geocoder.addressSearch(address, (result, status) => {
+            console.log("[카카오맵] 지오코딩 시도:", address);
+            console.log("[카카오맵] 지오코딩 결과:", result, status);
+            if (status === window.kakao.maps.services.Status.OK) {
+              const coords = new window.kakao.maps.LatLng(result[0].y, result[0].x);
+              map.setCenter(coords);
+              new window.kakao.maps.Marker({ map, position: coords });
+              setMapCenter({
+                lat: parseFloat(result[0].y),
+                lng: parseFloat(result[0].x),
+              });
+              console.log("[카카오맵] setMapCenter로 설정:", {
+                lat: parseFloat(result[0].y),
+                lng: parseFloat(result[0].x),
+              });
+            } else {
+              console.warn("주소를 찾을 수 없습니다:", address);
+            }
+          });
         });
       });
     };
@@ -97,25 +113,38 @@ export default function MapKakao({ address, id }) {
 
   // (D) 주변 샵 불러오기 (30km 이내, 현재 샵 제외)
   useEffect(() => {
-    if (!mapCenter) return;
+    if (!mapCenter) {
+      console.log("[지도 useEffect] mapCenter 변경됨: null");
+      return;
+    }
+    console.log("[지도 useEffect] mapCenter 변경됨:", mapCenter, typeof mapCenter.lat, mapCenter.lat);
 
     async function fetchShops() {
-      // 1) DB에서 final_admitted=true인 레코드 불러오기
-      const { data, error } = await supabase
-        .from("partnershipsubmit")
-        .select("id, lat, lng, company_name, address, near_building, thumbnail_url")
-        .eq("final_admitted", true);
+    console.log("[🔥 fetchShops] 함수 진입!");
+    try {
+        // 1) DB에서 final_admitted=true인 레코드 불러오기
+        const { data, error } = await supabase
+          .from("partnershipsubmit")
+          .select("id, lat, lng, company_name, address, near_building, thumbnail_url")
+          .eq("final_admitted", true);
 
-      if (error) {
-        console.error("주변 샵 불러오기 오류:", error);
-        return;
-      }
+        console.log("Supabase 쿼리 결과:", { data, error });
 
-      // 2) 콘솔 출력
-      console.log("[fetchShops] final_admitted=true 레코드:", data);
+        if (error) {
+          console.error("주변 샵 불러오기 오류:", error);
+          return;
+        }
 
-      if (data && data.length > 0) {
-        // 3) 각 레코드에 거리 계산
+        // 2) 데이터가 없거나 빈 배열일 때 로그 추가
+        if (!data || data.length === 0) {
+          console.log("[fetchShops] final_admitted=true 인 레코드가 없습니다.");
+          return;
+        }
+
+        // 3) 콘솔 출력
+        console.log("[fetchShops] Supabase에서 받은 데이터:", data);
+
+        // 4) 각 레코드에 거리 계산
         const shopsWithDistance = data.map((shop) => {
           let distance = Infinity;
           if (shop.lat && shop.lng) {
@@ -126,21 +155,20 @@ export default function MapKakao({ address, id }) {
               shop.lng
             );
           }
+          console.log("[fetchShops] 거리 계산된 샵:", { ...shop, distance });
           return { ...shop, distance };
         });
 
-        console.log("[fetchShops] shopsWithDistance:", shopsWithDistance);
-
-        // 4) 30km 이내 + 현재 샵 제외 + 거리순
+        // 5) 30km 이내 + 현재 샵 제외 + 거리순
         const filtered = shopsWithDistance
           .filter((s) => s.distance <= 30)
           .filter((s) => s.id !== id)
           .sort((a, b) => a.distance - b.distance);
 
-        console.log("[fetchShops] 최종 필터링된 주변 샵:", filtered);
+        console.log("[fetchShops] 최종 필터링 (30km 이내 & 현재 샵 제외):", filtered);
         setNearbyShops(filtered);
-      } else {
-        console.log("[fetchShops] final_admitted=true 인 레코드가 없습니다.");
+      } catch (e) {
+        console.error("[❌ fetchShops] 내부 오류:", e);
       }
     }
 

@@ -10,6 +10,20 @@ function createSlug(text) {
   if (typeof text !== "string" || text.trim() === "") {
     return "no-slug";
   }
+
+function convertAddressToCoord(address, callback) {
+  if (!window.kakao || !window.kakao.maps) return;
+  const geocoder = new window.kakao.maps.services.Geocoder();
+  geocoder.addressSearch(address, (result, status) => {
+    if (status === window.kakao.maps.services.Status.OK) {
+      const lat = parseFloat(result[0].y);
+      const lng = parseFloat(result[0].x);
+      callback({ lat, lng });
+    } else {
+      alert("주소를 찾을 수 없습니다.");
+    }
+  });
+}
   return text
     .trim()
     .replace(/\s+/g, "-")
@@ -262,53 +276,28 @@ export default function NearMeListPage() {
     }
   }
 
-  /**
-   * (F) 주소 검색
-   */
-  async function handleSearchAddress() {
-    if (!userLat || !userLng) {
-      alert("사용자 위치가 확인되지 않았습니다!");
-      return;
-    }
-    const keyword = searchInputRef.current?.value.trim();
-    if (!keyword) {
-      alert("검색어를 입력해주세요!");
-      return;
-    }
-    const { data, error } = await supabase
-      .from("partnershipsubmit")
-      .select(`
-        id,
-        final_admitted,
-        company_name,
-        thumbnail_url,
-        address,
-        comment,
-        greeting,
-        lat,
-        lng,
-        partnershipsubmit_themes ( themes ( id, name ) ),
-        sections ( courses ( price ) )
-      `)
-      .eq("final_admitted", true)
-      .ilike("address", `%${keyword}%`);
-
-    if (error) {
-      console.error("검색 API 오류:", error);
-      return;
-    }
-    if (data && data.length > 0 && mapObj) {
-      const first = data[0];
-      if (first.lat && first.lng) {
-        const newPos = new window.kakao.maps.LatLng(first.lat, first.lng);
-        setCenterLat(first.lat);
-        setCenterLng(first.lng);
-        mapObj.setCenter(newPos);
-        moveMarker(first.lat, first.lng);
-      }
-    }
-    setFilteredShops(data || []);
+/**
+ * (F) 주소 검색
+ */
+async function handleSearchAddress() {
+  const keyword = searchInputRef.current?.value.trim();
+  if (!keyword) {
+    alert("검색어를 입력해주세요!");
+    return;
   }
+
+  convertAddressToCoord(keyword, ({ lat, lng }) => {
+    if (mapObj) {
+      const newPos = new window.kakao.maps.LatLng(lat, lng);
+      setCenterLat(lat);
+      setCenterLng(lng);
+      mapObj.setCenter(newPos);
+      moveMarker(lat, lng);
+      convertCoordToAddress(lng, lat, (addr) => setAddress(addr));
+      filterShopsByDistance(lat, lng);
+    }
+  });
+}
 
   function handleKeyDown(e) {
     if (e.key === "Enter") {
@@ -326,6 +315,20 @@ export default function NearMeListPage() {
         callback(addr);
       } else {
         callback("");
+      }
+    });
+  }
+
+  function convertAddressToCoord(address, callback) {
+    if (!window.kakao || !window.kakao.maps) return;
+    const geocoder = new window.kakao.maps.services.Geocoder();
+    geocoder.addressSearch(address, (result, status) => {
+      if (status === window.kakao.maps.services.Status.OK) {
+        const lat = parseFloat(result[0].y);
+        const lng = parseFloat(result[0].x);
+        callback({ lat, lng });
+      } else {
+        alert("주소를 찾을 수 없습니다.");
       }
     });
   }
@@ -358,10 +361,7 @@ export default function NearMeListPage() {
           </div>
           <hr className="border-black w-[60%] mx-auto mb-2" />
           <p className="text-sm text-gray-500 text-center">
-            처음 한 번만 지도 자동 닫기 (30km 필터)
-            <br />
-            검색 시에는 Supabase 조회를 통해 결과를 가져옵니다.
-          </p>
+           내 주변 가까운 순으로 제휴사 리스트를 소개해 드릴게요 지역을 지도에서 직접 선택하실 수도 있어요!</p>
           <div className="flex justify-center mt-2">
             <button
               onClick={handleToggleMap}
@@ -398,8 +398,8 @@ export default function NearMeListPage() {
         </div>
       )}
 
-      <div className="mb-6">
-        <h3 className="text-lg font-semibold mb-2">내 주변 (30km) 매장 목록</h3>
+      <div className="mb-6 mt-20">
+        <h3 className="text-lg font-semibold mb-2">검색 결과</h3>
 
         <div className="space-y-6">
           {filteredShops.map((shop) => (
@@ -421,8 +421,9 @@ export default function NearMeListPage() {
  * 모바일일 때는 화면 꽉 차게, 데스크톱(md) 이상이면 373×217
  */
 function ShopCard({ shop, userLat, userLng }) {
+
   const url = shop.thumbnail_url
-    ? `https://vejthvawsbsitttyiwzv.supabase.co/storage/v1/object/public/gunma/${shop.thumbnail_url}`
+    ? process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL +'/'+shop.thumbnail_url
     : "/placeholder.png";
 
   let dist = 99999;

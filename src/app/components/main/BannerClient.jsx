@@ -18,7 +18,7 @@ export default function BannerClient() {
     <>
       {/* 1) 데스크톱 배너 */}
       <div className="hidden md:block">
-        <div className="w-full h-[400px] relative">
+        <div className="w-full max-w-[1500px] mx-auto h-[350px] relative">
           {currentBanner === 1 ? (
             <Image
               src="/logo/banner1.gif"
@@ -41,7 +41,7 @@ export default function BannerClient() {
 
       {/* 2) 모바일 배너 */}
       <div className="block md:hidden">
-        <div className="w-full h-[200px] relative">
+        <div className="w-full h-[150px] relative">
           {currentBanner === 1 ? (
             <Image
               src="/logo/banner1.gif"

@@ -69,22 +69,14 @@ const THEMES = [
 export default function ClientUI({ city, district, theme }) {
   const router = useRouter();
 
-  // ---------------------------------------------
-  // (A) SSR 시엔 항상 false -> 서버/클라 일치
-  // ---------------------------------------------
+  // 초기 렌더링 여부를 추적하는 state 추가
+  const [isInitialRender, setIsInitialRender] = useState(true);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [isThemeOpen, setIsThemeOpen] = useState(false);  // 테마 선택창 상태 추가
+  const [isThemeOpen, setIsThemeOpen] = useState(false);
 
-  // ---------------------------------------------
-  // (B) 컴포넌트 마운트 후(클라이언트)에서만
-  //     화면 크기 & district에 따라 열림/닫힘 결정
-  // ---------------------------------------------
   useEffect(() => {
-    // 1) 모바일( <768px )이면 기본 닫힘
+    // 컴포넌트 마운트 시 초기 상태 설정
     const isMobile = window.innerWidth < 768;
-
-    // 2) 데스크톱( >=768px )이면
-    //    district === "전체"면 열고, 아니면 닫기
     if (!isMobile) {
       if (district === "전체") {
         setIsFilterOpen(true);
@@ -92,9 +84,15 @@ export default function ClientUI({ city, district, theme }) {
         setIsFilterOpen(false);
       }
     } else {
-      // 모바일은 항상 닫힘(사용자가 토글로 열 수 있음)
       setIsFilterOpen(false);
     }
+    
+    // 약간의 지연 후 초기 렌더링 상태를 false로 변경
+    const timer = setTimeout(() => {
+      setIsInitialRender(false);
+    }, 100);
+
+    return () => clearTimeout(timer);
   }, [district]);
 
   // ---------------------------------------------------
@@ -169,13 +167,6 @@ export default function ClientUI({ city, district, theme }) {
 
         {/* 상단 버튼들 */}
         <div className="mx-auto mt-6 flex max-w-5xl items-center justify-center gap-3">
-          <button
-            onClick={() => alert("지역검색 버튼 클릭!")}
-            className="rounded-md bg-gradient-to-r from-orange-400 to-orange-400 px-4 py-2 text-white hover:bg-orange-600"
-          >
-            지역검색
-          </button>
-
           {/* 시·도 토글 버튼 */}
           <button
             onClick={handleToggleFilter}
@@ -231,10 +222,17 @@ export default function ClientUI({ city, district, theme }) {
         </div>
       </div>
 
-      {/* (F) 필터 열기/닫기 */}
-      {isFilterOpen && (
-        <div className="w-full bg-white py-6">
-          <div className="mx-auto max-w-5xl">
+      {/* 필터 열기/닫기 */}
+      <div className={`w-full bg-white ${
+        // 초기 렌더링시에는 애니메이션 클래스를 적용하지 않음
+        isInitialRender 
+          ? isFilterOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0 overflow-hidden'
+          : `transition-all duration-300 ease-in-out ${
+              isFilterOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0 overflow-hidden'
+            }`
+      }`}>
+        <div className="mx-auto max-w-5xl py-6">
+          <div className="border rounded-lg border-gray-200 p-4">
             {/* 테이블 헤더 */}
             <div className="mb-2 flex items-center border-b border-gray-200 px-4 pb-2">
               <div className="mr-8 text-lg font-semibold text-gray-600">시·도</div>
@@ -249,8 +247,10 @@ export default function ClientUI({ city, district, theme }) {
                     <div
                       key={region.id}
                       onClick={() => handleSelectCity(region.name)}
-                      className={`cursor-pointer px-4 py-2 hover:bg-orange-50 ${
-                        city === region.name ? "bg-orange-200" : ""
+                      className={`cursor-pointer px-4 py-2 ${
+                        city === region.name 
+                          ? "bg-gradient-to-r from-orange-400 to-red-400 text-white font-bold" 
+                          : "hover:bg-orange-50"
                       }`}
                     >
                       {region.name}
@@ -266,8 +266,10 @@ export default function ClientUI({ city, district, theme }) {
                     <div
                       key={dist.id}
                       onClick={() => handleSelectDistrict(dist.name)}
-                      className={`cursor-pointer py-1 px-2 hover:bg-orange-50 ${
-                        district === dist.name ? "bg-orange-200" : ""
+                      className={`cursor-pointer py-1 px-2 ${
+                        district === dist.name 
+                          ? "bg-gradient-to-r from-orange-400 to-red-400 text-white font-bold" 
+                          : "hover:bg-orange-50"
                       }`}
                     >
                       {dist.name}
@@ -276,27 +278,9 @@ export default function ClientUI({ city, district, theme }) {
                 </div>
               </div>
             </div>
-
-            {/* 테마 목록 */}
-            <div className="mt-6 border-t border-gray-200 pt-4">
-              <h4 className="mb-2 text-lg font-semibold text-gray-600">테마</h4>
-              <div className="flex flex-wrap gap-2">
-                {THEMES.map((th) => (
-                  <div
-                    key={th.id}
-                    onClick={() => handleSelectTheme(th.name)}
-                    className={`cursor-pointer rounded-full border px-4 py-1 hover:bg-orange-50 ${
-                      theme === th.name ? "bg-orange-100 border-orange-400" : ""
-                    }`}
-                  >
-                    {th.name}
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

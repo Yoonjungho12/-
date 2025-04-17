@@ -132,7 +132,7 @@ export async function generateMetadata({ params }) {
   // (3) 만약 themeObj가 없으면 fallback
   if (!themeObj) {
     const fallbackTitle = `${regionName} ${theme} 정보 - 여기닷`;
-    const fallbackDesc = `${regionName}의 ${theme} 업소 정보 및 리뷰를 확인하세요!`;
+    const fallbackDesc = `${regionName}의 ${theme} 업체 정보 및 리뷰를 확인하세요!`;
     return {
       title: fallbackTitle,
       description: fallbackDesc,
@@ -198,15 +198,7 @@ export default async function TodayPage({ params }) {
       {/* (C-2) 샵 리스트 (예시) */}
       <ShopList city={city} district={district} theme={theme} />
       
-      {/* (C-3) 서버에서 직접 렌더링하는 영역 예시 */}
-      {district === "전체" && (
-        <div className="mx-auto max-w-5xl py-8 px-4">
-          <h2 className="text-xl font-semibold">서버 컴포넌트 안내</h2>
-          <p className="mt-2 text-gray-600">
-            district가 전체인 경우, city 기준으로 지역을 활용했습니다.
-          </p>
-        </div>
-      )}
+   
     </div>
   );
 }

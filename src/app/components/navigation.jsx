@@ -46,6 +46,23 @@ export default function NavBar() {
     }
   }, []);
 
+  useEffect(() => {
+    const syncSessionBetweenTabs = async (e) => {
+      if (e.key === 'supabase.auth.token') {
+        const { data: { session } } = await supabase.auth.getSession();
+        setIsLoggedIn(!!session);
+        if (session?.user) {
+          fetchMyProfile(session.user.id);
+        } else {
+          setMyNickname("");
+        }
+      }
+    };
+
+    window.addEventListener("storage", syncSessionBetweenTabs);
+    return () => window.removeEventListener("storage", syncSessionBetweenTabs);
+  }, []);
+
   // 모달 외부 클릭 처리
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -148,15 +165,22 @@ export default function NavBar() {
   // (2) 로그아웃
   // --------------------------------------
   const handleLogout = async () => {
+    console.log("🔒 로그아웃 요청됨");
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    console.log("📦 현재 세션:", sessionData);
+    if (sessionError) console.error("❗ 세션 조회 에러:", sessionError);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        await supabase.auth.signOut();
+      const { error: logoutError } = await supabase.auth.signOut();
+      if (logoutError) {
+        console.error("❗ 로그아웃 에러:", logoutError);
+      } else {
+        console.log("✅ 로그아웃 성공");
       }
     } catch (err) {
-      console.error("Logout error:", err);
+      console.warn("세션이 이미 만료되었거나 signOut 실패:", err);
     } finally {
       setIsLoggedIn(false);
+      setMyNickname("");
       router.push("/");
     }
   };
@@ -167,9 +191,13 @@ export default function NavBar() {
       alert("로그인을 해주세요");
       return;
     }
-
+    console.log("👤 나의 활동 클릭됨");
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    console.log("📦 현재 세션:", sessionData);
+    if (sessionError) console.error("❗ 세션 조회 에러:", sessionError);
     try {
       const { data: { user } } = await supabase.auth.getUser();
+      console.log("유저 객체:", user);
       if (!user) {
         setIsLoggedIn(false);
         alert("로그인 상태를 확인할 수 없습니다. 다시 로그인해주세요.");
@@ -340,7 +368,7 @@ export default function NavBar() {
                 height={141}
                 quality={100}
                 priority
-                className="w-[67px] h-auto -mt-1 md:w-[90px] md:-mt-6"
+                className="w-[67px] h-[30px] object-cover -mt-1 md:w-[90px] md:h-[40px] md:-mt-6"
               />
             </Link>
 
@@ -380,7 +408,7 @@ export default function NavBar() {
                   height={341}
                   quality={100}
                   priority
-                  className="w-[100px] h-auto -mt-0"
+                  className="w-[150px] h-[60px] object-cover -mt-0"
                 />
               </Link>
             </div>
@@ -712,27 +740,95 @@ export default function NavBar() {
                   <h2 className="mb-2 font-semibold text-orange-500">지역</h2>
                   <ul className="space-y-1 text-sm text-gray-700">
                     <li>
-                      <Link href="/today" onClick={() => setShowMegaMenu(false)}>
+                      <Link href="/today/전체/전체/전체" onClick={() => setShowMegaMenu(false)}>
                         전체
                       </Link>
                     </li>
-                    <li>경기</li>
-                    <li>서울</li>
-                    <li>강원</li>
-                    <li>인천</li>
-                    <li>충북</li>
-                    <li>대전</li>
-                    <li>충남</li>
-                    <li>세종</li>
-                    <li>전북</li>
-                    <li>광주</li>
-                    <li>전남</li>
-                    <li>대구</li>
-                    <li>경북</li>
-                    <li>울산</li>
-                    <li>경남</li>
-                    <li>부산</li>
-                    <li>제주</li>
+                    <li>
+                      <Link href="/today/경기/전체/전체" onClick={() => setShowMegaMenu(false)}>
+                        경기
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/today/서울/전체/전체" onClick={() => setShowMegaMenu(false)}>
+                        서울
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/today/강원/전체/전체" onClick={() => setShowMegaMenu(false)}>
+                        강원
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/today/인천/전체/전체" onClick={() => setShowMegaMenu(false)}>
+                        인천
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/today/충북/전체/전체" onClick={() => setShowMegaMenu(false)}>
+                        충북
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/today/대전/전체/전체" onClick={() => setShowMegaMenu(false)}>
+                        대전
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/today/충남/전체/전체" onClick={() => setShowMegaMenu(false)}>
+                        충남
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/today/세종/전체/전체" onClick={() => setShowMegaMenu(false)}>
+                        세종
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/today/전북/전체/전체" onClick={() => setShowMegaMenu(false)}>
+                        전북
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/today/광주/전체/전체" onClick={() => setShowMegaMenu(false)}>
+                        광주
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/today/전남/전체/전체" onClick={() => setShowMegaMenu(false)}>
+                        전남
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/today/대구/전체/전체" onClick={() => setShowMegaMenu(false)}>
+                        대구
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/today/경북/전체/전체" onClick={() => setShowMegaMenu(false)}>
+                        경북
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/today/울산/전체/전체" onClick={() => setShowMegaMenu(false)}>
+                        울산
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/today/경남/전체/전체" onClick={() => setShowMegaMenu(false)}>
+                        경남
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/today/부산/전체/전체" onClick={() => setShowMegaMenu(false)}>
+                        부산
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/today/제주/전체/전체" onClick={() => setShowMegaMenu(false)}>
+                        제주
+                      </Link>
+                    </li>
                   </ul>
                 </div>
 

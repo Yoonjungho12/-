@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseF";
-
+import { useRouter } from "next/navigation"; // ⬅️ 이거 추가!
 /** 날짜 포맷 함수 (오늘/어제/x일 전) */
 function formatLocalTime(isoString) {
   if (!isoString) return "(등록일 없음)";
@@ -42,6 +42,7 @@ function formatLocalTime(isoString) {
 }
 
 export default function PostsPendingList() {
+  const router = useRouter(); 
   const [rows, setRows] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
   const [loading, setLoading] = useState(true);

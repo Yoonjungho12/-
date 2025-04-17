@@ -7,11 +7,12 @@ import { supabase } from "@/lib/supabaseF";
 // (A) 스켈레톤 카드
 function ShopCardSkeleton() {
   return (
-    <div className="overflow-hidden border border-gray-200 bg-white shadow-sm animate-pulse">
-      <div className="min-h-[300px] w-full bg-gray-200" />
+    <div className="w-[290px] overflow-hidden border border-gray-200 bg-white shadow-sm animate-pulse rounded-xl">
+      <div className="h-[153px] w-[263px] mx-auto mt-3 bg-gray-200 rounded-xl" />
       <div className="p-4">
-        <div className="mb-2 h-4 w-3/4 bg-gray-200" />
-        <div className="h-4 w-1/2 bg-gray-200" />
+        <div className="mb-2 h-4 w-3/4 bg-gray-200 rounded" />
+        <div className="h-4 w-1/2 bg-gray-200 rounded" />
+        <div className="mt-2 h-4 w-1/3 bg-gray-300 rounded" />
       </div>
     </div>
   );
@@ -42,6 +43,7 @@ function rewriteSpecialProvince(original) {
 }
 
 export default function MainoneClient({ initialRegion, initialData }) {
+  const regionCache = useRef({});
   // 1) 지역 목록
   const regionTabs = [
     "서울", "인천", "대전", "세종", "광주", "대구", "울산", "부산",
@@ -63,6 +65,11 @@ export default function MainoneClient({ initialRegion, initialData }) {
     if (region === selectedRegion) return;
     setSelectedRegion(region);
     setIsLoading(true);
+    if (regionCache.current[region]) {
+      setShopList(regionCache.current[region]);
+      setIsLoading(false);
+      return;
+    }
 
     const replaced = rewriteSpecialProvince(region);
     const { data, error } = await supabase
@@ -87,6 +94,8 @@ export default function MainoneClient({ initialRegion, initialData }) {
         config: "simple",
       });
 
+    // await new Promise((res) => setTimeout(res, 3000));
+
     setIsLoading(false);
     if (error) {
       console.error("DB fetch error:", error);
@@ -95,35 +104,12 @@ export default function MainoneClient({ initialRegion, initialData }) {
     }
 
     const sliced = (data || []).slice(0, 8);
+    regionCache.current[region] = sliced;
     setShopList(sliced);
   }
 
   // 6) 로딩 중이면 스켈레톤 렌더
-  if (isLoading) {
-    return (
-      <div className="w-full bg-white">
-        <div className="mx-auto max-w-5xl px-4 pt-8">
-          <h2 className="text-center text-xl font-bold">
-            여기닷 제휴 파트너 실시간 인기순위
-            <span className="ml-2 text-orange-500" aria-hidden="true">
-              ❤️
-            </span>
-          </h2>
-          <p className="mt-2 text-center text-red-100">
-            실시간 많은 회원들이 보고 있어요!
-          </p>
-        </div>
-
-        <div className="mx-auto mt-6 max-w-5xl px-4 pb-8">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <ShopCardSkeleton key={i} />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Removed the entire loading block
 
   // 7) 화살표 클릭 시 스크롤 이동
   function scrollLeft() {
@@ -353,88 +339,90 @@ export default function MainoneClient({ initialRegion, initialData }) {
 
         {/* (데스크톱) 그리드 */}
         <div className="hidden sm:grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {shopList.map((item) => {
-            // ▼▼ 최저가 계산 ▼▼
-            let lowestPrice = null;
-            if (item.sections?.length) {
-              item.sections.forEach((sec) => {
-                if (sec.courses?.length) {
-                  sec.courses.forEach((c) => {
-                    if (
-                      lowestPrice === null ||
-                      (c.price && c.price < lowestPrice)
-                    ) {
-                      lowestPrice = c.price;
+          {isLoading
+            ? Array.from({ length: 8 }).map((_, i) => <ShopCardSkeleton key={i} />)
+            : shopList.map((item) => {
+                // ▼▼ 최저가 계산 ▼▼
+                let lowestPrice = null;
+                if (item.sections?.length) {
+                  item.sections.forEach((sec) => {
+                    if (sec.courses?.length) {
+                      sec.courses.forEach((c) => {
+                        if (
+                          lowestPrice === null ||
+                          (c.price && c.price < lowestPrice)
+                        ) {
+                          lowestPrice = c.price;
+                        }
+                      });
                     }
                   });
                 }
-              });
-            }
 
-            // 썸네일/상세링크
-           const imageUrl =
-                process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL +'/'+
-                item.thumbnail_url;
-            console.log('Generated Image URL:', imageUrl);
-            console.log('Storage URL:', process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL);
-            console.log('Thumbnail URL:', item.thumbnail_url);
-            const detailUrl = `/board/details/${item.id}`;
+                // 썸네일/상세링크
+               const imageUrl =
+                    process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL +'/'+
+                    item.thumbnail_url;
+                console.log('Generated Image URL:', imageUrl);
+                console.log('Storage URL:', process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL);
+                console.log('Thumbnail URL:', item.thumbnail_url);
+                const detailUrl = `/board/details/${item.id}`;
 
-            return (
-              <Link
-                key={item.id}
-                href={detailUrl}
-                className="
-                  block
-                  overflow-hidden
-                  rounded-xl
-                  border border-gray-200
-                  bg-white
-                  shadow-xl
-                  focus-within:ring-2 focus-within:ring-blue-500
-                   w-[290px]
-                "
-              >
-                {/* 
-                  (이미지) 
-                  overflow-hidden + rounded-xl 
-                */}
-                <div className="h-[153px] w-[263px] overflow-hidden mx-auto mt-3 rounded-xl flex">
-                  <Image
-                    src={imageUrl}
-                    alt={`${item.company_name || item.post_title} 썸네일`}
-                    width={263}
-                    height={153}
-                     style={{ objectFit: "cover", objectPosition: "center" }}
-                    quality={30}
-                    priority
-                  />
-                </div>
+                return (
+                  <Link
+                    key={item.id}
+                    href={detailUrl}
+                    className="
+                      block
+                      overflow-hidden
+                      rounded-xl
+                      border border-gray-200
+                      bg-white
+                      shadow-xl
+                      focus-within:ring-2 focus-within:ring-blue-500
+                       w-[290px]
+                    "
+                  >
+                    {/* 
+                      (이미지) 
+                      overflow-hidden + rounded-xl 
+                    */}
+                    <div className="h-[153px] w-[263px] overflow-hidden mx-auto mt-3 rounded-xl flex">
+                      <Image
+                        src={imageUrl}
+                        alt={`${item.company_name || item.post_title} 썸네일`}
+                        width={263}
+                        height={153}
+                         style={{ objectFit: "cover", objectPosition: "center" }}
+                        quality={30}
+                        priority
+                      />
+                    </div>
 
-                <div className="p-4">
-                  <h3 className="mb-1 text-base font-semibold text-gray-900">
-                    {item.company_name || item.post_title}
-                  </h3>
-                  
-                  <p className="mt-0.5 text-xs text-gray-500">
-                    {item.comment
-                      ? typeof item.comment === "string"
-                        ? item.comment.slice(0, 30)
-                        : JSON.stringify(item.comment).slice(0, 30)
-                      : "자세한 정보 보기..."
-                    }
-                  </p>
+                    <div className="p-4">
+                      <h3 className="mb-1 text-base font-semibold text-gray-900">
+                        {item.company_name || item.post_title}
+                      </h3>
+                      
+                      <p className="mt-0.5 text-xs text-gray-500">
+                        {item.comment
+                          ? typeof item.comment === "string"
+                            ? item.comment.slice(0, 30)
+                            : JSON.stringify(item.comment).slice(0, 30)
+                          : "자세한 정보 보기..."
+                        }
+                      </p>
 
-                  {/* (최저가 영역) */}
-                  <div className="mt-2 text-sm font-semibold">
-                    {lowestPrice !== null
-                      ? formatPrice(lowestPrice)
-                      : "가격 정보 없음"}
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
+                      {/* (최저가 영역) */}
+                      <div className="mt-2 text-sm font-semibold">
+                        {lowestPrice !== null
+                          ? formatPrice(lowestPrice)
+                          : "가격 정보 없음"}
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
         </div>
       </div>
       <div className="flex justify-center"> 

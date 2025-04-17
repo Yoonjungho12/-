@@ -240,7 +240,7 @@ export default async function PartnershipTable({
   }
 
   // (E) 정렬 링크
-  const baseUrl = `/board/${regionSlug}/${subregionSlug}/${themeName}`;
+  const baseUrl = `/club/${regionSlug}/${subregionSlug}/${themeName}`;
 
   return (
     <div className="w-full" style={{ marginTop: "1rem" }}>

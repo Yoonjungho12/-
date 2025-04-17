@@ -118,12 +118,12 @@ export default async function ShopList({ city, district, theme }) {
   // 3) 카드 형태 UI로 렌더링 (모바일=세로, 데스크톱=가로)
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
-      <h2 className="text-2xl font-bold mb-4">
+      <h2 className="text-2xl text-center font-bold mb-4">
         {searchString || "전체"} 검색결과
       </h2>
 
       {data.length === 0 ? (
-        <p>검색 결과가 없습니다!</p>
+        <p className="text-center text-gray-600">검색 결과가 없습니다!</p>
       ) : (
         <div className="space-y-6">
           {data.map((item) => {

@@ -73,13 +73,23 @@ export default function RegionSelectorSSR({
   // 4) 렌더 함수
   // ─────────────────────────────────────────────────────
   function renderCell(item, isSelected, linkHref) {
+    // 공통 스타일
+    const baseClass =
+      "region-cell flex items-center justify-center text-xs md:text-sm px-3 py-2 cursor-pointer";
+
+    // 선택된 경우 그라데이션
+    const selectedClass =
+      "bg-gradient-to-r from-orange-400 to-red-400 text-white font-bold";
+
+    // 비선택 항목은 회색 배경
+    const normalClass = "bg-gray-100 text-gray-600 hover:bg-gray-200";
+
     return (
-    <Link href={linkHref} key={item.id}>  <div
-        
-        className={`flex items-center text-xs md:text-sm  region-cell ${isSelected ? "selected" : ""}`}
-      >
-        {item.name}
-      </div></Link>
+      <Link key={item.id} href={linkHref}>
+        <div className={`${baseClass} ${isSelected ? selectedClass : normalClass}`}>
+          {item.name}
+        </div>
+      </Link>
     );
   }
 
@@ -117,7 +127,7 @@ export default function RegionSelectorSSR({
               상위 지역을 먼저 선택해주세요.
             </p>
           ) : (
-            <div className="flex items-center region-grid-container mb-2">
+            <div className="region-grid-container mb-2">
               {subregionItems.map((child) => {
                 const isSelected = child.id === selectedSubregionId;
                 const href = `/club/${regionSlug}/${child.region_slug}/${
@@ -133,22 +143,13 @@ export default function RegionSelectorSSR({
       {/* (D) 테마 (PC/모바일) */}
       <div className="pc-theme mt-6">
         <h3 className="text-md font-bold mb-1">테마 선택</h3>
-        <div className="theme-grid-container  mb-2">
+        <div className="theme-grid-container mb-2">
           {THEMES.map((th) => {
             const isSelected = selectedThemeIds.includes(th.id);
             const href = `/club/${regionSlug || "전체"}/${
               subregionSlug || "전체"
             }/${th.name}`;
-
-            return (
-            <Link href={href} key={th.id}>   <div
-                
-                className={`text-xs md:text-sm region-cell ${isSelected ? "selected" : ""}`}
-              >
-               {th.name}
-              </div>
-              </Link>
-            );
+            return renderCell(th, isSelected, href);
           })}
         </div>
       </div>

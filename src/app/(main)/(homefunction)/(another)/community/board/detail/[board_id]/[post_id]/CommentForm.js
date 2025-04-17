@@ -54,7 +54,7 @@ export default function CommentForm({ postId }) {
   };
 
   return (
-    <div className="border-t border-gray-300 pt-4">
+    <div className="border-t border-gray-300 pt-4 bg-gray-50 rounded-lg p-4">
       <h3 className="text-sm font-bold mb-2">댓글 작성</h3>
       <textarea
         className="w-full border-[0.5px] r p-2 text-sm mb-2 rounded"

@@ -93,51 +93,83 @@ export default async function BoardPage({ params:param}) {
 
   // 4) 렌더링 (SEO 문제 없음 - 서버에서 HTML을 만들어 제공)
   return (
-    <div className="p-5 w-full max-w-5xl mx-auto">
-      <h2 className="text-xl font-bold mb-4">
-        커뮤니티 &gt; {boardInfo.name}
-      </h2>
+    <div className="p-5">
+      <div className="w-full max-w-7xl mx-auto">
+        <div className="mb-6">
+          <div className="text-sm text-gray-600 mb-6">
+            <Link href="/community" className="hover:text-orange-500">커뮤니티</Link>
+            <span className="mx-2">›</span>
+            <span className="text-orange-500 font-medium">{boardInfo.name}</span>
+          </div>
+        </div>
+        <div className="flex gap-6">
+          {/* 왼쪽 게시판 영역 */}
+          <div className="flex-1">
+            {/* 상단 네비게이션 */}
+            <div className="flex justify-between items-center mb-6">
+              <h1 className="text-2xl font-bold text-gray-800">{boardInfo.name}</h1>
+              {boardInfo.id !== 1 && (
+                <Link
+                  href={`/community/board/${decodedType}/write`}
+                  className="px-6 py-2.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 text-sm font-medium transition-colors duration-200 shadow-sm hover:shadow-md"
+                >
+                  글쓰기
+                </Link>
+              )}
+            </div>
+            {/* 게시글 목록 테이블 */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+              <table className="w-full border-t border-gray-200">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="py-1.5 w-16 text-center text-xs text-gray-500 border-b border-gray-200">번호</th>
+                    <th className="py-1.5 text-left text-xs text-gray-500 border-b border-gray-200">제목</th>
+                    <th className="py-1.5 w-24 text-center text-xs text-gray-500 border-b border-gray-200">글쓴이</th>
+                    <th className="py-1.5 w-20 text-center text-xs text-gray-500 border-b border-gray-200">작성일</th>
+                    <th className="py-1.5 w-16 text-center text-xs text-gray-500 border-b border-gray-200">조회</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {!posts || posts.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="text-center py-4 text-sm text-gray-500">
+                        게시글이 없습니다.
+                      </td>
+                    </tr>
+                  ) : (
+                    posts.map((post, index) => (
+                      <TrRow
+                        key={post.id}
+                        post={post}
+                        boardInfo={boardInfo}
+                        number={posts.length - index}
+                      />
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
 
-      <div className="mb-4 flex justify-between items-center">
-        <h2 className="text-lg font-semibold">{boardInfo.name}</h2>
-        <Link
-          href={`/community/board/${decodedType}/write`}
-          className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 text-sm"
-        >
-          글쓰기
-        </Link>
+            {/* 페이지네이션 */}
+            <div className="mt-10">
+              <div className="flex justify-center space-x-2">
+                <button className="px-3 py-1 text-xs text-gray-600 hover:text-orange-500">이전</button>
+                <button className="px-3 py-1 text-xs bg-orange-500 text-white rounded">1</button>
+                <button className="px-3 py-1 text-xs text-gray-600 hover:text-orange-500">다음</button>
+              </div>
+            </div>
+          </div>
+
+          {/* 오른쪽 광고 영역 */}
+          <div className="w-[300px] shrink-0">
+            <div className="sticky top-5">
+              <div className="bg-gray-100 w-full h-[600px] rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 text-sm">
+                광고 영역
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-
-      {/* 게시글 목록 테이블 */}
-      <table className="w-full border border-gray-300 text-sm">
-        <thead className="bg-gray-100 border-b border-gray-300">
-          <tr>
-            <th className="p-2 w-16 text-center">번호</th>
-            <th className="p-2 text-left">제목</th>
-            <th className="p-2 w-20 text-center">글쓴이</th>
-            <th className="p-2 w-20 text-center">날짜</th>
-            <th className="p-2 w-16 text-center">조회</th>
-          </tr>
-        </thead>
-        <tbody>
-          {!posts || posts.length === 0 ? (
-            <tr>
-              <td colSpan={5} className="p-4 text-center text-gray-500">
-                게시글이 없습니다.
-              </td>
-            </tr>
-          ) : (
-            posts.map((post) => (
-              // ★ 행 하나당 TrRow 클라이언트 컴포넌트로 렌더
-              <TrRow
-                key={post.id}
-                post={post}
-                boardInfo={boardInfo}
-              />
-            ))
-          )}
-        </tbody>
-      </table>
     </div>
   );
 }

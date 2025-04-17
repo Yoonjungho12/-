@@ -1,13 +1,14 @@
-"use client";
+ "use client";
+// Removed video import as it is now loaded internally by SunEditor
+import imageCompression from "browser-image-compression";
 
 import React, { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { createClient } from "@supabase/supabase-js";
-
-// 1) Supabase 클라이언트 생성
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+import { supabase } from "@/lib/supabaseF";
+import dynamic from "next/dynamic";
+import "suneditor/dist/css/suneditor.min.css";
+const SunEditor = dynamic(() => import("suneditor-react"), { ssr: false });
+import DOMPurify from "dompurify";
 
 // 테마 목록 상수
 const THEMES = [
@@ -40,13 +41,13 @@ export default function WritePage() {
 
   // 로그인된 사용자 ID
   const [userId, setUserId] = useState(null);
-
-  // 글 제목, 내용
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false); // 추가
 
   // 테마 선택 (기본값: THEMES[0].id)
   const [theme, setTheme] = useState(THEMES[0].id);
+  
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
 
   // 게시판 타입별 ID와 이름 매핑
   let boardTitle = { name: "", id: 0 };
@@ -101,11 +102,51 @@ export default function WritePage() {
 
   // "글 저장" 버튼
   const handleSave = async () => {
+    setIsSubmitting(true); // 추가
     try {
       if (!userId) {
         alert("로그인이 필요합니다!");
         return;
       }
+
+      // Process blob images in content and upload to Supabase Storage
+      const tempDoc = document.createElement("div");
+      tempDoc.innerHTML = content;
+
+      const imgElements = tempDoc.querySelectorAll("img[src^='blob:']");
+      for (const img of imgElements) {
+        const blobUrl = img.src;
+        const originalFile = await fetch(blobUrl).then((r) => r.blob());
+        
+        const file = await imageCompression(originalFile, {
+          maxSizeMB: 1.2,
+          maxWidthOrHeight: 1200,
+          useWebWorker: true,
+        });
+        const fileExt = file.type.split("/").pop();
+        const fileName = `${Date.now()}.${fileExt}`;
+        const filePath = `community_images/${fileName}`;
+        
+        const { error } = await supabase.storage
+          .from("here-it-is")
+          .upload(filePath, file, {
+            contentType: file.type,
+            upsert: false,
+          });
+        
+        if (error) {
+          console.error("이미지 업로드 실패:", error.message);
+          continue;
+        }
+        
+        const { data: publicUrlData } = supabase.storage
+          .from("here-it-is")
+          .getPublicUrl(filePath);
+        
+        img.src = publicUrlData.publicUrl;
+      }
+
+      const finalContent = DOMPurify.sanitize(tempDoc.innerHTML);
 
       // (1) Insert 객체 구성
       // "방문후기" 게시판일 때만 theme_id 넣고, 아니면 넣지 않는다.
@@ -113,7 +154,7 @@ export default function WritePage() {
         board_id: boardTitle.id,
         user_id: userId,
         title,
-        content,
+        content: finalContent,
       };
       if (boardTitle.name === "방문후기") {
         insertData.theme_id = theme;
@@ -140,6 +181,8 @@ export default function WritePage() {
     } catch (err) {
       console.error("에러 발생:", err);
       alert("알 수 없는 오류가 발생했습니다!");
+    } finally {
+      setIsSubmitting(false); // 추가
     }
   };
 
@@ -149,22 +192,40 @@ export default function WritePage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-4">
-      {/* 게시판 이름 표기 */}
-      <h2 className="mb-3 mt-3 md:mb-5">
-        커뮤니티 {'>'} {boardTitle.name}
-      </h2>
+    <div className="max-w-6xl mx-auto">
+      {/* 게시판 이름과 등록 버튼을 포함하는 헤더 */}
+      <div className="flex justify-between items-center mt-1 md:mt-3 pl-3 md:pl-0 mb-2 md:mb-4">
+        <h2>
+          커뮤니티 {'>'} {boardTitle.name}
+        </h2>
+      </div>
 
-      <h1 className="text-xl font-bold mb-4">글쓰기</h1>
+      {/* 글쓰기 제목과 모바일 등록 버튼을 같은 줄에 배치 */}
+      <div className="px-3 flex justify-between items-center pl-3 md:pl-0 mb-2 md:mb-4">
+        <h1 className="text-xl font-bold">글쓰기</h1>
+        {/* 모바일에서만 보이는 등록 버튼 */}
+        <button
+          onClick={handleSave}
+          disabled={isSubmitting}
+          className={`md:hidden px-4 py-2 bg-orange-500 text-white text-sm rounded hover:bg-orange-600 flex items-center gap-1 ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          {isSubmitting && (
+            <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+            </svg>
+          )}
+          {isSubmitting ? "등록 중..." : "등록"}
+        </button>
+      </div>
 
       <table className="w-full border-t border-b border-gray-300 mb-4 text-sm">
         <tbody>
           <tr className="border-b border-gray-300">
-            <td className="w-24 p-2 bg-gray-100 align-middle">제목</td>
+            <td className="w-24 p-2 bg-gray-100 align-middle hidden md:table-cell">제목</td>
             <td className="p-2">
               <input
                 type="text"
-                value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 className="w-full border p-2 text-sm"
                 placeholder="제목을 입력하세요"
@@ -174,7 +235,7 @@ export default function WritePage() {
           {/* 테마 선택 (방문후기 게시판일 때만 표시) */}
           {boardTitle.name === "방문후기" && (
             <tr className="border-b border-gray-300">
-              <td className="w-24 p-2 bg-gray-100 align-middle">테마</td>
+              <td className="w-24 p-2 bg-gray-100 align-middle hidden md:table-cell">테마</td>
               <td className="p-2">
                 <select
                   className="w-full border p-2 text-sm"
@@ -191,32 +252,60 @@ export default function WritePage() {
             </tr>
           )}
           <tr>
-            <td className="w-24 p-2 bg-gray-100 align-top">내용</td>
+            <td className="w-24 p-2 bg-gray-100 align-top hidden md:table-cell">내용</td>
             <td className="p-2">
-              <textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                className="w-full border p-2 text-sm"
-                rows={10}
-                placeholder="내용을 입력하세요"
-              />
+              <div className="sun-editor-custom-wrapper">
+                <SunEditor
+                  height="600px"
+                  lang="ko"
+                  setContents={content}
+                  onChange={(val) => setContent(val)}
+                  onImageUploadBefore={(files, info, uploadHandler) => {
+                    const file = files[0];
+                    const localUrl = URL.createObjectURL(file);
+                    uploadHandler({
+                      result: [{ url: localUrl }],
+                    });
+                    return false; // 서버 업로드 방지
+                  }}
+                  setOptions={{
+                    height: "300px",
+                    defaultStyle: "font-size: 14px;",
+                    buttonList: [
+                      ["fontSize"],
+                      ["bold", "underline", "italic", "strike", "hiliteColor"],
+                      ["align", "list"],
+                      ["link", "image", "video"],
+                      ["removeFormat"]
+                    ],
+                    katex: "window.katex",
+                    formats: ["p", "blockquote", "h1", "h2", "h3"],
+                    toolbarWidth: "100%",
+                    popupDisplay: "full",
+                    videoFileInput: false
+                    // Removed custom plugins to revert to built-in behavior
+                  }}
+                />
+              </div>
             </td>
           </tr>
         </tbody>
       </table>
 
-      <div className="flex gap-2 justify-end">
+      {/* PC에서만 보이는 등록 버튼 */}
+      <div className="hidden md:flex gap-2 justify-end items-center">
         <button
           onClick={handleSave}
-          className="px-4 py-2 bg-blue-500 text-white text-sm rounded hover:bg-blue-600"
+          disabled={isSubmitting}
+          className={`px-4 py-2 bg-orange-500 text-white text-sm rounded hover:bg-orange-600 flex items-center gap-1 ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
-          작성
-        </button>
-        <button
-          onClick={handleList}
-          className="px-4 py-2 bg-gray-300 text-sm rounded hover:bg-gray-400"
-        >
-          목록
+          {isSubmitting && (
+            <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+            </svg>
+          )}
+          {isSubmitting ? "등록 중..." : "등록"}
         </button>
       </div>
     </div>

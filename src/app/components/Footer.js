@@ -22,7 +22,7 @@ export default function Footer() {
           - 만약 shouldHideMobileFooter가 true라면 표시 안 함
       */}
       {!shouldHideMobileFooter && (
-        <div className="block md:hidden pb-[100px] py-6 bg-gray-50 text-center text-gray-700 text-sm">
+        <div className="block md:hidden pb-[100px] py-6 bg-gray-50 text-center text-zinc-700 text-sm">
           <div className="px-4">
             {/* 상단 (개인정보취급방침, 서비스이용약관) */}
             <div className="mb-3 space-x-2">
@@ -58,7 +58,7 @@ export default function Footer() {
       )}
 
       {/* (B) PC용 (hidden md:block) */}
-      <footer className="hidden md:block mb-[60px] md:mb-0 bg-gray-100 text-gray-600 text-sm py-10">
+      <footer className="hidden md:block mb-[60px] md:mb-0 bg-zinc-200 text-gray-600 text-sm py-10">
         <div className="mx-auto max-w-7xl px-4">
           {/* 상단 정보 (기존 코드 그대로) */}
           <p className="text-sm">© 2025 All Rights Reserved.</p>
@@ -80,9 +80,16 @@ export default function Footer() {
 
               <div className="text-[13px] my-2">
                 <p>법적고지</p>
-                <p>※ 여기닷은 통신판매중개자로서 거래 당사자가 아니며, ...</p>
-                <p>※ 등록된 업체의 신뢰성 및 품질을 보장하지 않습니다...</p>
-                <p>※ 사이트 내 모든 콘텐츠 무단 도용 금지...</p>
+                <p>
+
+※ 여기닷은 통신판매중개자로서 거래 당사자가 아니며, 업체와 고객 간의 서비스 제공 및 이용과 관련한 책임은 해당 업체에 있습니다.</p>
+                <p>※ 여기닷은 정보 중개 및 광고 서비스를 제공하며, 등록된 업체의 신뢰성 및 서비스 품질을 보장하지 않습니다. 이용 전 충분한 검토를 권장합니다.</p>
+                <p>
+
+※ 사이트 내 모든 콘텐츠(텍스트, 이미지, 디자인 등)는 저작권 보호를 받으며 무단 도용을 금합니다.</p>
+<p>
+
+※ 제휴 신청은 24시간 가능합니다.</p>
               </div>
             </div>
                 </div>

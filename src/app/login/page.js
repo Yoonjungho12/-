@@ -3,30 +3,16 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseF";
-import ReCAPTCHA from "react-google-recaptcha";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-  const [captchaToken, setCaptchaToken] = useState(""); // 캡차 토큰 상태
   const router = useRouter();
-
-  // reCAPTCHA 체크 완료 시 콜백
-  const handleRecaptchaChange = (token) => {
-    console.log("Recaptcha value:", token);
-    setCaptchaToken(token);
-  };
 
   // (A) 이메일+비번 로그인
   const handleLogin = async () => {
     setErrorMessage("");
-
-    // 1) reCAPTCHA 토큰이 없는 경우 => 사용자에게 안내
-    if (!captchaToken) {
-      setErrorMessage("로봇이 아님을 인증해주세요.");
-      return;
-    }
 
     try {
       // 실제 로그인 로직 (예: supabase)
@@ -155,15 +141,6 @@ export default function LoginPage() {
             >
               아이디/비밀번호 찾기
             </button>
-          </div>
-
-          {/* reCAPTCHA 체크박스 */}
-          <div className="flex justify-center">
-            <ReCAPTCHA
-              sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY} 
-              // ↑ .env 파일 등에 넣어서 빌드 시 NEXT_PUBLIC_ 변수로 노출
-              onChange={handleRecaptchaChange}
-            />
           </div>
 
           {/* 로그인 버튼 */}

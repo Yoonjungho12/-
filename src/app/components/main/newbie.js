@@ -88,32 +88,33 @@ export default async function NewArrivalsSectionServer() {
                     border border-gray-200
                     bg-white
                     shadow-xl
-                    
                   "
                 >
-                  {/* 
-                    (1) 모바일 이미지 래퍼 
-                    -> overflow-hidden + rounded-xl 
-                  */}
-                  <div className="w-[240px] h-[130px] mx-auto mt-3 overflow-hidden rounded-xl flex ">
-                    <Image
-                      src={shop.imgSrc}
-                      alt={shop.title}
-                      width={240}
-                      height={130}
-                      style={{ objectFit: "cover" }}
-                      quality={70}
-                      sizes="240px"
-                    />
-                  </div>
+                  <Link href={`/board/details/${shop.id}`}>
+                    {/* 
+                      (1) 모바일 이미지 래퍼 
+                      -> overflow-hidden + rounded-xl 
+                    */}
+                    <div className="w-[240px] h-[130px] mx-auto mt-3 overflow-hidden rounded-xl flex ">
+                      <Image
+                        src={shop.imgSrc}
+                        alt={shop.title}
+                        width={240}
+                        height={130}
+                        style={{ objectFit: "cover" }}
+                        quality={70}
+                        sizes="240px"
+                      />
+                    </div>
 
-                  {/* 텍스트 영역 */}
-                  <div className="p-4 w-[260px] box-border">
-                    <h3 className="mb-1 text-base font-semibold text-gray-800">
-                      {shop.title}
-                    </h3>
-                    <p className="text-sm text-gray-600">{shop.address}</p>
-                  </div>
+                    {/* 텍스트 영역 */}
+                    <div className="p-4 w-[260px] box-border">
+                      <h3 className="mb-1 text-base font-semibold text-gray-800">
+                        {shop.title}
+                      </h3>
+                      <p className="text-sm text-gray-600">{shop.address}</p>
+                    </div>
+                  </Link>
                 </div>
               ))}
             </div>
@@ -135,27 +136,29 @@ export default async function NewArrivalsSectionServer() {
                     w-[290px]
                 "
               >
-                {/* 
-                  (2) 데스크톱 이미지 래퍼 
-                  -> overflow-hidden + rounded-xl 
-                */}
-                <div className="h-[153px] w-[263px] overflow-hidden mx-auto mt-3 rounded-xl flex ">
-                  <Image
-                    src={shop.imgSrc}
-                    alt={shop.title}
-                    width={263}
-                    height={153}
-                    style={{ objectFit: "cover" }}
-                    quality={70}
-                  />
-                </div>
+                <Link href={`/board/details/${shop.id}`}>
+                  {/* 
+                    (2) 데스크톱 이미지 래퍼 
+                    -> overflow-hidden + rounded-xl 
+                  */}
+                  <div className="h-[153px] w-[263px] overflow-hidden mx-auto mt-3 rounded-xl flex ">
+                    <Image
+                      src={shop.imgSrc}
+                      alt={shop.title}
+                      width={263}
+                      height={153}
+                      style={{ objectFit: "cover" }}
+                      quality={70}
+                    />
+                  </div>
 
-                <div className="p-4">
-                  <h3 className="mb-1 text-base font-semibold text-gray-800">
-                    {shop.title}
-                  </h3>
-                  <p className="text-sm text-gray-600">{shop.address}</p>
-                </div>
+                  <div className="p-4">
+                    <h3 className="mb-1 text-base font-semibold text-gray-800">
+                      {shop.title}
+                    </h3>
+                    <p className="text-sm text-gray-600">{shop.address}</p>
+                  </div>
+                </Link>
               </div>
             ))}
           </div>
