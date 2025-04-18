@@ -37,9 +37,25 @@ function rewriteSpecialProvince(original) {
       return "강원특별자치도";
     case "전북":
       return "전북특별자치도";
-    default:
-      return original;
+  default:
+    return original;
   }
+}
+
+function getLowestPrice(item) {
+  let lowestPrice = null;
+  if (item.sections && item.sections.length > 0) {
+    item.sections.forEach((section) => {
+      if (section.courses && section.courses.length > 0) {
+        section.courses.forEach((course) => {
+          if (lowestPrice === null || course.price < lowestPrice) {
+            lowestPrice = course.price;
+          }
+        });
+      }
+    });
+  }
+  return lowestPrice;
 }
 
 export default function MainoneClient({ initialRegion, initialData }) {
@@ -285,21 +301,8 @@ export default function MainoneClient({ initialRegion, initialData }) {
           >
             {shopList.map((item, index) => {
               // ▼▼ 최저가 계산 ▼▼
-              let lowestPrice = null;
-              if (item.sections?.length) {
-                item.sections.forEach((sec) => {
-                  if (sec.courses?.length) {
-                    sec.courses.forEach((c) => {
-                      if (
-                        lowestPrice === null ||
-                        (c.price && c.price < lowestPrice)
-                      ) {
-                        lowestPrice = c.price;
-                      }
-                    });
-                  }
-                });
-              }
+              const lowestPrice = getLowestPrice(item);
+              console.log(`[MainoneClient][Mobile] ID: ${item.id}, 최저가:`, lowestPrice);
 
               // 이미지 URL/상세링크
               const imageUrl =
@@ -377,21 +380,8 @@ export default function MainoneClient({ initialRegion, initialData }) {
             ? Array.from({ length: 8 }).map((_, i) => <ShopCardSkeleton key={i} />)
             : shopList.map((item, index) => {
                 // ▼▼ 최저가 계산 ▼▼
-                let lowestPrice = null;
-                if (item.sections?.length) {
-                  item.sections.forEach((sec) => {
-                    if (sec.courses?.length) {
-                      sec.courses.forEach((c) => {
-                        if (
-                          lowestPrice === null ||
-                          (c.price && c.price < lowestPrice)
-                        ) {
-                          lowestPrice = c.price;
-                        }
-                      });
-                    }
-                  });
-                }
+                const lowestPrice = getLowestPrice(item);
+                console.log(`[MainoneClient][Desktop] ID: ${item.id}, 최저가:`, lowestPrice);
 
                 // 썸네일/상세링크
                const imageUrl =

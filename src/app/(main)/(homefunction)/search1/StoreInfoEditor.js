@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseF";
-import SectionManager from "./SectionManager";
+import SectionManager from "../myshop/[id]/SectionManager";
 
 /**
  * 매장 정보 수정 전용 컴포넌트
@@ -132,7 +132,7 @@ export default function StoreInfoEditor({ storeInfo, setStoreInfo, sections, set
       <div className="border-b border-gray-200">
         <div className="flex justify-between items-center py-4">
           <div className="flex items-center">
-            <span className="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+            <span className="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium bg-orange-100 text-orange-800">
               {storeInfo.company_name}
             </span>
           </div>
@@ -140,13 +140,13 @@ export default function StoreInfoEditor({ storeInfo, setStoreInfo, sections, set
             <div className="flex items-center space-x-3">
               <button
                 onClick={toggleEdit}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-full text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
+                className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-full text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-all duration-200"
               >
                 취소
               </button>
               <button
                 onClick={handleSave}
-                className="inline-flex items-center px-6 py-2 border border-transparent shadow-sm text-sm font-medium rounded-full text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
+                className="inline-flex items-center px-6 py-2 border border-transparent shadow-sm text-sm font-medium rounded-full text-white bg-gradient-to-r from-orange-600 to-indigo-600 hover:from-orange-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-all duration-200"
               >
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -157,7 +157,7 @@ export default function StoreInfoEditor({ storeInfo, setStoreInfo, sections, set
           ) : (
             <button
               onClick={toggleEdit}
-              className="inline-flex items-center px-6 py-2 border border-transparent shadow-sm text-sm font-medium rounded-full text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
+              className="inline-flex items-center px-6 py-2 border border-transparent shadow-sm text-sm font-medium rounded-full text-white bg-gradient-to-r from-orange-500 to-orange-500 hover:from-orange-700 hover:to-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-all duration-200"
             >
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -176,14 +176,14 @@ export default function StoreInfoEditor({ storeInfo, setStoreInfo, sections, set
                 className={`
                   group inline-flex items-center py-4 px-1 border-b-2 font-medium text-sm
                   ${activeTab === tab.id
-                    ? 'border-blue-500 text-blue-600'
+                    ? 'border-orange-500 text-orange-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }
                 `}
               >
                 <svg
                   className={`mr-2 h-5 w-5 ${
-                    activeTab === tab.id ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500'
+                    activeTab === tab.id ? 'text-orange-500' : 'text-gray-400 group-hover:text-gray-500'
                   }`}
                   fill="none"
                   stroke="currentColor"
@@ -259,7 +259,7 @@ export default function StoreInfoEditor({ storeInfo, setStoreInfo, sections, set
                 value={isEditing ? tempInfo.contact_method : storeInfo.contact_method}
                 onChange={(e) => setTempInfo(prev => ({ ...prev, contact_method: e.target.value }))}
                 disabled={!isEditing}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
               />
             </div>
           </div>
@@ -275,7 +275,7 @@ export default function StoreInfoEditor({ storeInfo, setStoreInfo, sections, set
                 value={isEditing ? tempInfo.address : storeInfo.address}
                 onChange={(e) => setTempInfo(prev => ({ ...prev, address: e.target.value }))}
                 disabled={!isEditing}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
               />
             </div>
             <div>
@@ -285,7 +285,7 @@ export default function StoreInfoEditor({ storeInfo, setStoreInfo, sections, set
                 value={isEditing ? tempInfo.address_street : storeInfo.address_street}
                 onChange={(e) => setTempInfo(prev => ({ ...prev, address_street: e.target.value }))}
                 disabled={!isEditing}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
               />
             </div>
             <div>
@@ -295,7 +295,7 @@ export default function StoreInfoEditor({ storeInfo, setStoreInfo, sections, set
                 value={isEditing ? (tempInfo.near_building ?? "") : (storeInfo.near_building ?? "")}
                 onChange={(e) => setTempInfo(prev => ({ ...prev, near_building: e.target.value }))}
                 disabled={!isEditing}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
               />
             </div>
           </div>
@@ -475,7 +475,7 @@ export default function StoreInfoEditor({ storeInfo, setStoreInfo, sections, set
                 onInput={autoResize}
                 rows={1}
                 disabled={!isEditing}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 min-h-[100px] overflow-hidden"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 min-h-[100px] overflow-hidden"
               />
             </div>
             <div>
@@ -489,7 +489,7 @@ export default function StoreInfoEditor({ storeInfo, setStoreInfo, sections, set
                 onInput={autoResize}
                 rows={1}
                 disabled={!isEditing}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 min-h-[100px] overflow-hidden"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 min-h-[100px] overflow-hidden"
               />
             </div>
             <div>
@@ -503,7 +503,7 @@ export default function StoreInfoEditor({ storeInfo, setStoreInfo, sections, set
                 onInput={autoResize}
                 rows={1}
                 disabled={!isEditing}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 min-h-[100px] overflow-hidden"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 min-h-[100px] overflow-hidden"
               />
             </div>
           </div>

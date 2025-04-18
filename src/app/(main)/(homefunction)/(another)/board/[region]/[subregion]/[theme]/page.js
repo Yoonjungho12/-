@@ -3,7 +3,7 @@
 import RegionSelectorSSR from "../../../RegionSelectorSSR";
 import PartnershipTable from "./PartnershipTable";
 import REGIONS from "../../../REGIONS";
-
+import Link from "next/link";
 /* -----------------------------------------------------
    (0) 테마별 메타 정보 (title + description)
    - {region}은 generateMetadata에서 치환됩니다.
@@ -201,6 +201,7 @@ export default async function BoardPage({ params: a, searchParams: b }) {
   // 실사용 UI
   return (
     <div className="mx-auto w-full max-w-7xl md:px-4">
+       <Link href="/board/전체/전체/전체">
       <div className="flex items-center mt-5 mb-3">
         <svg
           className="w-5 h-5 mr-2 text-gray-600 text-base"
@@ -215,9 +216,12 @@ export default async function BoardPage({ params: a, searchParams: b }) {
           * 일단 예시로 아래처럼 표시 
         */}
         <h2 className="text-base font-bold text-gray-700">
-          지역별 샵 &gt; {regionName} &gt; {subregionDecoded}
+         
+  지역별 샵 &gt; {regionName} &gt; {subregionDecoded}
+
         </h2>
       </div>
+      </Link>
 
       {/* SSR 지역/테마 표 (원하실 경우만 사용) */}
       <RegionSelectorSSR

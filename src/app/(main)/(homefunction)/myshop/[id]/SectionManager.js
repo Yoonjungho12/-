@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseF";
 
 /**
@@ -14,6 +14,18 @@ export default function SectionManager({
   onlyDigits,
   post_id
 }) {
+
+  console.log("📢 SectionManager 렌더링됨! post_id:", post_id, "| typeof:", typeof post_id);
+  useEffect(() => {
+    console.log("🧩 useEffect triggered in SectionManager");
+    console.log("🧩 post_id (from useEffect):", post_id);
+  }, [post_id]);
+
+  // Debug logs for SectionManager mounting and props
+  console.log("🔥 SectionManager 마운트됨");
+  console.log("🔥 전달받은 post_id:", post_id, typeof post_id);
+  console.log("🔥 전달받은 sections:", sections);
+
   // ─────────────────────────────────────────────
   // (A) 섹션 추가/수정용 모달 상태들
   // ─────────────────────────────────────────────
@@ -42,6 +54,13 @@ export default function SectionManager({
   const [editCourseDuration, setEditCourseDuration] = useState("");
   const [editCoursePrice, setEditCoursePrice] = useState(0);
 
+  const [activeSection, setActiveSection] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [tempSections, setTempSections] = useState(sections);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStartIndex, setDragStartIndex] = useState(null);
+  const [dragEndIndex, setDragEndIndex] = useState(null);
+
   // ─────────────────────────────────────────────
   // (C) 섹션 추가
   // ─────────────────────────────────────────────
@@ -62,15 +81,18 @@ export default function SectionManager({
 
     // 새로운 임시 섹션 객체 생성
     const newSection = {
-      id: `temp_${Date.now()}`,
+      id: Date.now(), // 임시 ID를 숫자로 생성
       section_title: newSectionName.trim(),
       section_description: newSectionDescription.trim(),
       display_order: maxOrder + 1,
-      courses: []
+      courses: [],
+      isTemp: true // 임시 섹션 표시
     };
 
     // 로컬 상태 업데이트
-    setSections(prev => [...prev, newSection]);
+    const updated = [...sections, newSection];
+    setSections(updated);
+    setTempSections(updated);
     setSectionModalOpen(false);
   }
 
@@ -245,20 +267,23 @@ export default function SectionManager({
 
     // 새로운 임시 코스 객체 생성
     const newCourse = {
-      id: `temp_${Date.now()}`,
+      id: Date.now(),
       course_name: newCourseName.trim(),
       duration: newCourseDuration.trim(),
       price: newCoursePrice,
       etc_info: '',
-      display_order: maxOrder + 1
+      display_order: maxOrder + 1,
+      isTemp: true
     };
 
     // 로컬 상태 업데이트
-    setSections(prev => prev.map(section =>
+    const updated = sections.map(section =>
       section.id === targetSectionId
         ? { ...section, courses: [...(section.courses || []), newCourse] }
         : section
-    ));
+    );
+    setSections(updated);
+    setTempSections(updated);
 
     setCourseModalOpen(false);
     setNewCourseName('');
@@ -346,6 +371,17 @@ export default function SectionManager({
   // ─────────────────────────────────────────────
   async function handleFinalSubmit() {
     try {
+      // Detailed logging for handleFinalSubmit
+      console.log("🚀 handleFinalSubmit 실행됨");
+      console.log("🚀 현재 post_id:", post_id, typeof post_id);
+      console.log("🚀 현재 sections 상태:", sections);
+
+      if (!post_id || isNaN(post_id)) {
+        console.error("❌ post_id가 잘못되었음. 현재 값:", post_id);
+        alert("메뉴 등록에 필요한 post_id가 유효하지 않습니다.");
+        return;
+      }
+
       // 1. 섹션이 하나도 없는 경우
       if (sections.length === 0) {
         alert('등록된 섹션이 없습니다. 섹션을 먼저 추가해주세요.');
@@ -368,24 +404,39 @@ export default function SectionManager({
 
       // 4. 섹션 데이터 저장
       for (const section of sections) {
-        if (section.id.startsWith('temp_')) {
+        const sectionData = {
+          post_id: Number(post_id), // post_id를 숫자로 변환
+          section_title: section.section_title,
+          section_description: section.section_description,
+          display_order: section.display_order
+        };
+
+        console.log('저장할 섹션 데이터:', sectionData);
+
+        if (section.isTemp) {
           // 새로운 섹션 추가
           const { data: newSection, error: sectionError } = await supabase
             .from('sections')
-            .insert({
-              post_id: post_id,
-              section_title: section.section_title,
-              section_description: section.section_description,
-              display_order: section.display_order
-            })
+            .insert(sectionData)
             .select()
             .single();
 
-          if (sectionError) throw sectionError;
+          if (sectionError) {
+            console.error('섹션 저장 중 오류:', sectionError);
+            throw sectionError;
+          }
 
           // 해당 섹션의 코스들 추가
           if (section.courses && section.courses.length > 0) {
-            const coursesData = section.courses.map(course => ({
+              for (const course of section.courses) {
+                const rawPrice = onlyDigits(course.price);
+                const parsedPrice = parseInt(rawPrice, 10);
+                if (isNaN(parsedPrice) || parsedPrice > 2147483647) {
+                  alert(`가격이 너무 큽니다: ${course.price} → 최대 2,147,483,647 원까지 입력할 수 있습니다.`);
+                  throw new Error("가격 초과로 인한 중단");
+                }
+              }
+              const coursesData = section.courses.map(course => ({
               section_id: newSection.id,
               course_name: course.course_name,
               duration: course.duration,
@@ -413,18 +464,25 @@ export default function SectionManager({
 
           if (sectionError) throw sectionError;
 
-          // 기존 코스 삭제 후 새로 추가
+          // 기존 코스 삭제
+          const { error: deleteError } = await supabase
+            .from('courses')
+            .delete()
+            .eq('section_id', section.id);
+
+          if (deleteError) throw deleteError;
+
+          // 새로운 코스 추가
           if (section.courses && section.courses.length > 0) {
-            // 기존 코스 삭제
-            const { error: deleteError } = await supabase
-              .from('courses')
-              .delete()
-              .eq('section_id', section.id);
-
-            if (deleteError) throw deleteError;
-
-            // 새로운 코스 추가
-            const coursesData = section.courses.map(course => ({
+              for (const course of section.courses) {
+                const rawPrice = onlyDigits(course.price);
+                const parsedPrice = parseInt(rawPrice, 10);
+                if (isNaN(parsedPrice) || parsedPrice > 2147483647) {
+                  alert(`가격이 너무 큽니다: ${course.price} → 최대 2,147,483,647 원까지 입력할 수 있습니다.`);
+                  throw new Error("가격 초과로 인한 중단");
+                }
+              }
+              const coursesData = section.courses.map(course => ({
               section_id: section.id,
               course_name: course.course_name,
               duration: course.duration,
@@ -452,6 +510,58 @@ export default function SectionManager({
     }
   }
 
+  // 섹션 드래그 시작
+  const handleDragStart = (index) => {
+    setIsDragging(true);
+    setDragStartIndex(index);
+  };
+
+  // 섹션 드래그 중
+  const handleDragOver = (e, index) => {
+    e.preventDefault();
+    if (isDragging && dragStartIndex !== index) {
+      setDragEndIndex(index);
+      const newSections = [...tempSections];
+      const draggedSection = newSections[dragStartIndex];
+      newSections.splice(dragStartIndex, 1);
+      newSections.splice(index, 0, draggedSection);
+      setTempSections(newSections);
+      setDragStartIndex(index);
+    }
+  };
+
+  // 섹션 드래그 종료
+  const handleDragEnd = async () => {
+    setIsDragging(false);
+    
+    // display_order 업데이트
+    const updatedSections = tempSections.map((section, index) => ({
+      ...section,
+      display_order: index + 1
+    }));
+    
+    setTempSections(updatedSections);
+    setSections(updatedSections);
+    
+    // DB 업데이트
+    try {
+      for (const section of updatedSections) {
+        const { error } = await supabase
+          .from('sections')
+          .update({ display_order: section.display_order })
+          .eq('id', section.id);
+          
+        if (error) throw error;
+      }
+    } catch (err) {
+      console.error('섹션 순서 업데이트 중 오류:', err);
+      alert('섹션 순서 업데이트 중 오류가 발생했습니다.');
+    }
+    
+    setDragStartIndex(null);
+    setDragEndIndex(null);
+  };
+
   // ─────────────────────────────────────────────
   // (K) 화면 렌더링
   // ─────────────────────────────────────────────
@@ -461,120 +571,108 @@ export default function SectionManager({
       <div className="flex justify-between items-center">
         <button
           onClick={openSectionModal}
-          className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+          className="px-4 py-2 rounded-full text-white bg-gradient-to-r from-orange-500 to-orange-500 hover:from-orange-700 hover:to-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-all duration-200"
         >
           섹션 추가
         </button>
         <button
           onClick={handleFinalSubmit}
-          className="px-6 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
+          className="px-6 py-2.5 rounded-full text-white bg-gradient-to-r from-orange-500 to-orange-500 hover:from-orange-700 hover:to-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-all duration-200"
         >
           메뉴 최종 등록
         </button>
       </div>
 
       {/* 섹션 목록 */}
-      {sections.length === 0 ? (
-        <div className="text-center py-8 text-gray-500">
-          등록된 섹션이 없습니다. 섹션을 추가해주세요.
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {sections.map((section, sectionIndex) => (
-            <div key={section.id} className="bg-white rounded-lg shadow-sm border p-4">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-lg font-medium">{section.section_title}</h3>
-                  {section.section_description && (
-                    <p className="text-gray-600 text-sm mt-1">{section.section_description}</p>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => openEditSectionModal(section)}
-                    className="text-gray-600 hover:text-gray-900"
-                  >
-                    수정
-                  </button>
-                  <button
-                    onClick={() => handleDeleteSection(section.id)}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    삭제
-                  </button>
-                  {sectionIndex > 0 && (
-                    <button
-                      onClick={() => moveSectionUp(sectionIndex)}
-                      className="text-gray-600 hover:text-gray-900"
-                    >
-                      ↑
-                    </button>
-                  )}
-                  {sectionIndex < sections.length - 1 && (
-                    <button
-                      onClick={() => moveSectionDown(sectionIndex)}
-                      className="text-gray-600 hover:text-gray-900"
-                    >
-                      ↓
-                    </button>
-                  )}
-                </div>
+      <div className="space-y-4">
+        <p className="text-sm text-gray-500 mb-2">☰ 아이콘을 드래그하여 섹션 순서를 변경할 수 있습니다.</p>
+        {tempSections.map((section, index) => (
+          <div
+            key={section.id}
+            draggable
+            onDragStart={() => handleDragStart(index)}
+            onDragOver={(e) => handleDragOver(e, index)}
+            onDragEnd={handleDragEnd}
+            className={`p-4 border rounded-lg ${
+              isDragging && dragStartIndex === index
+                ? 'opacity-50 bg-gray-100'
+                : 'bg-white'
+            }`}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center gap-2">
+                <span className="cursor-move">☰</span>
+                <h3 className="text-lg font-semibold">{section.section_title}</h3>
               </div>
-
-              {/* 코스 목록 */}
-              <div className="space-y-3 mt-4">
-                {section.courses && section.courses.map((course, courseIndex) => (
-                  <div key={course.id} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded">
-                    <div>
-                      <span className="font-medium">{course.course_name}</span>
-                      {course.duration && (
-                        <span className="text-gray-600 text-sm ml-2">({course.duration})</span>
-                      )}
-                      <span className="text-orange-600 ml-3">{formatPrice(course.price)}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => openEditCourseModal(section.id, course)}
-                        className="text-gray-600 hover:text-gray-900 text-sm"
-                      >
-                        수정
-                      </button>
-                      <button
-                        onClick={() => handleDeleteCourse(section.id, course.id)}
-                        className="text-red-600 hover:text-red-700 text-sm"
-                      >
-                        삭제
-                      </button>
-                      {courseIndex > 0 && (
-                        <button
-                          onClick={() => moveCourseUp(sectionIndex, courseIndex)}
-                          className="text-gray-600 hover:text-gray-900"
-                        >
-                          ↑
-                        </button>
-                      )}
-                      {courseIndex < section.courses.length - 1 && (
-                        <button
-                          onClick={() => moveCourseDown(sectionIndex, courseIndex)}
-                          className="text-gray-600 hover:text-gray-900"
-                        >
-                          ↓
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
+              <div className="flex gap-2">
                 <button
-                  onClick={() => openCourseModal(section.id)}
-                  className="w-full py-2 text-gray-600 hover:text-gray-900 border border-dashed border-gray-300 rounded-lg hover:border-gray-400 transition-colors"
+                  onClick={() => openEditSectionModal(section)}
+                  className="px-3 py-1 text-sm  hover:bg-orange-50 rounded"
                 >
-                  + 코스 추가
+                  수정
+                </button>
+                <button
+                  onClick={() => handleDeleteSection(section.id)}
+                  className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded"
+                >
+                  삭제
                 </button>
               </div>
             </div>
-          ))}
-        </div>
-      )}
+
+            {/* 코스 목록 */}
+            <div className="space-y-3 mt-4">
+              {section.courses && section.courses.map((course, courseIndex) => (
+                <div key={course.id} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded">
+                  <div>
+                    <span className="font-medium">{course.course_name}</span>
+                    {course.duration && (
+                      <span className="text-gray-600 text-sm ml-2">({course.duration})</span>
+                    )}
+                    <span className="text-orange-500 ml-3">{formatPrice(course.price)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => openEditCourseModal(section.id, course)}
+                      className="text-gray-600 hover:text-gray-900 text-sm"
+                    >
+                      수정
+                    </button>
+                    <button
+                      onClick={() => handleDeleteCourse(section.id, course.id)}
+                      className="hover:text-red-700 text-sm"
+                    >
+                      삭제
+                    </button>
+                    {courseIndex > 0 && (
+                      <button
+                        onClick={() => moveCourseUp(index, courseIndex)}
+                        className="text-gray-600 hover:text-gray-900"
+                      >
+                        ↑
+                      </button>
+                    )}
+                    {courseIndex < section.courses.length - 1 && (
+                      <button
+                        onClick={() => moveCourseDown(index, courseIndex)}
+                        className="text-gray-600 hover:text-gray-900"
+                      >
+                        ↓
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+              <button
+                onClick={() => openCourseModal(section.id)}
+                className="w-full py-2 text-gray-600 hover:text-gray-900 border border-dashed border-gray-300 rounded-lg hover:border-gray-400 transition-colors"
+              >
+                + 코스 추가
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
 
       {/* 섹션 추가 모달 */}
       {sectionModalOpen && (
@@ -616,7 +714,7 @@ export default function SectionManager({
               </button>
               <button
                 onClick={handleAddSection}
-                className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-500 transition-colors"
               >
                 추가
               </button>
@@ -665,7 +763,7 @@ export default function SectionManager({
               </button>
               <button
                 onClick={handleUpdateSection}
-                className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-500 transition-colors"
               >
                 저장
               </button>
@@ -726,7 +824,7 @@ export default function SectionManager({
               </button>
               <button
                 onClick={handleAddCourse}
-                className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-500 transition-colors"
               >
                 추가
               </button>
@@ -787,7 +885,7 @@ export default function SectionManager({
               </button>
               <button
                 onClick={handleUpdateCourse}
-                className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-500 transition-colors"
               >
                 저장
               </button>
@@ -795,6 +893,7 @@ export default function SectionManager({
           </div>
         </div>
       )}
+
     </div>
   );
 } 

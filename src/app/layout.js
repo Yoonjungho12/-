@@ -4,8 +4,8 @@ import { Geist } from "next/font/google";
 const geist = Geist({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "여기닷",
-  description: "여기닷 info..",
+  title: "전국 나이트, 클럽, 라운지바, 사주타로, 애견펜션까지 중개 플랫폼 - 여기닷",
+  description: "나이트클럽, 클럽, 라운지바, 바, 성인용품, 눈썹문신, 사주·타로, 애견펜션까지! 라이프스타일과 유흥을 한눈에 비교하고 예약할 수 있는 중개 플랫폼, 여기닷에서 지금 원하는 서비스를 찾아보세요.",
   viewport: "initial-scale=1.0, user-scalable=no, maximum-scale=1, width=device-width, viewport-fit=cover",
   icons: {
     icon: "/logo/favicon.ico",

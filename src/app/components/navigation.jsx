@@ -368,7 +368,7 @@ export default function NavBar() {
                 height={141}
                 quality={100}
                 priority
-                className="w-[67px] h-[30px] object-cover -mt-1 md:w-[90px] md:h-[40px] md:-mt-6"
+                className="w-[100px] h-[45px] object-cover object-[0_-10px] -mt-1 md:w-[90px] md:h-[40px] md:object-[0_0] md:-mt-6"
               />
             </Link>
 

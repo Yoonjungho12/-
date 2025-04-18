@@ -26,6 +26,7 @@ export default function NewArrivalsSectionClient({ shopCards }) {
       },
       { 
         threshold: 0.1,
+        root: null,
         rootMargin: "0px 0px -50px 0px"
       }
     );
@@ -78,7 +79,7 @@ export default function NewArrivalsSectionClient({ shopCards }) {
                 <div
                   key={shop.id}
                   ref={(el) => (cardsRef.current[index] = el)}
-                  className="card shrink-0 w-[270px] snap-start overflow-hidden rounded-xl border border-gray-200/50 bg-white/80 backdrop-blur-sm shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-1 opacity-0"
+                className="card shrink-0 w-[270px] snap-start overflow-hidden rounded-xl border border-gray-200/50 bg-white/80 backdrop-blur-sm shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-1"
                 >
                   <Link href={`/board/details/${shop.id}`}>
                     <div className="w-[240px] h-[130px] mx-auto mt-3 overflow-hidden rounded-xl flex relative group">
@@ -113,7 +114,7 @@ export default function NewArrivalsSectionClient({ shopCards }) {
               <div
                 key={shop.id}
                 ref={(el) => (cardsRef.current[index] = el)}
-                className="card block overflow-hidden rounded-xl border border-gray-200/50 bg-white/80 backdrop-blur-sm shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-1 opacity-0"
+                className="card block overflow-hidden rounded-xl border border-gray-200/50 bg-white/80 backdrop-blur-sm shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-1"
               >
                 <Link href={`/board/details/${shop.id}`}>
                   <div className="h-[153px] w-[263px] overflow-hidden mx-auto mt-3 rounded-xl flex relative group">
