@@ -1,255 +1,170 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
-import { usePathname } from "next/navigation";
+import React, { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseF";
-
-// 분리한 컴포넌트 import
-import SectionManager from "./SectionManager";
-import MemberManager from "./MemberManager";
-import ShopPhotoUploader from "./ShopPhotoUploader";
 import StoreInfoEditor from "./StoreInfoEditor";
+import SectionManager from "./SectionManager";
+import ShopPhotoUploader from "./ShopPhotoUploader";
 
-function onlyDigits(value) {
-  return value.replace(/\D/g, "");
-}
-
+// 가격 포맷팅 함수
 function formatPrice(num) {
   if (!num || isNaN(num)) return "0 원";
   return Number(num).toLocaleString() + " 원";
 }
 
+// 숫자만 추출하는 함수
+function onlyDigits(value) {
+  return value.replace(/\D/g, "");
+}
+
 export default function MyShopPageClient() {
-  // URL 파라미터에서 post_id 추출
-  const pathname = usePathname();
-  const pathParts = pathname?.split("/") || [];
-  const postId = pathParts[2] || null;
-
-  // 기본 state들
-  const [companyName, setCompanyName] = useState(null);
-  const [errorMessage, setErrorMessage] = useState(null);
-
-  // 섹션/코스 로딩 상태
-  const [loading, setLoading] = useState(true);
+  const { id } = useParams();
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [storeInfo, setStoreInfo] = useState({
+    id: "",
+    name: "",
+    ad_type: "",
+    region_id: null,
+    sub_region_id: null,
+    company_name: "",
+    phone_number: "",
+    manager_contact: "",
+    parking_type: "",
+    contact_method: "",
+    greeting: "",
+    event_info: "",
+    holiday: null,
+    open_hours: "",
+    address: "",
+    address_street: "",
+    near_building: "",
+    program_info: "",
+    post_title: "",
+    lat: null,
+    lng: null,
+    thumbnail_url: null
+  });
+  
   const [sections, setSections] = useState([]);
-
-  // 사진 업로드 섹션 ref
-  const imageUploadSectionRef = useRef(null);
-
-  // (추가) 토글 상태
-  const [showSectionManager, setShowSectionManager] = useState(false);
-  const [showPhotoUploader, setShowPhotoUploader] = useState(false);
-  const [showStoreEditor, setShowStoreEditor] = useState(false);
+  const [photos, setPhotos] = useState([]);
 
   useEffect(() => {
-    if (!postId) {
-      setErrorMessage("URL이 잘못되었습니다. (postId 없음)");
-      setLoading(false);
-      return;
-    }
-
-    (async () => {
+    async function fetchData() {
       try {
-        // 1) partnershipsubmit → 회사명
-        const { data: psRow, error: psErr } = await supabase
-          .from("partnershipsubmit")
-          .select("company_name")
-          .eq("id", postId)
+        // 기본 정보 가져오기
+        const { data: submitData, error: submitError } = await supabase
+          .from('partnershipsubmit')
+          .select('*')
+          .eq('id', id)
           .single();
-        if (psErr) throw new Error("DB 조회 에러: " + psErr.message);
-        if (!psRow) throw new Error("존재하지 않는 업체");
-        setCompanyName(psRow.company_name);
 
-        // 2) 섹션 + 코스
-        const { data: secRows, error: secErr } = await supabase
-          .from("sections")
-          .select("*")
-          .eq("post_id", postId)
-          .order("display_order", { ascending: true });
-        if (secErr) throw new Error("sections 조회 에러: " + secErr.message);
+        if (submitError) throw submitError;
 
-        const secIds = (secRows || []).map((s) => s.id);
-        let couRows = [];
-        if (secIds.length > 0) {
-          const { data: cRows, error: couErr } = await supabase
-            .from("courses")
-            .select("*")
-            .in("section_id", secIds)
-            .order("display_order", { ascending: true });
-          if (couErr) throw new Error("courses 조회 에러: " + couErr.message);
-          couRows = cRows;
-        }
+        // 섹션 및 코스 정보 가져오기
+        const { data: sectionsData, error: sectionsError } = await supabase
+          .from('sections')
+          .select(`
+            *,
+            courses (*)
+          `)
+          .eq('post_id', id)
+          .order('display_order', { ascending: true });
 
-        // 섹션/코스 구조화
-        const newSections = secRows.map((sec) => {
-          const relatedCourses = couRows
-            .filter((c) => c.section_id === sec.id)
-            .map((c) => ({
-              id: c.id,
-              name: c.course_name,
-              duration: c.duration || "",
-              price: c.price || 0,
-            }));
-          return {
-            id: sec.id,
-            name: sec.section_title,
-            courses: relatedCourses,
-          };
-        });
-        setSections(newSections);
-      } catch (err) {
-        console.error(err);
-        setErrorMessage(err.message);
-      } finally {
-        setLoading(false);
+        if (sectionsError) throw sectionsError;
+
+        // 이미지 정보 가져오기
+        const { data: imagesData, error: imagesError } = await supabase
+          .from('partnershipsubmit_images')
+          .select('*')
+          .eq('submit_id', id)
+          .order('created_at', { ascending: true });
+
+        if (imagesError) throw imagesError;
+
+        // 데이터 설정
+        setStoreInfo(submitData);
+        setSections(sectionsData || []);
+        
+        // 이미지 데이터 포맷팅
+        const formattedPhotos = [
+          // 썸네일 이미지
+          {
+            id: 'thumbnail',
+            url: submitData.thumbnail_url 
+              ? `${process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL}/${submitData.thumbnail_url}`
+              : null,
+            description: '썸네일 이미지'
+          },
+          // 일반 이미지들
+          ...(imagesData || []).map((img, index) => ({
+            id: img.id,
+            url: img.image_url 
+              ? `${process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL}/${img.image_url}`
+              : null,
+            description: `이미지 ${index + 1}`
+          }))
+        ].filter(photo => photo.url);
+
+        setPhotos(formattedPhotos);
+        setIsLoading(false);
+      } catch (error) {
+        console.error('데이터 로딩 중 오류 발생:', error);
+        alert('데이터를 불러오는 중 오류가 발생했습니다.');
+        setError(error.message);
+        setIsLoading(false);
       }
-    })();
-  }, [postId]);
-
-  if (loading) {
-    return <div className="p-4">로딩 중...</div>;
-  }
-  if (errorMessage) {
-    return <div className="p-4">{errorMessage}</div>;
-  }
-
-  // DB 저장 버튼 (섹션/코스)
-  async function handleSaveToDB() {
-    if (!postId) {
-      alert("postId가 없어 저장 불가능!");
-      return;
     }
-    const confirmMsg = "현재 화면의 섹션/코스 정보를 DB에 새로 반영합니다.\n계속할까요?";
-    if (!window.confirm(confirmMsg)) return;
 
-    try {
-      const { error: delSecErr } = await supabase
-        .from("sections")
-        .delete()
-        .eq("post_id", postId);
-      if (delSecErr) throw new Error("sections 삭제 에러: " + delSecErr.message);
-
-      for (let i = 0; i < sections.length; i++) {
-        const sec = sections[i];
-        const { data: secInserted, error: secErr } = await supabase
-          .from("sections")
-          .insert({
-            post_id: postId,
-            section_title: sec.name,
-            section_description: "",
-            display_order: i,
-          })
-          .select("*")
-          .single();
-        if (secErr) throw new Error(`섹션(${sec.name}) insert 에러: ` + secErr.message);
-
-        const newSectionId = secInserted.id;
-        for (let j = 0; j < sec.courses.length; j++) {
-          const c = sec.courses[j];
-          const { error: cErr } = await supabase.from("courses").insert({
-            section_id: newSectionId,
-            course_name: c.name,
-            duration: c.duration || "",
-            etc_info: "",
-            display_order: j,
-            price: c.price || 0,
-          });
-          if (cErr) throw new Error(`코스(${c.name}) insert 에러: ` + cErr.message);
-        }
-      }
-      alert("DB 저장이 완료되었습니다!");
-    } catch (err) {
-      console.error(err);
-      alert("DB 저장 에러: " + err.message);
+    if (id) {
+      fetchData();
     }
+  }, [id]);
+
+  if (isLoading) {
+    return <div className="min-h-screen flex items-center justify-center">
+      <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-blue-500"></div>
+    </div>;
+  }
+
+  if (error) {
+    return <div className="text-red-500">{error}</div>;
   }
 
   return (
-    <div className="p-4 max-w-6xl mx-auto">
-      <h1 className="text-xl font-bold mb-4">업체명: {companyName || "알수없음"}</h1>
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 h-full">
+          {/* 가게 정보 */}
+          <div className="bg-white rounded-xl shadow-sm p-6 h-[calc(100vh-8rem)] overflow-auto">
+            <div className="sticky top-0 bg-white pb-4 z-10">
+              <h2 className="text-lg font-semibold text-gray-900">가게 정보</h2>
+            </div>
+            <StoreInfoEditor 
+              storeInfo={storeInfo} 
+              setStoreInfo={setStoreInfo}
+              sections={sections}
+              setSections={setSections}
+              formatPrice={formatPrice}
+              onlyDigits={onlyDigits}
+              post_id={id}
+            />
+          </div>
 
-      {/* 상단 버튼들 (색상/스타일 변경) */}
-      <div className="mb-4 flex flex-wrap gap-2">
-        <button
-          onClick={() => setShowPhotoUploader(!showPhotoUploader)}
-          className="
-            px-4 py-2 rounded-md 
-            bg-gray-800 text-white 
-            hover:bg-gray-700 
-            transition-colors
-          "
-        >
-          이미지 수정 및 업로드 {showPhotoUploader ? "닫기" : "열기"}
-        </button>
-
-        <button
-          onClick={() => setShowStoreEditor(!showStoreEditor)}
-          className="
-            px-4 py-2 rounded-md 
-            bg-gray-800 text-white 
-            hover:bg-gray-700 
-            transition-colors
-          "
-        >
-          가게 정보 수정 {showStoreEditor ? "닫기" : "열기"}
-        </button>
-
-        <button
-          onClick={handleSaveToDB}
-          className="
-            px-4 py-2 rounded-md 
-            bg-gray-800 text-white 
-            hover:bg-gray-700 
-            transition-colors
-          "
-        >
-          DB에 저장하기
-        </button>
-
-        <button
-          onClick={() => setShowSectionManager(!showSectionManager)}
-          className="
-            px-4 py-2 rounded-md
-            bg-gray-800 text-white 
-            hover:bg-gray-700 
-            transition-colors
-          "
-        >
-          가격/코스 관리 {showSectionManager ? "닫기" : "열기"}
-        </button>
+          {/* 사진 관리 */}
+          <div className="bg-white rounded-xl shadow-sm p-6 h-[calc(100vh-8rem)] overflow-auto">
+            <div className="sticky top-0 bg-white pb-4 z-10">
+              <h2 className="text-lg font-semibold text-gray-900">사진 관리</h2>
+            </div>
+            <ShopPhotoUploader 
+              shopId={id} 
+              photos={photos}
+              setPhotos={setPhotos}
+            />
+          </div>
+        </div>
       </div>
-
-      {/* 섹션/코스 관리 (토글) */}
-      {showSectionManager && (
-        <>
-          <SectionManager
-            sections={sections}
-            setSections={setSections}
-            formatPrice={formatPrice}
-            onlyDigits={onlyDigits}
-          />
-          <hr className="my-6" />
-        </>
-      )}
-
-      {/* 사진 업로드 (토글) */}
-      {showPhotoUploader && (
-        <>
-          <ShopPhotoUploader
-            editId={postId}
-            editIsAdmitted={false}
-            imageUploadSectionRef={imageUploadSectionRef}
-          />
-          <hr className="my-6" />
-        </>
-      )}
-
-      {/* 가게 정보 수정 (토글) */}
-      {showStoreEditor && (
-        <>
-          <StoreInfoEditor shopId={postId} />
-        </>
-      )}
     </div>
   );
 }

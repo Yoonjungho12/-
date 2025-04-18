@@ -83,105 +83,123 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="h-screen w-full bg-gray-100 flex items-center justify-center px-4">
-      <div className="w-full max-w-md rounded-md bg-white p-6 shadow text-base">
-        {/* 로고 */}
-        <div className="mb-6 text-center">
-          <h1 className="text-2xl font-bold text-orange-500">여기닷</h1>
-        </div>
+    <div className="min-h-screen w-full bg-gradient-to-br from-orange-50 to-red-50 flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-md">
+        {/* 메인 카드 */}
+        <div className="bg-white rounded-2xl shadow-xl p-8 space-y-8">
+          {/* 로고 */}
+          <div className="text-center">
+            <img 
+              src="/logo/logo.png" 
+              alt="로고" 
+              className="h-40 mx-auto object-cover object-center -mt-8 -mb-16" 
+            />
+          </div>
 
-        {/* 입력 폼 */}
-        <form onSubmit={handleFormSubmit} className="space-y-5">
-          <input
-            type="text"
-            placeholder="아이디(이메일)"
-            className="w-full rounded border border-gray-300 px-3 py-3 text-base
-                       focus:outline-none focus:ring-2 focus:ring-red-400"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
+          {/* 입력 폼 */}
+          <form onSubmit={handleFormSubmit} className="space-y-6">
+            <div className="space-y-4">
+              <div>
+                <input
+                  type="text"
+                  placeholder="아이디(이메일)"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-gray-100 focus:bg-white"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
 
-          <input
-            type="password"
-            placeholder="비밀번호"
-            className="w-full rounded border border-gray-300 px-3 py-3 text-base
-                       focus:outline-none focus:ring-2 focus:ring-red-400"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
+              <div>
+                <input
+                  type="password"
+                  placeholder="비밀번호"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-gray-100 focus:bg-white"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+            </div>
 
-          {/* 에러 메시지 */}
-          {errorMessage && (
-            <div className="flex items-center text-sm text-red-500">
-              <svg
-                className="mr-1 h-4 w-4"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
+            {/* 에러 메시지 */}
+            {errorMessage && (
+              <div className="flex items-center justify-center text-sm text-red-500 bg-red-50 py-2 rounded-lg">
+                <svg
+                  className="w-5 h-5 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <span>{errorMessage}</span>
+              </div>
+            )}
+
+            {/* 아이디/비밀번호 찾기 */}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                className="text-sm text-gray-500 hover:text-orange-500 transition-colors duration-200"
+              >
+                아이디/비밀번호 찾기
+              </button>
+            </div>
+
+            {/* 버튼 그룹 */}
+            <div className="space-y-4">
+              {/* 로그인 버튼 */}
+              <button
+                type="submit"
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 text-white font-medium hover:from-orange-600 hover:to-red-600 transform hover:scale-[1.02] transition-all duration-200 shadow-md hover:shadow-lg"
+              >
+                로그인
+              </button>
+
+              {/* 구글 로그인 버튼 */}
+              <button
+                type="button"
+                onClick={handleGoogleLogin}
+                className="w-full py-3 px-4 rounded-xl bg-white border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 flex items-center justify-center space-x-2 transform hover:scale-[1.02] transition-all duration-200 shadow-sm hover:shadow-md"
+              >
+                <img src="/icons/google.svg" alt="" className="w-5 h-5" />
+                <span>구글 계정으로 로그인</span>
+              </button>
+
+              {/* 카카오 로그인 버튼 */}
+              <button
+                type="button"
+                onClick={handleKakaoLogin}
+                className="w-full py-3 px-4 rounded-xl bg-[#FEE500] text-[#391B1B] font-medium hover:bg-[#FDD800] flex items-center justify-center space-x-2 transform hover:scale-[1.02] transition-all duration-200 shadow-md hover:shadow-lg"
+              >
+                <img src="/icons/kakao.svg" alt="" className="w-5 h-5" />
+                <span>카카오 계정으로 로그인</span>
+              </button>
+            </div>
+          </form>
+
+          {/* 회원가입 링크 */}
+          <div className="pt-4 text-center border-t border-gray-200">
+            <Link 
+              href="/signup" 
+              className="text-orange-500 hover:text-orange-600 font-medium inline-flex items-center space-x-1 group"
+            >
+              <span>새로운 계정 만들기</span>
+              <svg 
+                className="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-200" 
+                fill="none" 
+                stroke="currentColor" 
                 viewBox="0 0 24 24"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.506 0 
-                     2.598-1.445 2.076-2.88l-2.928-8A2 2 0 0016.07 
-                     6H7.93a2 2 0 00-1.9 1.37l-2.928 8c-.522 
-                     1.435.57 2.88 2.076 2.88z"
-                />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
               </svg>
-              <span>{errorMessage}</span>
-            </div>
-          )}
-
-          {/* 아이디/비밀번호 찾기 */}
-          <div className="flex justify-end">
-            <button
-              type="button"
-              className="text-sm text-gray-500 hover:text-red-500"
-            >
-              아이디/비밀번호 찾기
-            </button>
-          </div>
-
-          {/* 로그인 버튼 */}
-          <div className="flex flex-col items-center justify-center">
-            <button
-              type="submit"
-              className="w-full rounded bg-orange-400 py-3 text-base font-medium text-white hover:bg-orange-500  mb-3"
-            >
-              로그인
-            </button>
-
-            {/* 구글 로그인 버튼 */}
-            <button
-              type="button"
-              onClick={handleGoogleLogin}
-              className="items-center space-x-1 rounded bg-white px-4 py-3
-                         text-base font-medium text-black hover:bg-blue-500 hover:text-white w-full flex justify-center border border-blue-600 mb-3"
-            >
-              <img src="/icons/google.svg" alt="" width={20} />
-              <span>구글 로그인</span>
-            </button>
-
-            {/* 카카오 로그인 버튼 */}
-            <button
-              type="button"
-              onClick={handleKakaoLogin}
-              className="flex items-center space-x-1 rounded bg-yellow-300 px-4 py-3
-                         text-base font-medium text-gray-800 hover:bg-yellow-400 w-full flex justify-center"
-            >
-              <img src="/icons/kakao.svg" alt="" width={20} />
-              <span>카카오 로그인</span>
-            </button>
-          </div>
-
-          {/* 계정 가입 */}
-          <div className="mt-2 text-center">
-            <Link href="/signup" className="text-base text-red-500 hover:underline">
-              간편 계정 가입
             </Link>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseF";
@@ -11,6 +11,45 @@ export default function RecommendedShopsClient({ initialTag, initialShops }) {
   // 서버에서 받은 초기 태그와 초기 샵 목록
   const [selectedTag, setSelectedTag] = useState(initialTag || "라운지바");
   const [shops, setShops] = useState(initialShops || []);
+  const sectionRef = useRef(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (sectionRef.current) {
+        const rect = sectionRef.current.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+        const progress = Math.min(Math.max(1 - (rect.top + rect.height) / (viewportHeight + rect.height), 0), 1);
+        setScrollProgress(progress * 3);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.unobserve(entry.target);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => {
+      if (sectionRef.current) {
+        observer.unobserve(sectionRef.current);
+      }
+    };
+  }, []);
 
   // 태그 클릭 시 → Supabase 재호출
   async function handleClickTag(tagName) {
@@ -48,7 +87,7 @@ export default function RecommendedShopsClient({ initialTag, initialShops }) {
       let { data: subRows } = await supabase
         .from("partnershipsubmit")
         .select(
-          "id, post_title, address, address_street, thumbnail_url, comment"
+          "id, post_title, company_name, address, address_street, thumbnail_url, comment"
         )
         .in("id", submitIds)
         .limit(4);
@@ -59,15 +98,19 @@ export default function RecommendedShopsClient({ initialTag, initialShops }) {
       }
 
       // 4) 받아온 데이터 변환
-      const newShops = subRows.map((item) => ({
-        id: item.id,
-        imgSrc:
-          "https://vejthvawsbsitttyiwzv.supabase.co/storage/v1/object/public/gunma/" +
-          item.thumbnail_url,
-        title: item.post_title,
-        address: (item.address || "") + " " + (item.address_street || ""),
-        reviewCount: item.comment || 0,
-      }));
+      const newShops = subRows.map((item) => {
+        const finalUrl = `${process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL}/${item.thumbnail_url}`;
+        console.log('이미지 최종 URL 레코멘디드:', finalUrl);
+
+        return {
+          id: item.id,
+          imgSrc: finalUrl,
+          company_name: item.company_name || item.post_title,
+          title: item.post_title || "제목 없음",
+          address: item.address || "주소 미기재",
+          reviewCount: item.comment || 0,
+        };
+      });
 
       setShops(newShops);
     } catch (err) {
@@ -77,161 +120,141 @@ export default function RecommendedShopsClient({ initialTag, initialShops }) {
   }
 
   return (
-    <>
-      {/* 
-        ★ 부모 컨테이너가 어딘가에서 width 제한을 해도,
-        아래 기법을 쓰면 해당 섹션만은 "뷰포트 기준"으로 깔림
-      */}
-     <section
-  className="
-    relative 
-    left-1/2 
-    -translate-x-1/2 
-    w-screen 
-    py-10 
-    flex 
-    flex-col 
-    items-center 
-    mb-10
-    mt-10
-    md:mt-20
-    bg-gradient-to-r from-red-400 to-orange-400
-    text-white
-  "
->
-        {/* 
-          여기부터 실제 "콘텐츠 폭" 
-          max-w-7xl + mx-auto로 가운데 정렬 
-        */}
-        <div className="mx-auto w-full max-w-5xl px-4">
-          {/* === 핵심: 제목 양옆에 수평선(직선) 넣기 === */}
-          <div className="flex items-center justify-center mt-2 mb-4 w-[100%] mx-auto">
-            <hr className="flex-grow border-[0.5px] border-white" />
-            <h2 className="mx-3 text-xl md:text-2xl font-bold text-white  whitespace-nowrap px-3">
-              여기닷! 테마별 제휴점 추천
-            </h2>
-            <hr className="flex-grow border-[0.5px] border-white" />
-          </div>
-          <p className="text-white text-sm md:text-[16px] text-center">
-            회원님께서 필요한 제휴점를 테마별로 빠르게 찾아보세요!
+    <section
+      ref={sectionRef}
+      className={`
+        mb-10
+        mt-10
+        md:mt-20
+        relative 
+        left-1/2 
+        -translate-x-1/2 
+        w-screen 
+        py-9
+        flex 
+        flex-col 
+        items-center 
+        overflow-hidden
+      `}
+    >
+      {/* 배경 레이어 */}
+      <div 
+        className="absolute inset-0 bg-gradient-to-r from-red-400 to-orange-400"
+        style={{
+          transform: `scaleX(${1 + scrollProgress})`,
+          transition: 'transform 0.3s ease-out',
+          transformOrigin: 'center',
+        }}
+      />
+
+      <div className="relative z-10 mx-auto w-full max-w-6xl px-4">
+        {/* 제목 섹션 */}
+        <div className={`
+          text-center 
+          mb-8 
+          transition-all 
+          duration-1000 
+          delay-300
+          transform
+          ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}
+        `}>
+          <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">
+            여기닷! 테마별 제휴점 추천
+          </h2>
+          <p className="text-white/90 text-sm md:text-base">
+            회원님께서 필요한 제휴점을 테마별로 빠르게 찾아보세요!
           </p>
+        </div>
 
-          {/* 태그 버튼들 */}
-          <div className="mt-6 flex flex-wrap justify-center gap-1 md:gap-3">
-            {tags.map((tag) => {
-              const isSelected = tag === selectedTag;
-              return (
-                <button
-                  key={tag}
-                  onClick={() => handleClickTag(tag)}
-                  className={
-                    isSelected
-                      ? "rounded-full bg-orange-500 border border-white px-2 py-2 md:py-3 md:px-3 text-white hover:bg-orange-600 text-sm md:text-base"
-                      : "rounded-full border border-orange-500 px-2 py-2 md:py-0 md:px-3 bg-white text-orange-600 hover:bg-white text-sm md:text-base"
+        {/* 태그 버튼들 */}
+        <div className="flex flex-wrap justify-center gap-3 mb-12">
+          {tags.map((tag, index) => {
+            const isSelected = tag === selectedTag;
+            return (
+              <button
+                key={tag}
+                onClick={() => handleClickTag(tag)}
+                className={`
+                  transform 
+                  transition-all 
+                  duration-700
+                  ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}
+                  hover:scale-105
+                  ${isSelected
+                    ? "rounded-full bg-white shadow-lg px-6 py-2.5 text-orange-500 font-semibold border-2 border-white text-sm md:text-base"
+                    : "rounded-full bg-white/20 backdrop-blur-sm px-6 py-2.5 text-white hover:bg-white/30 text-sm md:text-base"
                   }
-                >
-                  {tag}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* 
-            (A) 모바일(640px 미만) → 슬라이드 형태
-            (B) 데스크톱(640px 이상) → 그리드 형태
-          */}
-          <div className="mt-8">
-            {/* (A) 모바일 슬라이드 */}
-            <div className="block sm:hidden px-2">
-              <div
-                className="
-                  flex
-                  overflow-x-auto
-                  gap-8
-                  snap-x 
-                  snap-mandatory
-                  hide-scrollbar
-                "
-                style={{ scrollBehavior: "smooth" }}
+                `}
+                style={{
+                  transitionDelay: `${index * 100 + 600}ms`
+                }}
               >
-                {shops.map((shop) => (
-                  <Link
-                    key={shop.id}
-                    href={`/board/details/${shop.id}`}
-                    className="
-                      shrink-0
-                  w-[290px]
-                      snap-start
-                      rounded-xl 
-                      border border-gray-200 
-                      bg-white 
-                      shadow-sm
-                      focus-within:ring-2 focus-within:ring-blue-500
-                    "
-                  >
-                    {/* 이미지 영역 */}
-                    <div className="w-[240px] h-[130px] mx-auto mt-2 overflow-hidden">
-                      <Image
-                        src={shop.imgSrc}
-                        alt={shop.title}
-                        width={240}
-                        height={130}
-                        style={{ objectFit: "cover" }}
-                        quality={30}
-                        priority
-                        className="rounded-2xl"
-                        sizes="240px"
-                      />
-                    </div>
-                    {/* 텍스트 영역 */}
-                    <div className="p-4 w-[300px] box-border">
-                      <h3 className="mb-1 text-base font-semibold text-gray-900">
-                        {shop.title}
-                      </h3>
-                      <p className="text-sm text-gray-600">{shop.address}</p>
-                      <p className="mt-0.5 text-xs text-gray-500">
-                        리뷰 {shop.reviewCount}
-                      </p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
+                {tag}
+              </button>
+            );
+          })}
+        </div>
 
-            {/* (B) 데스크톱 그리드 */}
-            <div className="hidden sm:grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {shops.map((shop) => (
+        {/* 카드 그리드 */}
+        <div className="mt-8">
+          {/* 모바일 슬라이드 */}
+          <div className="block sm:hidden">
+            <div
+              className="
+                flex
+                overflow-x-auto
+                gap-6
+                snap-x 
+                snap-mandatory
+                hide-scrollbar
+                pb-4
+              "
+              style={{ scrollBehavior: "smooth" }}
+            >
+              {shops.map((shop, index) => (
                 <Link
                   key={shop.id}
                   href={`/board/details/${shop.id}`}
-                  className="
-                    block
+                  className={`
+                    shrink-0
+                    w-[293px]
+                    h-[362px]
+                    snap-start
+                    rounded-2xl
+                    shadow-lg
+                    relative
                     overflow-hidden
-                    rounded-xl 
-                    border border-gray-200
-                    bg-white
-                    shadow-sm
-                    focus-within:ring-2 focus-within:ring-blue-500
-                  "
+                    transition-all
+                    duration-700
+                    transform
+                    ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}
+                    hover:scale-[1.02]
+                    hover:shadow-2xl
+                    bg-black
+                  `}
+                  style={{
+                    transitionDelay: `${index * 100 + 900}ms`
+                  }}
                 >
-                  <div className="h-[153px] w-[263px] overflow-hidden mx-auto mt-4">
+                  <div className="w-full h-full transition-transform duration-300 ease-out hover:scale-105">
                     <Image
                       src={shop.imgSrc}
                       alt={shop.title}
-                      width={263}
-                      height={153}
-                      style={{ objectFit: "cover" }}
+                      fill
+                      unoptimized
+                      style={{ objectFit: "cover", opacity: "0.9" }}
                       quality={30}
                       priority
-                      className="rounded-2xl"
+                      sizes="293px"
+                      className="transition-all duration-300 ease-out hover:opacity-100"
                     />
                   </div>
-                  <div className="p-4">
-                    <h3 className="mb-1 text-base font-semibold text-gray-900">
-                      {shop.title}
+                  <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/90 via-black/60 to-transparent transform transition-all duration-300 ease-out hover:translate-y-0">
+                    <h3 className="text-lg font-bold text-white mb-2 transform transition-all duration-300 ease-out group-hover:translate-y-0">
+                      {shop.company_name}
                     </h3>
-                    <p className="text-sm text-gray-600">{shop.address}</p>
-                    <p className="mt-0.5 text-xs text-gray-500">
+                    <p className="text-gray-200 text-sm mb-1 transform transition-all duration-300 ease-out group-hover:translate-y-0">{shop.address}</p>
+                    <p className="text-gray-300 text-sm transform transition-all duration-300 ease-out group-hover:translate-y-0">
                       리뷰 {shop.reviewCount}
                     </p>
                   </div>
@@ -239,16 +262,88 @@ export default function RecommendedShopsClient({ initialTag, initialShops }) {
               ))}
             </div>
           </div>
-        </div>
 
-        {/* 더보기 버튼 */}
-        <Link
-          href={"/board/전체/전체"}
-          className="md:mt-10 md:mb-10 rounded border-[0.5px] border-gray-500 px-5 py-2 text-gray-500"
-        >
-          더보기 +
-        </Link>
-      </section>
-    </>
+          {/* 데스크톱 그리드 */}
+          <div className="hidden sm:grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {shops.map((shop, index) => (
+              <Link
+                key={shop.id}
+                href={`/board/details/${shop.id}`}
+                className={`
+                  block
+                  overflow-hidden
+                  rounded-2xl
+                  shadow-lg
+                  relative
+                  h-[362px]
+                  w-[293px]
+                  mx-auto
+                  transition-all
+                  duration-700
+                  transform
+                  ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}
+                  hover:scale-[1.02]
+                  hover:shadow-2xl
+                  bg-black
+                  group
+                `}
+                style={{
+                  transitionDelay: `${index * 100 + 900}ms`
+                }}
+              >
+                <div className="w-full h-full transition-transform duration-300 ease-out group-hover:scale-105">
+                  <Image
+                    src={shop.imgSrc}
+                    alt={shop.title}
+                    fill
+                    unoptimized
+                    style={{ objectFit: "cover", opacity: "0.9" }}
+                    quality={70}
+                    className="transition-all duration-300 ease-out group-hover:opacity-100"
+                  />
+                </div>
+                <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/90 via-black/60 to-transparent transform transition-all duration-300 ease-out group-hover:translate-y-0">
+                  <h3 className="text-lg font-bold text-white mb-2 transform transition-all duration-300 ease-out group-hover:translate-y-0">
+                    {shop.company_name}
+                  </h3>
+                  <p className="text-gray-200 text-sm mb-1 transform transition-all duration-300 ease-out group-hover:translate-y-0">{shop.address}</p>
+                  <p className="text-gray-300 text-sm transform transition-all duration-300 ease-out group-hover:translate-y-0">
+                    리뷰 {shop.reviewCount}
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* 더보기 버튼 */}
+      <Link
+        href={"/board/전체/전체"}
+        className={`
+          relative z-10
+          mt-12
+          px-8
+          py-3
+          rounded-full
+          border-2
+          border-white
+          text-white
+          transition-all
+          duration-700
+          transform
+          ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}
+          hover:bg-white/10
+          hover:scale-105
+          text-sm
+          md:text-base
+        `}
+        style={{
+          transitionDelay: '1200ms'
+        }}
+      >
+        더보기 +
+      </Link>
+    </section>
   );
 }

@@ -92,7 +92,17 @@ export default function MapKakao({ address, id }) {
             if (status === window.kakao.maps.services.Status.OK) {
               const coords = new window.kakao.maps.LatLng(result[0].y, result[0].x);
               map.setCenter(coords);
-              new window.kakao.maps.Marker({ map, position: coords });
+              
+              new window.kakao.maps.Marker({
+                map,
+                position: coords,
+                image: new window.kakao.maps.MarkerImage(
+                  '//t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png',
+                  new window.kakao.maps.Size(32, 32),
+                  { offset: new window.kakao.maps.Point(16, 32) }
+                )
+              });
+
               setMapCenter({
                 lat: parseFloat(result[0].y),
                 lng: parseFloat(result[0].x),
@@ -176,7 +186,7 @@ export default function MapKakao({ address, id }) {
   }, [mapCenter]);
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col p-3">
       {/* 지도 영역 */}
       <div ref={mapRef} className="relative w-full h-[390px] bg-gray-200" />
 
@@ -224,7 +234,7 @@ NEXT_PUBLIC_SUPABASE_STORAGE_URL +'/'+
                     <div className="text-gray-600 text-sm mt-1">
                       {shop.near_building || ""}
                     </div>
-                    <div className="text-sm text-blue-600 mt-1">
+                    <div className="text-sm text-orange-500 mt-1">
                       거리: {shop.distance.toFixed(2)} km
                     </div>
                   </div>

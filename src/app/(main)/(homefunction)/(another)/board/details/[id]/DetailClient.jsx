@@ -7,6 +7,8 @@ import CommentsUI from "./comment";
 import MapKakao from "./MapKakao";
 import { MegaphoneIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
 const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL;
 
 /** (A) 비로그인 시 localStorage 익명 UUID */
@@ -31,11 +33,11 @@ function buildPublicImageUrl(path) {
 /** (C) 라벨-값 표시용 작은 컴포넌트 */
 function DetailRow({ label, value }) {
   return (
-    <div className="mb-4">
-      <span className="inline-block w-24 font-semibold text-gray-600">
+    <div className="flex items-center justify-between py-2.5 border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors duration-200">
+      <span className="font-semibold text-gray-600 text-[16px]">
         {label}
       </span>
-      <span className="text-gray-800">{value || "-"}</span>
+      <span className="text-gray-800 text-[16px] text-right">{value || "-"}</span>
     </div>
   );
 }
@@ -61,6 +63,8 @@ export default function DetailClient({ row, images, numericId, showBlurDefault }
   const [showBlur, setShowBlur] = useState(showBlurDefault);
   const [isLoading, setIsLoading] = useState(true);
   const [loadingPopup, setLoadingPopup] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
 
   // (A) 세션 체크
   useEffect(() => {
@@ -157,7 +161,9 @@ export default function DetailClient({ row, images, numericId, showBlurDefault }
 
   async function handleSave() {
     if (!session?.user?.id) {
-      alert("로그인 먼저 해주세요!");
+      setToastMessage("로그인 먼저 해주세요!");
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 2000);
       return;
     }
 
@@ -170,12 +176,18 @@ export default function DetailClient({ row, images, numericId, showBlurDefault }
           .eq("partnershipsubmit_id", numericId);
         if (!error) {
           setIsSaved(false);
-          alert("가고싶다 해제되었습니다!");
+          setToastMessage("가고싶다 해제되었습니다!");
+          setShowToast(true);
+          setTimeout(() => setShowToast(false), 2000);
         } else {
-          alert("가고싶다 해제 오류!");
+          setToastMessage("가고싶다 해제 오류!");
+          setShowToast(true);
+          setTimeout(() => setShowToast(false), 2000);
         }
       } catch (err) {
-        alert("가고싶다 해제 오류!");
+        setToastMessage("가고싶다 해제 오류!");
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 2000);
       }
       return;
     }
@@ -189,12 +201,18 @@ export default function DetailClient({ row, images, numericId, showBlurDefault }
         });
       if (!error) {
         setIsSaved(true);
-        alert("가고싶다 목록에 저장됨!");
+        setToastMessage("가고싶다 목록에 저장됨!");
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 2000);
       } else {
-        alert("가고싶다 저장 오류");
+        setToastMessage("가고싶다 저장 오류");
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 2000);
       }
     } catch (err) {
-      alert("가고싶다 저장 오류");
+      setToastMessage("가고싶다 저장 오류");
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 2000);
     }
   }
 
@@ -210,14 +228,17 @@ export default function DetailClient({ row, images, numericId, showBlurDefault }
   }
   const hasDetailImages = images && images.length > 0;
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
 
   useEffect(() => {
     if (allImages.length <= 1) return;
     const timer = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % allImages.length);
-    }, 3000);
+      if (!isHovered) {
+        setCurrentIndex((prev) => (prev + 1) % allImages.length);
+      }
+    }, 8000);
     return () => clearInterval(timer);
-  }, [allImages]);
+  }, [allImages, isHovered]);
 
   function handleThumbnailClick(idx) {
     setCurrentIndex(idx);
@@ -463,9 +484,48 @@ export default function DetailClient({ row, images, numericId, showBlurDefault }
   // ─────────────────────────────────────────────────────────
   // 최종 렌더링
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6 flex gap-6">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+      className="max-w-7xl mx-auto px-4 py-8 flex gap-8"
+    >
+      {/* 토스트 메시지 */}
+      <AnimatePresence>
+        {showToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.3 }}
+            className="fixed top-8 left-1/2 transform -translate-x-1/2 z-50"
+          >
+            <div className="bg-black/80 backdrop-blur-sm text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-2">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <span className="text-sm font-medium">{toastMessage}</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* (A) 왼쪽 영역 */}
-      <div className="flex-[7] relative">
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+        className="flex-[7] relative"
+      >
         {showBlur && (
           <div className="fixed inset-0 bg-white/80 backdrop-blur-sm z-10 flex items-center justify-center">
             <div className="text-center">
@@ -509,40 +569,61 @@ export default function DetailClient({ row, images, numericId, showBlurDefault }
         )}
 
         {/* 사진 영역 */}
-        <div className="flex gap-4">
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+          className="flex gap-6"
+        >
           {/* 메인 이미지 */}
           <div
-            className="relative flex-1 bg-gray-100 rounded overflow-hidden"
-            style={{ height: 390 }}
+            className="relative flex-1 bg-gradient-to-br from-gray-100 to-gray-200 rounded-3xl overflow-hidden shadow-md"
+            style={{ height: 420 }}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
           >
             {allImages.length > 0 ? (
               <>
-                <Image
-                  key={currentIndex}
-                  src={allImages[currentIndex]}
-                  alt={`메인 이미지 ${currentIndex + 1}`}
-                  fill
-                  className="object-cover"
-                />
-                <div className="absolute bottom-2 right-2 px-2 py-1 text-sm bg-black/60 text-white rounded">
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.div
+                    key={currentIndex}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="absolute inset-0 group"
+                  >
+                    <Image
+                      src={allImages[currentIndex]}
+                      alt={`메인 이미지 ${currentIndex + 1}`}
+                      fill
+                      className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      priority
+                    />
+                  </motion.div>
+                </AnimatePresence>
+                <div className="absolute bottom-4 right-4 px-3 py-1.5 text-xs bg-black/80 text-white rounded-full backdrop-blur-sm shadow-sm z-10">
                   {currentIndex + 1} / {allImages.length}
                 </div>
 
-                {/* 가고싶다 */}
-                <button
+                {/* 가고싶다 - 고정 위치로 이동 */}
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
                   onClick={handleSave}
-                  className={`absolute top-2 right-2 w-8 h-8
+                  className={`absolute top-4 right-4 w-10 h-10 z-10
                     rounded-full flex items-center justify-center
-                    bg-black/60
-                    ${isSaved ? "text-red-500" : "text-white"}
+                    bg-black/80 backdrop-blur-sm shadow-sm
+                    ${isSaved ? "text-red-400" : "text-white"}
+                    transition-all duration-300
                   `}
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
+                    fill={isSaved ? "currentColor" : "none"}
                     strokeWidth="2"
                     stroke="currentColor"
-                    className="w-4 h-4"
+                    className="w-5 h-5"
                     viewBox="0 0 24 24"
                   >
                     <path
@@ -556,7 +637,7 @@ export default function DetailClient({ row, images, numericId, showBlurDefault }
                          6.86-8.55 11.158L12 21z"
                     />
                   </svg>
-                </button>
+                </motion.button>
               </>
             ) : (
               <div className="w-full h-full flex items-center justify-center text-gray-500">
@@ -566,174 +647,251 @@ export default function DetailClient({ row, images, numericId, showBlurDefault }
           </div>
 
           {/* 오른쪽 썸네일 */}
-          <div
-            className="flex flex-col gap-2 overflow-y-auto"
-            style={{ height: 390, width: "190px" }}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+            className="flex flex-col gap-3 overflow-y-auto p-1 pr-2"
+            style={{ height: 420, width: "200px" }}
           >
             {hasDetailImages
               ? allImages.map((imgUrl, idx) => (
                   <div
                     key={idx}
-                    className={`relative cursor-pointer border ${
-                      idx === currentIndex ? "border-red-500" : "border-transparent"
-                    }`}
-                    style={{ width: "190px", height: "113px", display: 'flex' }}
+                    className={`relative cursor-pointer rounded-2xl overflow-hidden
+                      ${idx === currentIndex ? "ring-2 ring-red-500 shadow-lg" : "ring-1 ring-gray-200"}
+                      transition-all duration-300
+                    `}
+                    style={{ width: "190px", height: "138px" }}
                     onClick={() => handleThumbnailClick(idx)}
                   >
-                    <Image src={imgUrl} alt={`썸네일 ${idx}`} fill className="object-cover" />
+                    <div className="absolute inset-0 bg-gray-100 overflow-hidden">
+                      <Image 
+                        src={imgUrl} 
+                        alt={`썸네일 ${idx}`} 
+                        fill 
+                        className="object-cover transition-transform duration-500 hover:scale-125" 
+                      />
+                    </div>
                   </div>
                 ))
               : row.thumbnail_url && (
                   <div
-                    className="relative cursor-pointer border border-red-500"
-                    style={{ width: "190px", height: "113px" }}
+                    className="relative cursor-pointer rounded-2xl overflow-hidden ring-2 ring-red-500 shadow-lg"
+                    style={{ width: "190px", height: "138px" }}
                   >
-                    <Image
-                      src={buildPublicImageUrl(row.thumbnail_url)}
-                      alt="썸네일"
-                      fill
-                      className="object-cover"
-                    />
+                    <div className="absolute inset-0 bg-gray-100 overflow-hidden">
+                      <Image
+                        src={buildPublicImageUrl(row.thumbnail_url)}
+                        alt="썸네일"
+                        fill
+                        className="object-cover transition-transform duration-500 hover:scale-125"
+                      />
+                    </div>
                   </div>
                 )}
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
 
         {/* 기본 정보 */}
-        <div className="mt-3 bg-white p-4 rounded">
-          <div className="flex flex-col ">
-            <h1 className="text-3xl font-bold mb-2">{row.company_name}</h1>
-            <div className="flex items-center gap-6 ml-1 text-gray-500 mt-">
-              <div className="flex items-center gap-1 mt-2 mb-3">
-                <img src="/icons/views.svg" alt="조회수" style={{ width: "18px", height: "16px" }} />
-                <span>{views.toLocaleString()}</span>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+          className="mt-8 bg-white p-8 rounded-3xl shadow-md"
+        >
+          <div className="flex flex-col">
+            <h1 className="text-2xl font-bold mb-3 text-gray-800">{row.company_name}</h1>
+            <div className="flex items-center gap-8 ml-1 text-gray-500">
+              <div className="flex items-center gap-2 mt-2 mb-4">
+                <img src="/icons/views.svg" alt="조회수" className="w-4 h-4" />
+                <span className="text-gray-600 font-medium text-sm">{views.toLocaleString()}</span>
               </div>
-              <div className="flex items-center gap-1 mt-2 mb-3">
-                <img src="/icons/man.svg" alt="댓글수" style={{ width: "18px", height: "14px" }} />
-                <span>{row.comment || 0}</span>
+              <div className="flex items-center gap-2 mt-2 mb-4">
+                <img src="/icons/man.svg" alt="댓글수" className="w-4 h-4" />
+                <span className="text-gray-600 font-medium text-sm">{row.comment || 0}</span>
               </div>
             </div>
           </div>
 
-          <DetailRow label="제휴사소개" value={row.greeting} />
-          <DetailRow label="오시는 길" value={row.address_street} />
-          <DetailRow label="전화번호" value={row.phone_number} />
-          <DetailRow
-            label="연락방법"
-            value={
-              row.contact_method
-                ? `${row.contact_method}${row.near_building ? ` / ${row.near_building}` : ""}`
-                : row.near_building || ""
-            }
-          />
-          <DetailRow label="영업시간" value={row.open_hours} />
-          {lowestPrice > 0 && (
-            <DetailRow label="최저가" value={`${formatPrice(lowestPrice)}원 ~`} />
-          )}
-          <DetailRow label="휴무일" value={row.holiday} />
-          <DetailRow label="주차안내" value={row.parking_type} />
+          <div className="mb-8">
+            <div className="font-semibold text-gray-700 mb-4 text-base">제휴사 소개</div>
+            <div className="text-gray-800 whitespace-pre-wrap leading-relaxed text-sm">{row.company_info}</div>
+            {row.greeting && (
+              <div className="mt-6 p-6 bg-gray-50 rounded-2xl whitespace-pre-wrap border border-gray-100 shadow-sm">
+                <div className="text-gray-800 leading-relaxed text-sm">{row.greeting}</div>
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-x-8 gap-y-4">
+            <DetailRow label="오시는 길" value={row.address_street} />
+            <DetailRow label="전화번호" value={row.phone_number} />
+            <DetailRow
+              label="연락방법"
+              value={
+                row.contact_method
+                  ? `${row.contact_method}${row.near_building ? ` / ${row.near_building}` : ""}`
+                  : row.near_building || ""
+              }
+            />
+            <DetailRow label="영업시간" value={row.open_hours} />
+            {lowestPrice > 0 && (
+              <DetailRow label="최저가" value={`${formatPrice(lowestPrice)}원 ~`} />
+            )}
+            <DetailRow label="휴무일" value={row.holiday} />
+            <DetailRow label="주차안내" value={row.parking_type} />
+          </div>
 
           {/* 출근부 */}
           {loadingMembers ? (
-            <div className="mb-2 flex items-center">
-              <span className="w-24 font-semibold text-gray-600">출근부</span>
-              <span className="text-gray-800">불러오는 중...</span>
+            <div className="mb-4 flex items-center mt-6">
+              <span className="w-24 font-semibold text-gray-600 text-sm">출근부</span>
+              <span className="text-gray-800 text-sm">불러오는 중...</span>
             </div>
           ) : members.length > 0 ? (
-            <div className="mb-2 flex items-center">
-              <span className="w-24 font-semibold text-gray-600">출근부</span>
-              <div className="flex flex-wrap gap-2">
+            <div className="mb-4 flex items-center mt-6">
+              <span className="w-24 font-semibold text-gray-600 text-sm">출근부</span>
+              <div className="flex flex-wrap gap-3">
                 {members.map((m, index) => {
                   const colorClass = pastelColors[index % pastelColors.length];
                   return (
-                    <span
+                    <motion.span
                       key={index}
-                      className={`inline-block px-2 py-1 text-sm rounded ${colorClass}`}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className={`inline-block px-3 py-1.5 text-xs rounded-full ${colorClass} shadow-sm hover:shadow-md transition-shadow duration-300`}
                     >
                       {m.member}
-                    </span>
+                    </motion.span>
                   );
                 })}
               </div>
             </div>
           ) : null}
-        </div>
+        </motion.div>
 
-        <div className="border-[0.5px] border-gray-300"></div>
+        <div className="border-[0.5px] border-gray-200 my-8"></div>
 
         {/* 이벤트 */}
         {row.event_info?.trim() && (
-          <div className="flex flex-col mt-5 mb-5 bg-white p-4 rounded">
-            <span className="font-semibold text-xl mb-2">이벤트</span>
-            <span>{"■ " + row.event_info}</span>
-          </div>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+            className="mb-8"
+          >
+            <div className="font-semibold text-gray-700 mb-4 text-base">이벤트</div>
+            <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100 shadow-sm">
+              <div className="text-gray-800 whitespace-pre-wrap leading-relaxed text-sm">{row.event_info}</div>
+            </div>
+          </motion.div>
         )}
 
-        <div className="border-[0.5px] border-gray-300"></div>
+        <div className="border-[0.5px] border-gray-200 my-8"></div>
 
         {/* 코스안내 */}
         {loadingSections ? (
-          <div className="py-4">로딩중...</div>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+            className="py-4"
+          >
+            <span className="text-sm">로딩중...</span>
+          </motion.div>
         ) : sectionsData.length > 0 && (
-          <div className="mt-6">
-            <h2 className="text-xl font-bold mb-4">코스안내</h2>
-            <p className="text-sm text-gray-500 mb-2">{row.program_info || "코스 정보 없음"}</p>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+            className="mt-8"
+          >
+            <h2 className="text-xl font-bold mb-4 text-gray-800">코스안내</h2>
+            <p className="text-sm text-gray-500 mb-4">{row.program_info || "코스 정보 없음"}</p>
             <div className="space-y-4">
               {sectionsData.map((sec) => (
-                <div key={sec.id} className="border border-gray-200 rounded overflow-hidden">
+                <motion.div 
+                  key={sec.id} 
+                  className="border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300"
+                >
                   <button
                     onClick={() => toggleSectionOpen(sec.id)}
-                    className="w-full flex items-center justify-between bg-gray-100 px-4 py-3 focus:outline-none text-left"
+                    className="w-full flex items-center justify-between bg-gray-50 px-4 py-3 focus:outline-none text-left hover:bg-gray-100 transition-colors duration-300"
                   >
-                    <span className="font-semibold text-gray-700">{sec.title}</span>
-                    <span className="text-sm text-gray-400">{sec.isOpen ? "▲" : "▼"}</span>
+                    <span className="font-semibold text-gray-700 text-sm">{sec.title}</span>
+                    <span className="text-xs text-gray-400 transition-transform duration-300">
+                      {sec.isOpen ? "▲" : "▼"}
+                    </span>
                   </button>
                   {sec.isOpen && (
-                    <div className="px-4 py-3">
+                    <motion.div 
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="px-4 py-3"
+                    >
                       {sec.courses.length === 0 ? (
                         <div className="text-sm text-gray-500">코스가 없습니다.</div>
                       ) : (
-                        <ul className="space-y-2">
+                        <ul className="space-y-3">
                           {sec.courses.map((c) => (
-                            <li key={c.id}>
+                            <motion.li 
+                              key={c.id}
+                              initial={{ opacity: 0, x: -10 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ duration: 0.3 }}
+                            >
                               <div className="flex items-center justify-between">
                                 <div>
-                                  <span className="font-semibold text-gray-800">{c.course_name}</span>
+                                  <span className="font-semibold text-gray-800 text-sm">{c.course_name}</span>
                                   {c.duration && (
-                                    <span className="text-sm text-gray-600 ml-1">: {c.duration}</span>
+                                    <span className="text-sm text-gray-600 ml-2">: {c.duration}</span>
                                   )}
                                 </div>
                                 {c.price > 0 && (
-                                  <div className="text-red-600 font-medium">
+                                  <div className="text-red-600 font-medium text-sm">
                                     {formatPrice(c.price) + " 원"}
                                   </div>
                                 )}
                               </div>
                               {c.etc_info?.trim() && (
-                                <div className="mt-1 text-sm text-gray-500">{c.etc_info}</div>
+                                <div className="mt-1 text-xs text-gray-500">{c.etc_info}</div>
                               )}
-                            </li>
+                            </motion.li>
                           ))}
                         </ul>
                       )}
-                    </div>
+                    </motion.div>
                   )}
-                </div>
+                </motion.div>
               ))}
             </div>
-          </div>
+          </motion.div>
         )}
 
         {/* 댓글 */}
-        <div className="mt-6 bg-white rounded">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+          className="mt-8 bg-white rounded-3xl shadow-md"
+        >
           <CommentsUI company_name={row.company_name} id={row.id} />
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
       {/* (B) 오른쪽 지도 */}
-      <div className="flex-[3] rounded overflow-hidden">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+        className="flex-[3] rounded-3xl overflow-hidden shadow-md"
+      >
         <MapKakao address={row.address} id={row.id} />
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

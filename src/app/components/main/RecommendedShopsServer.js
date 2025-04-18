@@ -52,7 +52,7 @@ export default async function RecommendedShopsServer() {
   const submitIds = relRows.map((r) => r.submit_id);
   let { data: subRows, error: subError } = await supabase
     .from("partnershipsubmit")
-    .select("id, post_title, address, address_street, thumbnail_url, comment")
+    .select("id, post_title, company_name, address, address_street, thumbnail_url, comment")
     .in("id", submitIds)
     .limit(4);
 
@@ -71,12 +71,13 @@ export default async function RecommendedShopsServer() {
   // (4) 최종 변환
   const initialShops = subRows.map((item) => ({
     id: item.id,
-    imgSrc: `https://vejthvawsbsitttyiwzv.supabase.co/storage/v1/object/public/gunma/${item.thumbnail_url}`,
+    imgSrc: `${process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL}/${item.thumbnail_url}`,
+    company_name: item.company_name || item.post_title,
     title: item.post_title,
-    address: item.address + " " + (item.address_street || ""),
+    address: item.address,
     reviewCount: item.comment || 0,
   }));
-
+  console.log(initialShops);
   // (5) 클라이언트 컴포넌트로 props 전달
   return (
     <RecommendedShopsClient

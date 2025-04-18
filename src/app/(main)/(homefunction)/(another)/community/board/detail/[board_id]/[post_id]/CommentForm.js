@@ -54,22 +54,27 @@ export default function CommentForm({ postId }) {
   };
 
   return (
-    <div className="border-t border-gray-300 pt-4 bg-gray-50 rounded-lg p-4">
-      <h3 className="text-sm font-bold mb-2">댓글 작성</h3>
-      <textarea
-        className="w-full border-[0.5px] r p-2 text-sm mb-2 rounded"
-        rows={4}
-        placeholder="댓글을 입력하세요"
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-      />
-      <div className="text-right">
-        <button
-          onClick={handleSubmit}
-          className="px-4 py-2 bg-orange-500 hover:bg-blue-600 text-white text-sm rounded"
-        >
-          등록
-        </button>
+    <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+      <div className="p-6">
+        <h3 className="text-lg font-bold text-gray-900 mb-4">댓글 작성</h3>
+        <textarea
+          className="w-full border border-gray-200 rounded-xl p-4 text-sm mb-4 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors resize-none"
+          rows={4}
+          placeholder="댓글을 입력하세요"
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+        />
+        <div className="flex justify-end">
+          <button
+            onClick={handleSubmit}
+            className="px-6 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-xl transition-colors flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            등록
+          </button>
+        </div>
       </div>
     </div>
   );

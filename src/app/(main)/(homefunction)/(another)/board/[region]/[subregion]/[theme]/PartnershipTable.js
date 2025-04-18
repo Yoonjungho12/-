@@ -178,87 +178,89 @@ export default async function PartnershipTable({
   return (
     <div className="w-full mt-4">
       {/* 정렬 옵션 링크 */}
-      <div className="mb-4 flex gap-4 text-sm">
+      <div className="mb-6 flex items-center justify-center gap-6 text-sm font-medium bg-white rounded-full shadow-sm py-3 px-6">
         <Link
           href={baseUrl}
-          className={!sortParam ? "font-bold text-black" : "text-gray-600"}
+          className={!sortParam 
+            ? "text-orange-500 font-bold relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-orange-500" 
+            : "text-gray-500 hover:text-gray-700 transition-colors"}
         >
           기본
         </Link>
-        <span className="text-gray-300">|</span>
-
+        <div className="w-1 h-1 rounded-full bg-gray-200" />
         <Link
           href={`${baseUrl}?sort=priceAsc`}
-          className={sortParam === "priceAsc" ? "font-bold text-black" : "text-gray-600"}
+          className={sortParam === "priceAsc" 
+            ? "text-orange-500 font-bold relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-orange-500" 
+            : "text-gray-500 hover:text-gray-700 transition-colors"}
         >
           가격 낮은순
         </Link>
-        <span className="text-gray-300">|</span>
-
+        <div className="w-1 h-1 rounded-full bg-gray-200" />
         <Link
           href={`${baseUrl}?sort=viewsDesc`}
-          className={sortParam === "viewsDesc" ? "font-bold text-black" : "text-gray-600"}
+          className={sortParam === "viewsDesc" 
+            ? "text-orange-500 font-bold relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-orange-500" 
+            : "text-gray-500 hover:text-gray-700 transition-colors"}
         >
           조회수 높은순
         </Link>
       </div>
 
       {/* Tailwind 테이블 */}
-      <table className="table-fixed w-full text-sm border-collapse PartnershipTable">
-        <colgroup>
-          {/* 첫 칼럼: 55% */}
-          <col className="w-[55%]" />
-          {/* 나머지 3개 칼럼: 15%씩 */}
-          <col className="w-[15%]" />
-          <col className="w-[15%]" />
-          <col className="w-[15%]" />
-        </colgroup>
-        <thead>
-          <tr>
-            <th className="border border-gray-300 py-2 px-2 text-center whitespace-nowrap desktop-only">
-              제목
-            </th>
-            <th className="border border-gray-300 py-2 px-2 text-center whitespace-nowrap desktop-only">
-              최저가
-            </th>
-            <th className="border border-gray-300 py-2 px-2 text-center whitespace-nowrap desktop-only">
-              조회수
-            </th>
-            <th className="border border-gray-300 py-2 px-2 text-center whitespace-nowrap desktop-only">
-              리뷰수
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {posts.map((item) => {
-            // 한 줄씩 <PartnershipRow> (클라이언트 컴포넌트) 에 넘김
-            const priceNum = getLowestPrice(item);
-            const displayPrice = priceNum > 0 ? formatPrice(priceNum) : "가격 없음";
+      <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <table className="table-fixed w-full text-sm border-separate border-spacing-0">
+          <colgroup>
+            <col className="w-[55%]" />
+            <col className="w-[15%]" />
+            <col className="w-[15%]" />
+            <col className="w-[15%]" />
+          </colgroup>
+          <thead>
+            <tr className="bg-gray-50">
+              <th className="py-4 px-6 text-left text-gray-600 font-medium desktop-only border-b border-gray-100">
+                제목
+              </th>
+              <th className="py-4 px-6 text-center text-gray-600 font-medium desktop-only border-b border-gray-100">
+                최저가
+              </th>
+              <th className="py-4 px-6 text-center text-gray-600 font-medium desktop-only border-b border-gray-100">
+                조회수
+              </th>
+              <th className="py-4 px-6 text-center text-gray-600 font-medium desktop-only border-b border-gray-100">
+                리뷰수
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {posts.map((item) => {
+              const priceNum = getLowestPrice(item);
+              const displayPrice = priceNum > 0 ? formatPrice(priceNum) : "가격 없음";
+              const mobileInfo = `조회수 ${Number(item.views || 0).toLocaleString()} / 리뷰 ${
+                item.comment || 0
+              } / 최저가 ${displayPrice}`;
+              const slug = createSlug(item.company_name);
 
-            const mobileInfo = `조회수 ${Number(item.views || 0).toLocaleString()} / 리뷰 ${
-              item.comment || 0
-            } / 최저가 ${displayPrice}`;
-            const slug = createSlug(item.company_name);
+              return (
+                <PartnershipRow
+                  key={item.id}
+                  item={item}
+                  displayPrice={displayPrice}
+                  mobileInfo={mobileInfo}
+                  slug={slug}
+                />
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
 
-            return (
-              <PartnershipRow
-                key={item.id}
-                item={item}
-                displayPrice={displayPrice}
-                mobileInfo={mobileInfo}
-                slug={slug}
-              />
-            );
-          })}
-        </tbody>
-      </table>
-
-      {/* 애니메이션, 반응형 */}
       <style>{`
         @keyframes textBlink {
           0%, 100% { color: #fff; }
           50% { color: #c23e2d; }
         }
+
         @media (max-width: 640px) {
           .desktop-only {
             display: none !important;
@@ -269,6 +271,23 @@ export default async function PartnershipTable({
           .mobile-info {
             display: block !important;
           }
+        }
+
+        .PartnershipTable tr:hover {
+          background-color: #fff8f6;
+          transition: background-color 0.2s ease;
+        }
+
+        .PartnershipTable tr:last-child td {
+          border-bottom: none;
+        }
+
+        .PartnershipTable td, .PartnershipTable th {
+          transition: all 0.2s ease;
+        }
+
+        .PartnershipTable tr:hover td {
+          background-color: #fff8f6;
         }
       `}</style>
     </div>

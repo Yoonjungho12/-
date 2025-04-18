@@ -113,21 +113,22 @@ export default function RegionSelectorSSR({
   // (D) 렌더 함수: 한 칸씩 그려주는 함수
   // ───────────────────────────────────────────
   function renderCell(item, isSelected, linkHref) {
-    // 공통 스타일
-    const baseClass =
-      "region-cell flex items-center justify-center text-xs md:text-sm px-3 py-2 cursor-pointer";
-
-    // 선택된 경우 그라데이션
-    const selectedClass =
-      "bg-gradient-to-r from-orange-400 to-red-400 text-white font-bold";
-
-    // 비선택 항목은 회색 배경
-    const normalClass = "bg-gray-100 text-gray-600 hover:bg-gray-200";
-
     return (
-      <Link key={item.id} href={linkHref}>
-        <div className={`${baseClass} ${isSelected ? selectedClass : normalClass}`}>
-          {item.name}
+      <Link key={item.id} href={linkHref} className="transform transition-all duration-200 hover:scale-[1.02]">
+        <div className={`
+          region-cell relative overflow-hidden rounded-xl shadow-sm
+          ${isSelected 
+            ? "bg-gradient-to-r from-rose-500 to-orange-400 text-white font-medium"
+            : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-100"
+          }
+          ${item.name === "전체" ? "font-medium" : ""}
+        `}>
+          <div className="relative z-10 py-3 px-4">
+            {item.name}
+          </div>
+          {isSelected && (
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.1),transparent)]" />
+          )}
         </div>
       </Link>
     );
@@ -137,18 +138,22 @@ export default function RegionSelectorSSR({
   // (E) 렌더링
   // ───────────────────────────────────────────
   return (
-    <div className="w-full">
-      {/* 상단 안내 (PC 전용) */}
-      <div className="flex flex-col md:flex-row items-center mt-3 md:mt-10 mb-3">
-        <h2 className="font-bold text-xl mr-3 hide-on-mobile">지역별 업체 선택</h2>
-        <p className="text-base text-gray-600 m-0 p-0 hide-on-mobile">
-          인기있는 지역들을 보기쉽게 모아놨어요!
-        </p>
+    <div className="w-full px-4 md:px-0">
+      <div className="flex flex-col md:flex-row items-center justify-between mt-3 md:mt-10 mb-6">
+        <div className="flex items-center gap-3">
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent hide-on-mobile">
+            지역별 업체 선택
+          </h2>
+          <div className="hidden md:block h-6 w-px bg-gray-200 mx-2"></div>
+          <p className="text-base text-gray-500 hide-on-mobile">
+            인기있는 지역들을 보기쉽게 모아놨어요!
+          </p>
+        </div>
       </div>
 
       {/* (1) 상위 지역 */}
       {regionSlug === "전체" && (
-        <div className="region-grid-container mb-1">
+        <div className="region-grid-container gap-3 mb-4">
           {mainRegionItems.map((item) => {
             const isSelected = item.id === selectedParentId;
             const href = `/board/${item.region_slug}/전체/${themeName || "전체"}`;
@@ -161,11 +166,11 @@ export default function RegionSelectorSSR({
       {regionSlug !== "전체" && (
         <>
           {subregionItems.length === 0 ? (
-            <p className="text-sm text-gray-500 mb-2">
-              상위 지역을 먼저 선택해주세요.
-            </p>
+            <div className="text-center py-8">
+              <p className="text-gray-500">상위 지역을 먼저 선택해주세요.</p>
+            </div>
           ) : (
-            <div className="region-grid-container mb-1">
+            <div className="region-grid-container gap-3 mb-4">
               {subregionItems.map((child) => {
                 const isSelected = child.id === selectedSubregionId;
                 const href = `/board/${regionSlug}/${child.region_slug}/${themeName || "전체"}`;
@@ -177,9 +182,11 @@ export default function RegionSelectorSSR({
       )}
 
       {/* (3) 테마 (PC용) */}
-      <div className="pc-theme mt-6">
-        <h3 className="text-md font-bold mb-1">테마 선택</h3>
-        <div className="theme-grid-container mb-2">
+      <div className="pc-theme mt-8">
+        <h3 className="text-xl font-bold mb-4 bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+          테마 선택
+        </h3>
+        <div className="theme-grid-container gap-3 mb-4">
           {THEMES.map((th) => {
             const isSelected = selectedThemeIds.includes(th.id);
             const href = `/board/${regionSlug || "전체"}/${subregionSlug || "전체"}/${th.name}`;

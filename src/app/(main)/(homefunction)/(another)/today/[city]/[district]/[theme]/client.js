@@ -78,7 +78,7 @@ export default function ClientUI({ city, district, theme }) {
     // 컴포넌트 마운트 시 초기 상태 설정
     const isMobile = window.innerWidth < 768;
     if (!isMobile) {
-      if (district === "전체") {
+      if (district === "전체" && city !== "전체") {
         setIsFilterOpen(true);
       } else {
         setIsFilterOpen(false);
@@ -93,7 +93,7 @@ export default function ClientUI({ city, district, theme }) {
     }, 100);
 
     return () => clearTimeout(timer);
-  }, [district]);
+  }, [district, city]);
 
   // ---------------------------------------------------
   // (C) 각종 핸들러
@@ -152,128 +152,133 @@ export default function ClientUI({ city, district, theme }) {
   // (E) 렌더
   // ---------------------------------------------------
   return (
-    <div>
+    <div className="bg-gray-50">
       {/* 상단 영역 */}
-      <div className="bg-gradient-to-r from-red-400 to-orange-400 px-4 py-8 text-white">
-        <div className="mx-auto max-w-5xl text-center">
-          <h1 className="text-2xl font-bold">
-            실시간 업데이트되는 업체 정보를 확인해 보세요!
+      <div className="relative bg-white shadow-sm">
+        <div className="mx-auto max-w-6xl px-4 py-6">
+          <div className="text-center">
+            <h1 className="text-2xl font-medium text-gray-900">
+              실시간 업데이트되는 업체 정보
+            </h1>
+            <p className="mt-2 text-gray-500">
+              최신 트렌드를 반영한 업체 정보가 실시간으로 업데이트됩니다
+            </p>
+          </div>
 
-          </h1>
-          <p className="mt-2 text-gray-200">
-            최신 트렌드를 반영한 업체 정보를 자동화된 시스템을 활용하여 지속적인 업데이트가 이루어지고 있습니다.
-          </p>
-        </div>
+          {/* 검색창 */}
+          <div className="mx-auto mt-4 max-w-2xl">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="지역명 검색 (예: 송파, 역삼)"
+                className="w-full rounded-full border-0 bg-gray-100 px-6 py-4 text-gray-900 ring-1 ring-inset ring-gray-200 placeholder:text-gray-400 focus:ring-2 focus:ring-orange-500"
+              />
+              <button className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-orange-500 p-2.5 text-white transition-colors hover:bg-orange-600">
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </button>
+            </div>
+          </div>
 
-        {/* 상단 버튼들 */}
-        <div className="mx-auto mt-6 flex max-w-5xl items-center justify-center gap-3">
-          {/* 시·도 토글 버튼 */}
-          <button
-            onClick={handleToggleFilter}
-            className="flex items-center gap-1 rounded-md bg-gradient-to-r from-gray-100 to-gray-200  px-4 py-2 text-gray-800 hover:bg-gray-400"
-          >
-            {city} {district}
-          </button>
+          {/* 필터 버튼들 */}
+          <div className="mx-auto mt-6 flex max-w-2xl items-center justify-center gap-3">
+            <button
+              onClick={handleToggleFilter}
+              className="flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-gray-700 ring-1 ring-gray-200 transition-all hover:bg-gray-50"
+            >
+              <span>{city} {district}</span>
+              <svg className={`h-4 w-4 transition-transform ${isFilterOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
 
-          <button
-            onClick={handleToggleTheme}
-            className="flex items-center gap-1 rounded-md bg-gradient-to-r from-gray-100 to-gray-200 px-4 py-2 text-gray-800 hover:bg-gray-400"
-          >
-            테마: {theme}
-          </button>
-        </div>
+            <button
+              onClick={handleToggleTheme}
+              className="flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-gray-700 ring-1 ring-gray-200 transition-all hover:bg-gray-50"
+            >
+              <span>테마: {theme}</span>
+              <svg className={`h-4 w-4 transition-transform ${isThemeOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+          </div>
 
-        {/* 검색창 */}
-        <div className="mx-auto mt-4 flex max-w-lg items-center justify-center">
-          <input
-            type="text"
-            placeholder="지역명 검색 (예: 송파, 역삼)"
-            className="w-full rounded-l-md border-2 border-r-0 border-gray-300 px-3 py-2 text-white focus:outline-none"
-          />
-          <button className="rounded-r-md border-2 border-gray-300 bg-white px-3 py-2 hover:bg-gray-100">
-            🔍
-          </button>
-        </div>
-
-        {/* 테마 선택 영역 */}
-        <div className={`mx-auto mt-4 max-w-4xl overflow-hidden transition-all duration-300 ease-in-out ${
-          isThemeOpen ? 'max-h-[200px] opacity-100' : 'max-h-0 opacity-0'
-        }`}>
-          <div className="max-h-[200px] overflow-y-auto">
-            <div className="flex flex-wrap justify-center gap-2 px-4 pb-4">
-              {THEMES.map((th) => (
-                <button
-                  key={th.id}
-                  onClick={() => {
-                    handleSelectTheme(th.name);
-                    setIsThemeOpen(false);
-                  }}
-                  className={`rounded-full px-4 py-2 transition-colors duration-200 ${
-                    theme === th.name 
-                      ? 'bg-orange-400 text-white' 
-                      : 'bg-white text-gray-700 hover:bg-orange-50'
-                  }`}
-                >
-                  {th.name}
-                </button>
-              ))}
+          {/* 테마 선택 영역 */}
+          <div className={`mx-auto mt-3 max-w-4xl overflow-hidden transition-all duration-300 ease-in-out ${
+            isThemeOpen ? 'max-h-[200px] opacity-100' : 'max-h-0 opacity-0'
+          }`}>
+            <div className="max-h-[200px] overflow-y-auto px-4">
+              <div className="flex flex-wrap justify-center gap-2">
+                {THEMES.map((th) => (
+                  <button
+                    key={th.id}
+                    onClick={() => {
+                      handleSelectTheme(th.name);
+                      setIsThemeOpen(false);
+                    }}
+                    className={`rounded-full px-4 py-2 text-sm transition-all ${
+                      theme === th.name 
+                        ? 'bg-orange-500 text-white' 
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    {th.name}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 필터 열기/닫기 */}
-      <div className={`w-full bg-white ${
-        // 초기 렌더링시에는 애니메이션 클래스를 적용하지 않음
+      {/* 필터 영역 */}
+      <div className={`w-full bg-white border-t border-gray-100 ${
         isInitialRender 
-          ? isFilterOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0 overflow-hidden'
+          ? isFilterOpen ? 'h-[400px] opacity-100' : 'h-0 opacity-0 overflow-hidden'
           : `transition-all duration-300 ease-in-out ${
-              isFilterOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0 overflow-hidden'
+              isFilterOpen ? 'h-[400px] opacity-100' : 'h-0 opacity-0 overflow-hidden'
             }`
       }`}>
-        <div className="mx-auto max-w-5xl py-6">
-          <div className="border rounded-lg border-gray-200 p-4">
-            {/* 테이블 헤더 */}
-            <div className="mb-2 flex items-center border-b border-gray-200 px-4 pb-2">
-              <div className="mr-8 text-lg font-semibold text-gray-600">시·도</div>
-              <div className="text-lg font-semibold text-gray-600">구·군</div>
+        <div className="mx-auto max-w-6xl h-full py-6 px-4">
+          <div className="flex gap-12 h-full">
+            {/* 왼쪽 시·도 목록 */}
+            <div className="w-48 h-full">
+              <h3 className="mb-3 text-sm font-medium text-gray-500">시·도</h3>
+              <div className="h-[calc(100%-2rem)] overflow-y-auto pr-2 space-y-1">
+                {REGIONS.map((region) => (
+                  <button
+                    key={region.id}
+                    onClick={() => handleSelectCity(region.name)}
+                    className={`w-full rounded-lg px-4 py-2 text-left text-sm transition-all ${
+                      city === region.name 
+                        ? "bg-orange-500 text-white" 
+                        : "text-gray-600 hover:bg-gray-100"
+                    }`}
+                  >
+                    {region.name}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <div className="grid grid-cols-10 gap-4">
-              {/* 왼쪽 시·도 목록 */}
-              <div className="col-span-2 border-r border-gray-200">
-                <div className="max-h-60 overflow-y-auto">
-                  {REGIONS.map((region) => (
-                    <div
-                      key={region.id}
-                      onClick={() => handleSelectCity(region.name)}
-                      className={`cursor-pointer px-4 py-2 ${
-                        city === region.name 
-                          ? "bg-gradient-to-r from-orange-400 to-red-400 text-white font-bold" 
-                          : "hover:bg-orange-50"
-                      }`}
-                    >
-                      {region.name}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* 오른쪽 구·군 목록 */}
-              <div className="col-span-8 max-h-60 overflow-y-auto px-2">
+            {/* 오른쪽 구·군 목록 */}
+            <div className="flex-1 h-full">
+              <h3 className="mb-3 text-sm font-medium text-gray-500">구·군</h3>
+              <div className="h-[calc(100%-2rem)] overflow-y-auto pr-2">
                 <div className="grid grid-cols-6 gap-2">
                   {districtsData.map((dist) => (
-                    <div
+                    <button
                       key={dist.id}
                       onClick={() => handleSelectDistrict(dist.name)}
-                      className={`cursor-pointer py-1 px-2 ${
+                      className={`rounded-lg py-2 px-3 text-sm transition-all ${
                         district === dist.name 
-                          ? "bg-gradient-to-r from-orange-400 to-red-400 text-white font-bold" 
-                          : "hover:bg-orange-50"
+                          ? "bg-orange-500 text-white" 
+                          : "text-gray-600 hover:bg-gray-100"
                       }`}
                     >
                       {dist.name}
-                    </div>
+                    </button>
                   ))}
                 </div>
               </div>

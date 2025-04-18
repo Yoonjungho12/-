@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseF";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function CommentsUI({ company_name, id }) {
   // ========== 기본 상태들 ==========
@@ -338,86 +339,123 @@ export default function CommentsUI({ company_name, id }) {
   // (10) UI
   // --------------------------------------
   return (
-    <div className="bg-white rounded mt-12 relative">
+    <div className="bg-white rounded-2xl shadow-lg p-8">
       {/* 상단: 업체명 + 댓글 개수 */}
-      <div className="text-center mb-6">
-        <h2 className="text-xl font-semibold mb-2">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-center mb-10"
+      >
+        <h2 className="text-2xl font-bold mb-4 bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
           {company_name} 업체에 리뷰를 남겨보세요!
         </h2>
-        <div className="text-4xl font-bold">{reviewCount}</div>
-        <div className="text-gray-500">개의 리뷰</div>
-      </div>
+        <div className="inline-flex items-center gap-2 px-6 py-3 bg-gray-50 rounded-full">
+          <div className="text-4xl font-bold bg-gradient-to-r from-red-600 to-yellow-600 bg-clip-text text-transparent">
+            {reviewCount}
+          </div>
+          <div className="text-gray-600 font-medium">개의 리뷰</div>
+        </div>
+      </motion.div>
 
       {/* 댓글 입력창 + 등록 버튼 */}
-      <div className="flex gap-2 mb-6">
-        <textarea
-          className="flex-1 border border-gray-300 rounded p-2 focus:outline-none focus:border-blue-400"
-          placeholder="리뷰를 입력해주세요"
-          value={commentText}
-          onChange={(e) => setCommentText(e.target.value)}
-        />
-        <button
-          className="w-20 bg-gray-200 hover:bg-gray-200 rounded text-gray-700"
-          onClick={handleSubmit}
-          disabled={!canSubmit()}
-        >
-          등록
-        </button>
-      </div>
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="mb-10"
+      >
+        <div className="flex gap-3">
+          <textarea
+            className="flex-1 border-2 border-gray-100 rounded-xl p-4 focus:outline-none focus:border-blue-200 focus:ring-2 focus:ring-blue-100 transition-all duration-300 resize-none h-[100px] placeholder:text-gray-400"
+            placeholder="이 업체는 어떠셨나요? 여러분의 소중한 리뷰를 남겨주세요."
+            value={commentText}
+            onChange={(e) => setCommentText(e.target.value)}
+          />
+          <button
+            className={`w-24 rounded-xl font-medium transition-all duration-300
+              ${canSubmit() 
+                ? "bg-orange-500 hover:bg-orange-600 text-white shadow-lg hover:shadow-xl" 
+                : "bg-gray-200 text-gray-400 cursor-not-allowed"}`}
+            onClick={handleSubmit}
+            disabled={!canSubmit()}
+          >
+            등록하기
+          </button>
+        </div>
+      </motion.div>
 
-      {/* 승인된(is_admitted=true) 댓글 목록 (현재 페이지) */}
-      <ul className="space-y-4 mb-4">
-        {comments.map((c) => {
-          const displayedDate = formatDateCustom(c.created_at);
-          return (
-            <li
-              key={c.id}
-              className="bg-white rounded shadow p-4 flex flex-col"
-              onContextMenu={(e) => handleContextMenu(e, c.profiles.user_id)}
-              onTouchStart={(e) => handleTouchStart(e, c.profiles.user_id)}
-              onTouchEnd={handleTouchEnd}
-            >
-              {/* 닉네임 + 날짜 */}
-              <div className="flex items-baseline gap-2">
-                <span className="font-semibold text-black">
-                  {c.profiles.nickname}
-                </span>
-                <span className="text-sm text-gray-400">{displayedDate}</span>
-              </div>
-
-              {/* 댓글 내용 */}
-              <div className="mt-1 text-gray-700">{c.comment}</div>
-
-              {/* 본인 글이면 삭제 버튼 */}
-              {currentUserId === c.user_id && (
-                <div className="mt-2 text-right">
-                  <button
-                    className="text-red-400 text-sm"
-                    onClick={() => handleDelete(c.id, c.user_id)}
-                  >
-                    삭제
-                  </button>
+      {/* 승인된(is_admitted=true) 댓글 목록 */}
+      <motion.ul 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.2 }}
+        className="space-y-4 mb-8"
+      >
+        <AnimatePresence>
+          {comments.map((c, index) => {
+            const displayedDate = formatDateCustom(c.created_at);
+            return (
+              <motion.li
+                key={c.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="bg-gray-50 rounded-xl p-6 hover:shadow-md transition-all duration-300"
+                onContextMenu={(e) => handleContextMenu(e, c.profiles.user_id)}
+                onTouchStart={(e) => handleTouchStart(e, c.profiles.user_id)}
+                onTouchEnd={handleTouchEnd}
+              >
+                {/* 닉네임 + 날짜 */}
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <span className="font-bold text-gray-800">
+                      {c.profiles.nickname}
+                    </span>
+                    <span className="text-sm text-gray-400 font-medium">
+                      {displayedDate}
+                    </span>
+                  </div>
+                  {/* 본인 글이면 삭제 버튼 */}
+                  {currentUserId === c.user_id && (
+                    <button
+                      className="text-red-400 hover:text-red-500 text-sm font-medium transition-colors duration-300"
+                      onClick={() => handleDelete(c.id, c.user_id)}
+                    >
+                      삭제하기
+                    </button>
+                  )}
                 </div>
-              )}
-            </li>
-          );
-        })}
-      </ul>
+
+                {/* 댓글 내용 */}
+                <div className="text-gray-700 leading-relaxed">
+                  {c.comment}
+                </div>
+              </motion.li>
+            );
+          })}
+        </AnimatePresence>
+      </motion.ul>
 
       {/* 페이지네이션 버튼 */}
-      <div className="flex justify-center gap-4">
+      <div className="flex justify-center items-center gap-6">
         <button
-          className="px-3 py-1 border rounded disabled:opacity-50 disabled:cursor-not-allowed"
+          className={`px-4 py-2 rounded-lg font-medium transition-all duration-300
+            ${page > 1 
+              ? "bg-white border-2 border-gray-200 text-gray-700 hover:border-blue-300 hover:text-blue-500" 
+              : "bg-gray-100 text-gray-400 cursor-not-allowed"}`}
           onClick={goToPrevPage}
           disabled={page <= 1}
         >
           이전
         </button>
-        <span className="self-center">
+        <span className="font-medium text-gray-700">
           {page} / {totalPages}
         </span>
         <button
-          className="px-3 py-1 border rounded disabled:opacity-50 disabled:cursor-not-allowed"
+          className={`px-4 py-2 rounded-lg font-medium transition-all duration-300
+            ${page < totalPages 
+              ? "bg-white border-2 border-gray-200 text-gray-700 hover:border-blue-300 hover:text-blue-500" 
+              : "bg-gray-100 text-gray-400 cursor-not-allowed"}`}
           onClick={goToNextPage}
           disabled={page >= totalPages}
         >
@@ -427,24 +465,24 @@ export default function CommentsUI({ company_name, id }) {
 
       {/* 우클릭/롱프레스 팝업 (쪽지 보내기) */}
       {popup.visible && (
-        <div
-          className="z-50 bg-white border border-gray-300 rounded p-2"
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="z-50 bg-white rounded-xl shadow-xl border border-gray-100 p-3"
           style={{
             position: "fixed",
             top: popup.y,
             left: popup.x,
-            minWidth: "120px",
+            minWidth: "150px",
           }}
         >
-          <ul className="text-center">
-            <li
-              className="cursor-pointer hover:underline text-blue-600"
-              onClick={handleSendMessage}
-            >
-              1:1 쪽지 보내기
-            </li>
-          </ul>
-        </div>
+          <button
+            className="w-full text-center py-2 px-4 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-300 font-medium"
+            onClick={handleSendMessage}
+          >
+            1:1 쪽지 보내기
+          </button>
+        </motion.div>
       )}
     </div>
   );

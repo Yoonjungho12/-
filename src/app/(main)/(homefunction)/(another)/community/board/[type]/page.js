@@ -93,69 +93,90 @@ export default async function BoardPage({ params:param}) {
 
   // 4) 렌더링 (SEO 문제 없음 - 서버에서 HTML을 만들어 제공)
   return (
-    <div className="p-5">
-      <div className="w-full max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* 브레드크럼 */}
         <div className="mb-6">
-          <div className="text-sm text-gray-600 mb-6">
-            <Link href="/community" className="hover:text-orange-500">커뮤니티</Link>
-            <span className="mx-2">›</span>
+          <nav className="flex items-center text-sm text-gray-600">
+            <Link href="/community" className="hover:text-orange-500 transition-colors">커뮤니티</Link>
+            <svg className="w-4 h-4 mx-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
             <span className="text-orange-500 font-medium">{boardInfo.name}</span>
-          </div>
+          </nav>
         </div>
-        <div className="flex gap-6">
+
+        <div className="flex gap-8">
           {/* 왼쪽 게시판 영역 */}
           <div className="flex-1">
             {/* 상단 네비게이션 */}
             <div className="flex justify-between items-center mb-6">
-              <h1 className="text-2xl font-bold text-gray-800">{boardInfo.name}</h1>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 mb-1">{boardInfo.name}</h1>
+                <p className="text-sm text-gray-500">다양한 의견을 자유롭게 나누어보세요</p>
+              </div>
               {boardInfo.id !== 1 && (
                 <Link
                   href={`/community/board/${decodedType}/write`}
-                  className="px-6 py-2.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 text-sm font-medium transition-colors duration-200 shadow-sm hover:shadow-md"
+                  className="flex items-center gap-2 px-6 py-2.5 bg-orange-500 text-white rounded-xl hover:bg-orange-600 text-sm font-medium transition-all duration-200 shadow-sm hover:shadow-md"
                 >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
                   글쓰기
                 </Link>
               )}
             </div>
-            {/* 게시글 목록 테이블 */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-              <table className="w-full border-t border-gray-200">
-                <thead>
-                  <tr className="bg-gray-50">
-                    <th className="py-1.5 w-16 text-center text-xs text-gray-500 border-b border-gray-200">번호</th>
-                    <th className="py-1.5 text-left text-xs text-gray-500 border-b border-gray-200">제목</th>
-                    <th className="py-1.5 w-24 text-center text-xs text-gray-500 border-b border-gray-200">글쓴이</th>
-                    <th className="py-1.5 w-20 text-center text-xs text-gray-500 border-b border-gray-200">작성일</th>
-                    <th className="py-1.5 w-16 text-center text-xs text-gray-500 border-b border-gray-200">조회</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {!posts || posts.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="text-center py-4 text-sm text-gray-500">
-                        게시글이 없습니다.
-                      </td>
+
+            {/* 게시글 목록 */}
+            <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-gray-50">
+                      <th className="py-4 w-16 text-center text-xs font-medium text-gray-500">번호</th>
+                      <th className="py-4 text-left text-xs font-medium text-gray-500">제목</th>
+                      <th className="py-4 w-24 text-center text-xs font-medium text-gray-500">글쓴이</th>
+                      <th className="py-4 w-20 text-center text-xs font-medium text-gray-500">작성일</th>
+                      <th className="py-4 w-16 text-center text-xs font-medium text-gray-500">조회</th>
                     </tr>
-                  ) : (
-                    posts.map((post, index) => (
-                      <TrRow
-                        key={post.id}
-                        post={post}
-                        boardInfo={boardInfo}
-                        number={posts.length - index}
-                      />
-                    ))
-                  )}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {!posts || posts.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="text-center py-12">
+                          <div className="text-gray-400 text-sm">게시글이 없습니다.</div>
+                        </td>
+                      </tr>
+                    ) : (
+                      posts.map((post, index) => (
+                        <TrRow
+                          key={post.id}
+                          post={post}
+                          boardInfo={boardInfo}
+                          number={posts.length - index}
+                        />
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
             {/* 페이지네이션 */}
-            <div className="mt-10">
-              <div className="flex justify-center space-x-2">
-                <button className="px-3 py-1 text-xs text-gray-600 hover:text-orange-500">이전</button>
-                <button className="px-3 py-1 text-xs bg-orange-500 text-white rounded">1</button>
-                <button className="px-3 py-1 text-xs text-gray-600 hover:text-orange-500">다음</button>
+            <div className="mt-8">
+              <div className="flex justify-center gap-1">
+                <button className="px-4 py-2 text-sm text-gray-600 hover:text-orange-500 transition-colors">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                <button className="px-4 py-2 text-sm bg-orange-500 text-white rounded-lg">1</button>
+                <button className="px-4 py-2 text-sm text-gray-600 hover:text-orange-500 transition-colors">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
               </div>
             </div>
           </div>
@@ -163,7 +184,7 @@ export default async function BoardPage({ params:param}) {
           {/* 오른쪽 광고 영역 */}
           <div className="w-[300px] shrink-0">
             <div className="sticky top-5">
-              <div className="bg-gray-100 w-full h-[600px] rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 text-sm">
+              <div className="bg-white rounded-2xl shadow-sm p-6 h-[600px] flex items-center justify-center text-gray-400 text-sm">
                 광고 영역
               </div>
             </div>

@@ -164,161 +164,169 @@ export default function AccountSettingPage() {
   }
 
   return (
-    <div className="max-w-[600px] mx-auto p-4 md:p-8 relative">
-      <h1 className="text-2xl font-bold mb-8">계정 설정</h1>
+    <div className="min-h-screen bg-gradient-to-br from-neutral-50 to-neutral-100">
+      <div className="max-w-[600px] mx-auto p-4 md:p-8">
+        <h1 className="text-2xl font-bold mb-8 text-gray-900">계정 설정</h1>
 
-      {!isLoggedIn ? (
-        <p className="text-gray-600">로그인 상태가 아닙니다.</p>
-      ) : (
-        <div className="space-y-6">
-          <div className="relative w-24 h-24 mx-auto">
-            <div className="w-full h-full rounded-full bg-gray-300" />
-            <div className="absolute bottom-0 right-0 bg-white rounded-full border p-1">
-              <svg
-                className="w-5 h-5 text-gray-500"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path d="M4 5a2 2 0 
-                012-2h.172a2 2 0 
-                001.414-.586l.828-.828A2 2 0 
-                0110.828 1H12a2 2 0 
-                012 2v1h2a2 2 0 
-                012 2v6a2 2 0 
-                01-2 2h-3v2a2 2 0 
-                01-2 2H5a2 2 0 
-                01-2-2v-2H1a2 2 0 
-                01-2-2V6a2 2 0 
-                012-2h3zM5 10a1 1 0 
-                102 0 1 1 0 
-                00-2 0z" />
-              </svg>
-            </div>
+        {!isLoggedIn ? (
+          <div className="bg-white rounded-2xl p-6 shadow-sm">
+            <p className="text-gray-600">로그인 상태가 아닙니다.</p>
           </div>
+        ) : (
+          <div className="space-y-6">
+            {/* 프로필 이미지 */}
+            <div className="bg-white rounded-2xl p-8 shadow-sm">
+              <div className="relative w-24 h-24 mx-auto mb-6">
+                <div className="w-full h-full rounded-full bg-neutral-100 flex items-center justify-center">
+                  <svg className="w-12 h-12 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </div>
+                <div className="absolute bottom-0 right-0 bg-white rounded-full border border-neutral-200 p-1.5 shadow-sm hover:shadow transition-shadow">
+                  <svg className="w-5 h-5 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
+              </div>
 
-          {/* 닉네임/이메일 */}
-          <div className="space-y-2">
-            <label className="block text-gray-500">숨고 활동명</label>
-            {!isEditingNickname ? (
+              {/* 닉네임/이메일 */}
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-600">닉네임</label>
+                  {!isEditingNickname ? (
+                    <div className="flex items-center justify-between bg-neutral-50 p-3 rounded-xl">
+                      <span className="text-gray-900">{nickname || "닉네임 없음"}</span>
+                      <button
+                        onClick={handleEditNickname}
+                        className="text-sm text-orange-500 hover:text-orange-600 font-medium"
+                      >
+                        수정
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={editNicknameInput}
+                          onChange={(e) => setEditNicknameInput(e.target.value)}
+                          maxLength={30}
+                          className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
+                        />
+                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-gray-400">
+                          {editNicknameInput.length}/30자
+                        </span>
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <button
+                          onClick={handleCancelEdit}
+                          className="px-4 py-2 text-sm font-medium text-gray-700 bg-neutral-100 rounded-xl hover:bg-neutral-200 transition-colors"
+                        >
+                          취소
+                        </button>
+                        <button
+                          onClick={handleUpdateNickname}
+                          className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all"
+                        >
+                          저장하기
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="bg-neutral-50 p-3 rounded-xl">
+                  <p className="text-sm text-gray-600">{session.user.email}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* 비밀번호 변경 */}
+            <div className="bg-white rounded-2xl p-6 shadow-sm">
               <div className="flex items-center justify-between">
-                <span>{nickname || "닉네임 없음"}</span>
+                <span className="font-medium text-gray-900">비밀번호 변경</span>
                 <button
-                  onClick={handleEditNickname}
-                  className="text-sm text-purple-500"
+                  onClick={handleChangePassword}
+                  className="text-sm text-orange-500 hover:text-orange-600 font-medium"
                 >
                   수정
                 </button>
               </div>
-            ) : (
-              <div>
-                <div className="relative mb-4">
-                  <input
-                    type="text"
-                    value={editNicknameInput}
-                    onChange={(e) => setEditNicknameInput(e.target.value)}
-                    maxLength={30}
-                    className="border border-gray-300 px-2 py-1 w-full rounded text-sm"
-                  />
-                  <span className="absolute right-2 top-1 text-gray-400 text-sm">
-                    {editNicknameInput.length}/30자
-                  </span>
-                </div>
-                <div className="flex justify-end space-x-2">
-                  <button
-                    onClick={handleCancelEdit}
-                    className="text-sm bg-gray-300 px-3 py-1 rounded"
-                  >
-                    취소
-                  </button>
-                  <button
-                    onClick={handleUpdateNickname}
-                    className="text-sm bg-gray-500 text-white px-3 py-1 rounded"
-                  >
-                    저장하기
-                  </button>
-                </div>
-              </div>
-            )}
-            <p className="text-sm text-gray-600">{session.user.email}</p>
-          </div>
+            </div>
 
-          {/* 비밀번호 변경 */}
-          <div className="flex items-center justify-between">
-            <span className="text-gray-500">비밀번호 변경</span>
-            <button
-              onClick={handleChangePassword}
-              className="text-sm text-purple-500"
-            >
-              수정
-            </button>
-          </div>
-
-          {/* 기타 정보 관리 */}
-          <div className="pt-2 border-t border-gray-200 space-y-3 text-gray-600 text-sm">
-            <button
-              onClick={() => alert("개인 정보 관리 페이지로 이동")}
-              className="w-full text-left"
-            >
-              개인 정보 관리 &gt;
-            </button>
-            <button
-              onClick={() => alert("맞춤 정보 설정 페이지로 이동")}
-              className="w-full text-left"
-            >
-              내 맞춤 정보 설정 &gt;
-            </button>
-          </div>
-
-          {/* 하단: 로그아웃 | 회원 탈퇴 */}
-          <div className="flex justify-between items-center mt-6 text-sm text-gray-400">
-            <button onClick={handleLogout} className="hover:text-gray-600">
-              로그아웃
-            </button>
-            <button
-              onClick={handleDeleteAccountClick}
-              className="hover:text-gray-600"
-            >
-              회원 탈퇴
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* 회원 탈퇴 모달 + 오버레이 */}
-      {showDeleteModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center"
-          onClick={handleOverlayClick}
-        >
-          <div className="absolute inset-0 bg-black/50"></div>
-
-          <div
-            onClick={handleModalContentClick}
-            className="relative bg-white p-6 rounded shadow-md w-[300px]"
-          >
-            <h2 className="text-lg font-bold mb-3">
-              정말 여기닷을 떠나실 건가요?
-            </h2>
-            <p className="text-sm text-gray-700 mb-6">
-              계정 탈퇴 시 모든 개인정보가 삭제됩니다.
-            </p>
-            <div className="flex flex-col justify-end">
+            {/* 기타 정보 관리 */}
+            <div className="bg-white rounded-2xl p-6 shadow-sm space-y-4">
               <button
-                onClick={handleCancelDelete}
-                className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-1 rounded mb-3"
+                onClick={() => alert("개인 정보 관리 페이지로 이동")}
+                className="w-full flex items-center justify-between p-3 text-left rounded-xl hover:bg-neutral-50 transition-colors group"
               >
-                다시 생각해볼게요
+                <span className="font-medium text-gray-900">개인 정보 관리</span>
+                <svg className="w-5 h-5 text-gray-400 group-hover:text-orange-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                </svg>
               </button>
               <button
-                onClick={handleConfirmDelete}
-                className="bg-gray-300 hover:bg-gray-400 px-4 py-1 rounded"
+                onClick={() => alert("맞춤 정보 설정 페이지로 이동")}
+                className="w-full flex items-center justify-between p-3 text-left rounded-xl hover:bg-neutral-50 transition-colors group"
               >
-                계정 탈퇴
+                <span className="font-medium text-gray-900">내 맞춤 정보 설정</span>
+                <svg className="w-5 h-5 text-gray-400 group-hover:text-orange-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+
+            {/* 하단: 로그아웃 | 회원 탈퇴 */}
+            <div className="flex justify-between items-center mt-6">
+              <button 
+                onClick={handleLogout}
+                className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                로그아웃
+              </button>
+              <button
+                onClick={handleDeleteAccountClick}
+                className="text-sm font-medium text-red-500 hover:text-red-600 transition-colors"
+              >
+                회원 탈퇴
               </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* 회원 탈퇴 모달 */}
+        {showDeleteModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={handleOverlayClick}>
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+
+            <div
+              onClick={handleModalContentClick}
+              className="relative bg-white p-8 rounded-2xl shadow-lg w-[320px] mx-4"
+            >
+              <h2 className="text-xl font-bold text-gray-900 mb-3">
+                정말 여기닷을 떠나실 건가요?
+              </h2>
+              <p className="text-sm text-gray-600 mb-8">
+                계정 탈퇴 시 모든 개인정보가 삭제됩니다.
+              </p>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={handleCancelDelete}
+                  className="w-full py-3 text-white font-medium bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all"
+                >
+                  다시 생각해볼게요
+                </button>
+                <button
+                  onClick={handleConfirmDelete}
+                  className="w-full py-3 font-medium text-gray-700 bg-neutral-100 rounded-xl hover:bg-neutral-200 transition-colors"
+                >
+                  계정 탈퇴
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

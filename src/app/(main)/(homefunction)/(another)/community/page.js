@@ -56,66 +56,82 @@ export default async function MainPage() {
   );
 
   return (
-    <main className="max-w-7xl mx-auto p-0 md:p-4 mt-1 md:mt-10">
-      <div className="flex flex-wrap md:-mx-2 gap-y-4">
-        {boardPostsArray.map((boardItem) => (
-          <div key={boardItem.id} className="w-full md:w-1/2 lg:w-1/3 md:px-2 mb-6">
-            <div className="bg-white md:rounded md:border md:border-gray-200 md:shadow-sm md:hover:shadow-md md:transition-all md:duration-200 md:p-4 h-full">
-              <div className="flex items-center bg-zinc-50 md:bg-white justify-between border-b-2 border-orange-500 p-1 md:pb-2 px-2 md:px-0">
-                <Link
-                  href={`/community/board/${encodeURIComponent(boardItem.name)}`}
-                  className="text-base font-bold text-orange-500 md:text-gray-900 hover:text-orange-500 flex items-center gap-1"
-                >
-                  {boardItem.icon && (
-                    <boardItem.icon className="w-5 h-5 text-orange-500 md:text-orange-500" />
-                  )}
-                  {boardItem.name}
-                </Link>
-                <Link
-                  href={`/community/board/${encodeURIComponent(boardItem.name)}`}
-                  className="text-xs text-gray-500 hover:text-orange-500"
-                >
-                  더보기 +
-                </Link>
-              </div>
-              <div className="px-1 md:px-2 md:px-0 mt-2">
-                {boardItem.posts.length === 0 ? (
-                  <div className="text-gray-400 text-center py-4 text-sm">게시글이 없습니다.</div>
-                ) : (
-                  <table className="w-full">
-                    <colgroup>
-                      <col className="w-auto"/>
-                      <col className="w-14 hidden md:table-column"/>
-                    </colgroup>
-                    <tbody className="divide-y divide-gray-200">
-                      {boardItem.posts.map((post) => {
+    <main className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="text-center space-y-2 mb-8">
+          <h1 className="text-2xl font-bold text-gray-900">커뮤니티</h1>
+          <p className="text-gray-500">다양한 주제로 자유롭게 소통해보세요</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {boardPostsArray.map((boardItem) => (
+            <div key={boardItem.id} className="group">
+              <div className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 h-full">
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <Link
+                      href={`/community/board/${encodeURIComponent(boardItem.name)}`}
+                      className="flex items-center gap-2 group-hover:text-orange-500 transition-colors"
+                    >
+                      {boardItem.icon && (
+                        <boardItem.icon className="w-5 h-5 text-orange-500" />
+                      )}
+                      <h2 className="text-lg font-bold text-gray-900 group-hover:text-orange-500 transition-colors">
+                        {boardItem.name}
+                      </h2>
+                    </Link>
+                    <Link
+                      href={`/community/board/${encodeURIComponent(boardItem.name)}`}
+                      className="text-sm text-gray-500 hover:text-orange-500 transition-colors"
+                    >
+                      더보기 →
+                    </Link>
+                  </div>
+
+                  <div className="space-y-3">
+                    {boardItem.posts.length === 0 ? (
+                      <div className="text-center py-6">
+                        <div className="text-gray-400 text-sm">게시글이 없습니다.</div>
+                      </div>
+                    ) : (
+                      boardItem.posts.map((post) => {
                         const commentCount = post.post_comments?.[0]?.count || 0;
                         const date = new Date(post.created_at);
                         const formattedDate = `${(date.getMonth() + 1).toString().padStart(2,'0')}-${date.getDate().toString().padStart(2,'0')}`;
+                        
                         return (
-                          <tr key={post.id} className="hover:bg-gray-50">
-                            <td className="py-1">
-                              <Link
-                                href={`/community/board/detail/${boardItem.id}/${post.id}`}
-                                className="text-sm text-gray-900 hover:text-orange-500 truncate block"
-                              >
-                                {post.title}
+                          <Link
+                            key={post.id}
+                            href={`/community/board/detail/${boardItem.id}/${post.id}`}
+                            className="block p-3 rounded-xl hover:bg-gray-50 transition-colors"
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1 min-w-0">
+                                <h3 className="text-sm font-medium text-gray-900 truncate">
+                                  {post.title}
+                                </h3>
                                 {commentCount > 0 && (
-                                  <span className="text-orange-500 ml-1">[{commentCount}]</span>
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-600 ml-2">
+                                    {commentCount}
+                                  </span>
                                 )}
-                              </Link>
-                            </td>
-                            <td className="py-1 text-[11px] text-gray-400 text-center border-l border-gray-200 hidden md:table-cell">{formattedDate}</td>
-                          </tr>
+                              </div>
+                              <div className="ml-3 flex-shrink-0">
+                                <span className="text-xs text-gray-400">
+                                  {formattedDate}
+                                </span>
+                              </div>
+                            </div>
+                          </Link>
                         );
-                      })}
-                    </tbody>
-                  </table>
-                )}
+                      })
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </main>
   );

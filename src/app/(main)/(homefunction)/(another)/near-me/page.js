@@ -115,27 +115,24 @@ export default function NearMeListPage() {
   const [didAutoClose, setDidAutoClose] = useState(false);
 
   // ─────────────────────────────────────────────────────
-  // (A) 사용자 위치 받아오기
+  // (A) 사용자 위치 받아오기 (IP 기반)
   // ─────────────────────────────────────────────────────
   useEffect(() => {
-    if (!navigator.geolocation) {
-      alert("이 브라우저는 위치 기반 서비스를 지원하지 않습니다.");
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
+    async function getLocationByIP() {
+      try {
+        const res = await fetch("https://ipapi.co/json/");
+        const data = await res.json();
+        const lat = parseFloat(data.latitude);
+        const lng = parseFloat(data.longitude);
         setUserLat(lat);
         setUserLng(lng);
-        // 지도 중심점도 사용자 위치
         setCenterLat(lat);
         setCenterLng(lng);
-      },
-      (err) => {
-        console.error("Geolocation 에러:", err);
+      } catch (err) {
+        console.error("IP 위치 정보 가져오기 실패:", err);
       }
-    );
+    }
+    getLocationByIP();
   }, []);
 
   // ─────────────────────────────────────────────────────
@@ -239,6 +236,12 @@ export default function NearMeListPage() {
     }
   }, [userLat, userLng, shops]);
 
+  useEffect(() => {
+    if (userLat && userLng && shops.length >= 0) {
+      setLocationLoaded(true);
+    }
+  }, [userLat, userLng, shops]);
+
   function filterShopsByDistance(lat, lng) {
     const MAX_DIST = 30;
     const results = shops.filter((shop) => {
@@ -248,14 +251,6 @@ export default function NearMeListPage() {
     });
     setFilteredShops(results);
     setLocationLoaded(true);
-
-    // 초회 로딩 시 한 번만 지도 닫기
-    if (!didAutoClose) {
-      setDidAutoClose(true);
-      setTimeout(() => {
-        setMapHidden(true);
-      }, 500);
-    }
   }
 
   // 지도 열고 닫기
@@ -337,79 +332,92 @@ async function handleSearchAddress() {
   // 렌더링
   // ─────────────────────────────────────────────────────
   return (
-    <div className="mt-5 max-w-7xl mx-auto p-4">
-      {locationLoaded ? (
-        <div className="mb-3">
-          <div className="flex items-center justify-center gap-2 mb-1">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-6 h-6 text-gray-600"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M3.55 11h6.4a1 1 0 00.94-.66l2.27-6.16a1 1 0 011.87 0l2.27 6.16a1 1 0 00.94.66h2.4c1.1 0 2 .9 2 2s-.9 2-2 2h-6.4a1 1 0 00-.94.66l-2.27 6.16a1 1 0 01-1.87 0l-2.27-6.16a1 1 0 00-.94-.66h-2.4c-1.1 0-2-.9-2-2s.9-2 2-2z"
+    <div className="min-h-screen bg-gray-50">
+      <div className="mx-auto max-w-7xl px-4 py-8">
+        {locationLoaded ? (
+          <div className="mb-8">
+            <div className="text-center space-y-2 mb-6">
+              <h1 className="text-2xl font-bold text-gray-900">내 주변 제휴사 찾기</h1>
+              <p className="text-gray-500">현재 위치를 기준으로 가까운 제휴사를 찾아드립니다</p>
+            </div>
+            
+            <div className="bg-white rounded-2xl shadow-sm p-6 max-w-3xl mx-auto">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <svg className="w-5 h-5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <div className="text-sm text-gray-500 mb-1">현재 위치</div>
+                  <div className="font-medium text-gray-900">{address || "정보 없음"}</div>
+                </div>
+                <button
+                  onClick={handleToggleMap}
+                  className="px-4 py-2 bg-white border border-gray-200 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  {mapHidden ? "지도 보기" : "지도 접기"}
+                </button>
+              </div>
+
+              <p className="text-sm text-gray-500 text-center">
+                내 주변 가까운 순으로 제휴사 리스트를 소개해 드릴게요!<br />
+                지도에서 직접 위치를 선택하실 수도 있습니다.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-pulse flex flex-col items-center">
+              <div className="w-12 h-12 bg-gray-200 rounded-full mb-4"></div>
+              <div className="text-gray-500">위치/데이터 로딩중...</div>
+            </div>
+          </div>
+        )}
+
+        {!mapHidden && (
+          <div className="mb-8">
+            <div ref={mapRef} className="w-full h-[300px] rounded-2xl overflow-hidden shadow-sm mb-4" />
+            <div className="flex items-center gap-2 max-w-2xl mx-auto">
+              <input
+                type="text"
+                placeholder="예) 서울 강남구 역삼동..."
+                onKeyDown={handleKeyDown}
+                className="flex-1 px-4 py-2.5 rounded-full bg-white border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                ref={searchInputRef}
               />
-            </svg>
-            <span className="font-medium text-base">
-              내 위치: {address || "정보 없음"}
-            </span>
+              <button
+                onClick={handleSearchAddress}
+                className="px-6 py-2.5 bg-orange-500 text-white rounded-full hover:bg-orange-600 transition-colors flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                검색
+              </button>
+            </div>
           </div>
-          <hr className="border-black w-[60%] mx-auto mb-2" />
-          <p className="text-sm text-gray-500 text-center">
-           내 주변 가까운 순으로 제휴사 리스트를 소개해 드릴게요 지역을 지도에서 직접 선택하실 수도 있어요!</p>
-          <div className="flex justify-center mt-2">
-            <button
-              onClick={handleToggleMap}
-              className="px-4 py-2 border text-sm rounded"
-            >
-              {mapHidden ? "지도 보기" : "지도 접기"}
-            </button>
+        )}
+
+        <div className="mt-12">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-gray-900">검색 결과</h2>
+            <div className="text-sm text-gray-500">{filteredShops.length}개의 제휴사</div>
           </div>
-        </div>
-      ) : (
-        <div className="text-sm text-gray-500 text-center mb-3">
-          위치/데이터 로딩중...
-        </div>
-      )}
 
-      {!mapHidden && (
-        <div className="mb-4">
-          <div ref={mapRef} className="w-full h-72 bg-gray-200 rounded mb-3" />
-          <div className="flex items-center gap-2 mb-4">
-            <input
-              type="text"
-              placeholder="예) 서울 강남구 역삼동..."
-              onKeyDown={handleKeyDown}
-              className="flex-1 border border-gray-300 rounded px-2 py-1"
-              ref={searchInputRef}
-            />
-            <button
-              onClick={handleSearchAddress}
-              className="px-3 py-2 bg-black text-white rounded text-sm"
-            >
-              검색
-            </button>
+          <div className="grid gap-6">
+            {filteredShops.map((shop) => (
+              <ShopCard
+                key={shop.id}
+                shop={shop}
+                userLat={centerLat}
+                userLng={centerLng}
+              />
+            ))}
           </div>
-        </div>
-      )}
-
-      <div className="mb-6 mt-20">
-        <h3 className="text-lg font-semibold mb-2">검색 결과</h3>
-
-        <div className="space-y-6">
-          {filteredShops.map((shop) => (
-            <ShopCard
-              key={shop.id}
-              shop={shop}
-              userLat={centerLat}
-              userLng={centerLng}
-            />
-          ))}
         </div>
       </div>
     </div>
@@ -421,16 +429,15 @@ async function handleSearchAddress() {
  * 모바일일 때는 화면 꽉 차게, 데스크톱(md) 이상이면 373×217
  */
 function ShopCard({ shop, userLat, userLng }) {
-
   const url = shop.thumbnail_url
-    ? process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL +'/'+shop.thumbnail_url
+    ? process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL + '/' + shop.thumbnail_url
     : "/placeholder.png";
 
   let dist = 99999;
   if (userLat && userLng && shop.lat && shop.lng) {
     dist = getDistanceFromLatLng(userLat, userLng, shop.lat, shop.lng);
   }
-  if (dist < 0.05) dist = 0; // 0.05km 이내면 0Km로 표시
+  if (dist < 0.05) dist = 0;
   const distanceStr = dist.toFixed(1) + "Km";
 
   const themeList = shop.partnershipsubmit_themes || [];
@@ -453,98 +460,68 @@ function ShopCard({ shop, userLat, userLng }) {
   return (
     <Link
       href={detailUrl}
-      className="
-        block
-        flex flex-col md:flex-row
-        items-stretch
-        p-3
-        rounded-lg
-        overflow-hidden
-        hover:bg-gray-200
-        transition-colors
-        mb-0
-        md:mb-4      "
+      className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300"
     >
-      {/* 
-        (1) 이미지 컨테이너: 모바일에서 w-full h-48 
-        md:에서 373×217
-      */}
-      <div className="relative w-full h-48 mb-3 md:mb-0 md:w-[373px] md:h-[217px] flex-shrink-0">
-        {/* fill 모드로 배치해서, 컨테이너 사이즈에 맞춰! */}
-        <Image
-          src={url}
-          alt={shop.company_name}
-          fill
-          className="object-cover rounded-xl"
-        />
-      </div>
+      <div className="flex flex-col md:flex-row">
+        {/* 이미지 영역 */}
+        <div className="relative w-full md:w-[373px] h-[300px] md:h-[250px] flex-shrink-0">
+          <Image
+            src={url}
+            alt={shop.company_name}
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        </div>
 
-      {/* (2) 오른쪽 텍스트 영역 */}
-      <div className="flex-1 px-4 py-2">
-        <h2 className="text-lg font-semibold mb-1">{shop.company_name}</h2>
-
-        {/* 주소 + 리뷰 + 거리 */}
-        <div className="flex items-center text-sm text-gray-600 mb-1 gap-3">
-          {/* 주소 */}
-          <div className="flex items-center gap-1">
-            <svg
-              className="w-4 h-4 text-gray-500"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 11c1.656 0
-                   3-1.344
-                   3-3s-1.344-3
-                   -3-3-3
-                   1.344-3
-                   3 1.344
-                   3 3
-                   3z"
-              />
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M19.5 9.5c0
-                   7.168-7.5
-                   11-7.5
-                   11s-7.5-3.832
-                   -7.5-11a7.5
-                   7.5 0
-                   1115
-                   0z"
-              />
-            </svg>
-            <span>{shop.address || "주소 정보 없음"}</span>
+        {/* 컨텐츠 영역 */}
+        <div className="flex-1 p-6">
+          <div className="flex items-start justify-between mb-3">
+            <h3 className="text-xl font-bold text-gray-900 group-hover:text-orange-500 transition-colors">
+              {shop.company_name}
+            </h3>
+            <div className="flex items-center px-3 py-1 rounded-full bg-orange-50 text-orange-600 text-sm font-medium">
+              {distanceStr}
+            </div>
           </div>
-          {/* 리뷰수 */}
-          <div className="text-gray-500">리뷰 {shop.comment ?? 0}</div>
-          {/* 거리 */}
-          <div className="text-red-500">{distanceStr}</div>
-        </div>
 
-        {/* 최저가 */}
-        <div className="text-sm text-red-600 font-semibold mb-1">
-          최저가: {lowestPrice ? formatPrice(lowestPrice) : "가격없음"}
-        </div>
+          <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
+            <div className="flex items-center gap-1.5">
+              <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span className="truncate">{shop.address || "주소 정보 없음"}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                  d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+              </svg>
+              <span>리뷰 {shop.comment ?? 0}</span>
+            </div>
+          </div>
 
-        {/* 인사말 */}
-        <p className="text-sm text-gray-800">{shop.greeting}</p>
+          <div className="text-sm font-medium text-orange-600 mb-4">
+            최저가: {lowestPrice ? formatPrice(lowestPrice) : "가격없음"}
+          </div>
 
-        {/* 테마 태그 */}
-        <div className="mt-2 flex flex-wrap gap-2">
-          {themeList.map((pt) => (
-            <span
-              key={pt.themes.id}
-              className="rounded-full border border-gray-300 px-2 py-1 text-xs text-gray-600"
-            >
-              #{pt.themes.name}
-            </span>
-          ))}
+          <p className="text-sm text-gray-600 line-clamp-2 mb-4">
+            {shop.greeting}
+          </p>
+
+          <div className="flex flex-wrap gap-1.5">
+            {themeList.map((pt) => (
+              <span
+                key={pt.themes.id}
+                className="px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600"
+              >
+                #{pt.themes.name}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
     </Link>

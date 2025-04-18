@@ -140,130 +140,175 @@ export default async function PostDetailPage({ params: ParamsPromise }) {
   }
 
   return (
-    <div className="max-w-6xl mx-auto py-8 px-4">
-      {/* 네비게이션 */}
-      <div className="mb-6">
-        <div className="text-sm text-gray-600 mb-6">
-          <Link href="/community" className="hover:text-orange-500">커뮤니티</Link>
-          <span className="mx-2">›</span>
-          <span className="text-orange-500 font-medium">{boardName}</span>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        {/* 네비게이션 */}
+        <div className="mb-8">
+          <nav className="flex items-center text-sm text-gray-600">
+            <Link href="/community" className="hover:text-orange-500 transition-colors">커뮤니티</Link>
+            <svg className="w-4 h-4 mx-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+            <Link href={`/community/board/${boardName}`} className="hover:text-orange-500 transition-colors">
+              {boardName}
+            </Link>
+            <svg className="w-4 h-4 mx-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+            <span className="text-orange-500 font-medium truncate max-w-[200px]">{postData.title}</span>
+          </nav>
         </div>
-      </div>
 
-      {/* 게시글 */}
-      <div className="border-t-3 border-orange-500 border-black">
-        <div className="border-t border-t-2 border-orange-500 py-3 px-4 border-b border-b-1 border-b-gray-300">
-          <h1 className="font-bold mb-2">{postData.title}</h1>
-          <div className="text-sm flex justify-between items-center">
-            <div>
-              <span className=''>{nickname}</span>
-              <span className="mx-2 text-gray-300">|</span>
-              <span>{dateStr}</span>
-            </div>
-            <div>
-              <span>조회 {finalViews}</span>
+        {/* 게시글 */}
+        <div className="bg-white rounded-2xl shadow-sm overflow-hidden mb-8">
+          <div className="p-6 border-b border-gray-100">
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">{postData.title}</h1>
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center gap-4 text-gray-600">
+                <div className="flex items-center gap-2">
+                  <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  <span>{nickname}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>{dateStr}</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-gray-500">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                <span>조회 {finalViews}</span>
+              </div>
             </div>
           </div>
+          <div
+            className="prose max-w-none prose-img:float-right prose-img:ml-4 prose-img:block prose-img:max-w-full prose-img:h-auto p-6"
+            dangerouslySetInnerHTML={{ __html: postData.content }}
+          />
         </div>
-        <div
-          className="prose max-w-none prose-img:float-right prose-img:ml-4 prose-img:block prose-img:max-w-full prose-img:h-auto px-4 py-8"
-          dangerouslySetInnerHTML={{ __html: postData.content }}
-        />
-      </div>
 
-      {/* 댓글 */}
-      {boardInfo.id !== 1 && (
-        <>
-          <div className="mt-10">
-            <h3 className="border-b-1 border-black border-gray-300 py-2">
-              <span>전체 댓글</span>
-              <span className="text-orange-500 ml-2">{commentCount}</span>
-            </h3>
-            {!commentList || commentList.length === 0 ? (
-              <div className="py-4 text-center text-gray-500">
-                등록된 댓글이 없습니다.
+        {/* 댓글 */}
+        {boardInfo.id !== 1 && (
+          <>
+            <div className="bg-white rounded-2xl shadow-sm overflow-hidden mb-8">
+              <div className="p-6 border-b border-gray-100">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-bold text-gray-900">댓글</h3>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-500">전체</span>
+                    <span className="text-sm font-medium text-orange-500">{commentCount}</span>
+                  </div>
+                </div>
               </div>
-            ) : (
-              <div>
-                {commentList.map((comment) => {
-                  const cNick = comment.profiles?.nickname || '익명';
-                  const cDateObj = new Date(comment.created_at);
-                  const cDateStr = `${(cDateObj.getMonth() + 1)
-                    .toString()
-                    .padStart(2, '0')}-${cDateObj
-                    .getDate()
-                    .toString()
-                    .padStart(2, '0')}`;
-                  return (
-                    <div key={comment.id} className="border-b border-b-1 border-gray-300 py-4">
-                      <div className="flex justify-between text-sm mb-2">
-                        <span>{cNick}</span>
-                        <span className="text-gray-500">{cDateStr}</span>
+              <div className="divide-y divide-gray-100">
+                {!commentList || commentList.length === 0 ? (
+                  <div className="p-6 text-center">
+                    <div className="text-gray-400 text-sm">등록된 댓글이 없습니다.</div>
+                  </div>
+                ) : (
+                  commentList.map((comment) => {
+                    const cNick = comment.profiles?.nickname || '익명';
+                    const cDateObj = new Date(comment.created_at);
+                    const cDateStr = `${(cDateObj.getMonth() + 1).toString().padStart(2, '0')}-${cDateObj
+                      .getDate()
+                      .toString()
+                      .padStart(2, '0')}`;
+                    return (
+                      <div key={comment.id} className="p-6">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-gray-900">{cNick}</span>
+                            <span className="text-xs text-gray-400">{cDateStr}</span>
+                          </div>
+                        </div>
+                        <p className="text-sm text-gray-600 whitespace-pre-wrap">{comment.content}</p>
                       </div>
-                      <p>{comment.content}</p>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                )}
               </div>
-            )}
-          </div>
-          <div className="mt-4">
+            </div>
             <CommentForm postId={postData.id} />
-          </div>
-        </>
-      )}
+          </>
+        )}
 
-      {/* 목록 */}
-      <div className="mt-10">
-        <table className="w-full border-t border-gray-200">
-          <thead>
-            <tr className="bg-gray-50">
-              <th className="py-1.5 w-16 text-center text-xs text-gray-500 border-b border-gray-200">번호</th>
-              <th className="py-1.5 text-left text-xs text-gray-500 border-b border-gray-200">제목</th>
-              <th className="py-1.5 w-24 text-center text-xs text-gray-500 border-b border-gray-200">글쓴이</th>
-              <th className="py-1.5 w-20 text-center text-xs text-gray-500 border-b border-gray-200">날짜</th>
-            </tr>
-          </thead>
-          <tbody>
-            {!boardPosts || boardPosts.length === 0 ? (
-              <tr>
-                <td colSpan="4" className="text-center py-4 text-sm text-gray-500">
-                  게시물이 없습니다.
-                </td>
-              </tr>
-            ) : (
-              boardPosts.map((bp, index) => {
-                const bNick = bp.profiles?.nickname || '익명';
-                const bDate = new Date(bp.created_at);
-                const bDateStr = `${(bDate.getMonth()+1).toString().padStart(2,'0')}-${bDate
-                  .getDate()
-                  .toString()
-                  .padStart(2,'0')}`;
-                return (
-                  <tr key={bp.id} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="py-1.5 text-center text-xs text-gray-600">{totalPosts - index}</td>
-                    <td className="py-1.5">
-                      <Link 
-                        href={`/community/board/detail/${boardId}/${bp.id}`}
-                        className="text-xs text-gray-900 hover:text-orange-500"
-                      >
-                        {bp.title}
-                      </Link>
+        {/* 목록 */}
+        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-gray-100">
+            <h3 className="text-lg font-bold text-gray-900">같은 게시판의 다른 글</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gray-50">
+                  <th className="py-4 w-16 text-center text-xs font-medium text-gray-500">번호</th>
+                  <th className="py-4 text-left text-xs font-medium text-gray-500">제목</th>
+                  <th className="py-4 w-24 text-center text-xs font-medium text-gray-500">글쓴이</th>
+                  <th className="py-4 w-20 text-center text-xs font-medium text-gray-500">날짜</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {!boardPosts || boardPosts.length === 0 ? (
+                  <tr>
+                    <td colSpan="4" className="text-center py-12">
+                      <div className="text-gray-400 text-sm">게시물이 없습니다.</div>
                     </td>
-                    <td className="py-1.5 text-center text-xs text-gray-600">{bNick}</td>
-                    <td className="py-1.5 text-center text-xs text-gray-500">{bDateStr}</td>
                   </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-        {/* 페이지네이션 */}
-        <div className="mt-10">
-          <div className="flex justify-center space-x-2">
-            <button className="px-3 py-1 text-xs text-gray-600 hover:text-orange-500">이전</button>
-            <button className="px-3 py-1 text-xs bg-orange-500 text-white rounded">1</button>
-            <button className="px-3 py-1 text-xs text-gray-600 hover:text-orange-500">다음</button>
+                ) : (
+                  boardPosts.map((bp, index) => {
+                    const bNick = bp.profiles?.nickname || '익명';
+                    const bDate = new Date(bp.created_at);
+                    const bDateStr = `${(bDate.getMonth() + 1).toString().padStart(2, '0')}-${bDate
+                      .getDate()
+                      .toString()
+                      .padStart(2, '0')}`;
+                    return (
+                      <tr key={bp.id} className="group hover:bg-gray-50 transition-colors">
+                        <td className="py-4 text-center">
+                          <div className="text-sm text-gray-600">{totalPosts - index}</div>
+                        </td>
+                        <td className="py-4">
+                          <Link
+                            href={`/community/board/detail/${boardId}/${bp.id}`}
+                            className="text-sm text-gray-900 group-hover:text-orange-500 transition-colors truncate block"
+                          >
+                            {bp.title}
+                          </Link>
+                        </td>
+                        <td className="py-4 text-center">
+                          <div className="text-sm text-gray-600">{bNick}</div>
+                        </td>
+                        <td className="py-4 text-center">
+                          <div className="text-sm text-gray-500">{bDateStr}</div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+          {/* 페이지네이션 */}
+          <div className="p-6 border-t border-gray-100">
+            <div className="flex justify-center gap-1">
+              <button className="px-4 py-2 text-sm text-gray-600 hover:text-orange-500 transition-colors">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <button className="px-4 py-2 text-sm bg-orange-500 text-white rounded-lg">1</button>
+              <button className="px-4 py-2 text-sm text-gray-600 hover:text-orange-500 transition-colors">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       </div>

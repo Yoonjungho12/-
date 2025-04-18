@@ -591,106 +591,109 @@ export default function NewListingPage() {
   // 11) 실제 렌더
   // ─────────────────────────────────────────────
   return (
-    <div className="max-w-4xl mx-auto p-4">
-
-      
-      {/* 내 신청서 목록(간단히 보여주고 싶으면 자유롭게 구현) */}
-   
-        <SubmitList 
-           mySubmits={mySubmits}
-           router={router}
-           handleEditClick={handleEditClick}
-         />
-
-      {/* 폼 시작 */}
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <SubmitForm
-          editId={editId}
-          isMaster={isMaster}
-          adType={adType}
-          setAdType={setAdType}
-          // 지역
-          regions={regions}
-          selectedRegionId={selectedRegionId}
-          setSelectedRegionId={setSelectedRegionId}
-          childRegions={childRegions}
-          selectedSubRegionId={selectedSubRegionId}
-          setSelectedSubRegionId={setSelectedSubRegionId}
-          themes={themes}
-          selectedThemeIds={selectedThemeIds}
-          setSelectedThemeIds={setSelectedThemeIds}
-          // 업체 정보
-          companyName={companyName}
-          setCompanyName={setCompanyName}
-          phoneNumber={phoneNumber}
-          setPhoneNumber={setPhoneNumber}
-          managerContact={managerContact}
-          setManagerContact={setManagerContact}
-          // 주차
-          parkingSelectVal={parkingSelectVal}
-          setParkingSelectVal={setParkingSelectVal}
-          parkingDirect={parkingDirect}
-          setParkingDirect={setParkingDirect}
-          // 연락
-          contactMethod={contactMethod}
-          setContactMethod={setContactMethod}
-          greeting={greeting}
-          setGreeting={setGreeting}
-          eventInfo={eventInfo}
-          setEventInfo={setEventInfo}
-          // 휴무일
-          holidaySelectVal={holidaySelectVal}
-          setHolidaySelectVal={setHolidaySelectVal}
-          holidayDirect={holidayDirect}
-          setHolidayDirect={setHolidayDirect}
-          // 영업시간
-          is24Hours={is24Hours}
-          setIs24Hours={setIs24Hours}
-          startTime={startTime}
-          setStartTime={setStartTime}
-          endTime={endTime}
-          setEndTime={setEndTime}
-          timeOptions={timeOptions}
-          // 주소
-          addressInput={addressInput}
-          setAddressInput={setAddressInput}
-          addressStreet={addressStreet}
-          setAddressStreet={setAddressStreet}
-          nearBuilding={nearBuilding}
-          setNearBuilding={setNearBuilding}
-          handleAddressSearch={handleAddressSearch}
-          handleKeyDown={handleKeyDown}
-          // 지도
-          mapRef={mapRef}
-          markerPosition={markerPosition}
-          // 프로그램/글
-          programInfo={programInfo}
-          setProgramInfo={setProgramInfo}
-          postTitle={postTitle}
-          setPostTitle={setPostTitle}
-        />
-
-        {/* 등록/수정 버튼 */}
-        <div className="flex justify-center">
-          <button
-            type="submit"
-            className="px-4 py-2 rounded bg-orange-500 text-white font-semibold hover:bg-orange-400"
-          >
-            {editId ? "수정하기" : "등록하기"}
-          </button>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">
+            제휴 신청
+          </h1>
+          <p className="text-gray-600">
+            업체 정보를 입력하고 제휴를 신청해주세요.
+          </p>
         </div>
-      </form>
 
-      {/* 승인 완료된 경우만 이미지 업로드 컴포넌트 표시 */}
-      {editId && editIsAdmitted && (
-        <ImageUpload
-          editId={editId}
-          editIsAdmitted={editIsAdmitted}
-          imageUploadSectionRef={imageUploadSectionRef}
-          setThumbnailImage={setThumbnailImage}
-          setMultiImages={setMultiImages}
-        />
-      )}
+        <div className="grid gap-8">
+          {/* 내 신청서 목록 */}
+          <SubmitList 
+            mySubmits={mySubmits}
+            router={router}
+            handleEditClick={handleEditClick}
+          />
+
+          {/* 폼 시작 */}
+          <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-lg p-6">
+            <SubmitForm
+              editId={editId}
+              isMaster={isMaster}
+              adType={adType}
+              setAdType={setAdType}
+              regions={regions}
+              selectedRegionId={selectedRegionId}
+              setSelectedRegionId={setSelectedRegionId}
+              childRegions={childRegions}
+              selectedSubRegionId={selectedSubRegionId}
+              setSelectedSubRegionId={setSelectedSubRegionId}
+              themes={themes}
+              selectedThemeIds={selectedThemeIds}
+              setSelectedThemeIds={setSelectedThemeIds}
+              companyName={companyName}
+              setCompanyName={setCompanyName}
+              phoneNumber={phoneNumber}
+              setPhoneNumber={setPhoneNumber}
+              managerContact={managerContact}
+              setManagerContact={setManagerContact}
+              holidaySelectVal={holidaySelectVal}
+              setHolidaySelectVal={setHolidaySelectVal}
+              holidayDirect={holidayDirect}
+              setHolidayDirect={setHolidayDirect}
+              parkingSelectVal={parkingSelectVal}
+              setParkingSelectVal={setParkingSelectVal}
+              parkingDirect={parkingDirect}
+              setParkingDirect={setParkingDirect}
+              contactMethod={contactMethod}
+              setContactMethod={setContactMethod}
+              greeting={greeting}
+              setGreeting={setGreeting}
+              eventInfo={eventInfo}
+              setEventInfo={setEventInfo}
+              is24Hours={is24Hours}
+              setIs24Hours={setIs24Hours}
+              startTime={startTime}
+              setStartTime={setStartTime}
+              endTime={endTime}
+              setEndTime={setEndTime}
+              timeOptions={timeOptions}
+              addressInput={addressInput}
+              setAddressInput={setAddressInput}
+              addressStreet={addressStreet}
+              setAddressStreet={setAddressStreet}
+              nearBuilding={nearBuilding}
+              setNearBuilding={setNearBuilding}
+              programInfo={programInfo}
+              setProgramInfo={setProgramInfo}
+              postTitle={postTitle}
+              setPostTitle={setPostTitle}
+              mapRef={mapRef}
+              handleAddressSearch={handleAddressSearch}
+              handleKeyDown={handleKeyDown}
+              markerPosition={markerPosition}
+            />
+
+            {/* 등록/수정 버튼 */}
+            <div className="flex justify-center mt-8">
+              <button
+                type="submit"
+                className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors duration-200 font-medium text-lg shadow-md hover:shadow-lg"
+              >
+                {editId ? "수정하기" : "등록하기"}
+              </button>
+            </div>
+          </form>
+
+          {/* 승인 완료된 경우만 이미지 업로드 컴포넌트 표시 */}
+          {editId && editIsAdmitted && (
+            <div className="bg-white rounded-2xl shadow-lg p-6">
+              <ImageUpload
+                editId={editId}
+                editIsAdmitted={editIsAdmitted}
+                imageUploadSectionRef={imageUploadSectionRef}
+                setThumbnailImage={setThumbnailImage}
+                setMultiImages={setMultiImages}
+              />
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

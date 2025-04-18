@@ -1,0 +1,276 @@
+// 모바일 푸터
+.mobileFooter {
+  display: block;
+  padding: 2rem 0;
+  background: #f8fafc;
+  text-align: left;
+  font-size: 0.625rem;
+  color: #64748b;
+  position: relative;
+  border-top: 1px solid #e2e8f0;
+
+  @media (min-width: 768px) {
+    display: none;
+  }
+}
+
+.mobileContent {
+  padding: 0 1.5rem;
+}
+
+.mobileLinks {
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+
+  button {
+    color: #4a5568;
+    text-decoration: none;
+    font-size: 0.9375rem;
+    
+    &:hover {
+      color: #1a202c;
+    }
+  }
+}
+
+.mobileInfo {
+  color: #64748b;
+  line-height: 1.4;
+  font-size: 0.625rem;
+
+  p {
+    margin-bottom: 0.25rem;
+  }
+}
+
+.brand {
+  font-weight: 700;
+  font-size: 1.125rem;
+  margin-bottom: 1.5rem;
+  color: #1a202c;
+}
+
+.copyright {
+  color: #94a3b8;
+  font-size: 0.625rem;
+  margin-top: 0.75rem;
+}
+
+// 데스크톱 푸터
+.desktopFooter {
+  display: none;
+  background: #f8fafc;
+  color: #64748b;
+  padding: 2rem 0;
+  position: relative;
+  border-top: 1px solid #e2e8f0;
+  font-size: 0.75rem;
+
+  @media (min-width: 768px) {
+    display: block;
+  }
+}
+
+.desktopContent {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+.companyInfo {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 3rem;
+  align-items: start;
+  position: relative;
+  font-size: 0.75rem;
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 33%;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: #e2e8f0;
+  }
+}
+
+.leftSection {
+  p {
+    color: #64748b;
+    line-height: 1.4;
+    font-size: 0.75rem;
+    margin-bottom: 0.25rem;
+  }
+}
+
+.rightSection {
+  .legalNotice {
+    color: #94a3b8;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    
+    p {
+      margin-bottom: 0.25rem;
+      position: relative;
+      padding-left: 0.75rem;
+      font-size: 0.75rem;
+      
+      &::before {
+        content: "※";
+        position: absolute;
+        left: 0;
+        font-size: 0.75rem;
+      }
+    }
+  }
+}
+
+.section {
+  h3 {
+    color: #1a202c;
+    font-weight: 600;
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    
+    li {
+      margin-bottom: 0.75rem;
+      
+      a {
+        color: #4a5568;
+        text-decoration: none;
+        font-size: 0.9375rem;
+        transition: color 0.2s;
+        
+        &:hover {
+          color: #1a202c;
+        }
+      }
+    }
+  }
+}
+
+.newsletter {
+  h3 {
+    color: #1a202c;
+    font-weight: 600;
+    font-size: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  p {
+    color: #4a5568;
+    font-size: 0.9375rem;
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+  }
+}
+
+.emailInput {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  margin-bottom: 1rem;
+  font-size: 0.9375rem;
+  color: #4a5568;
+  
+  &:focus {
+    outline: none;
+    border-color: #4299e1;
+    box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+  }
+}
+
+.subscribeButton {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: #4299e1;
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  
+  &:hover {
+    background: #3182ce;
+  }
+}
+
+.bottomSection {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+}
+
+.buttons {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.inquiryButton {
+  font-size: 0.875rem;
+  color: #1a202c;
+  font-weight: 500;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.partnershipButton {
+  padding: 0.625rem 1.5rem;
+  border-radius: 2rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  background: white;
+  color: #ff7e5f;
+  border: 1px solid #ff7e5f;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.legalLinks {
+  display: flex;
+  gap: 2rem;
+  
+  a {
+    color: #718096;
+    font-size: 0.875rem;
+    text-decoration: none;
+    
+    &:hover {
+      color: #4a5568;
+    }
+  }
+}
+
+.socialLinks {
+  display: flex;
+  gap: 1.5rem;
+  
+  a {
+    color: #718096;
+    
+    &:hover {
+      color: #4a5568;
+    }
+  }
+} 

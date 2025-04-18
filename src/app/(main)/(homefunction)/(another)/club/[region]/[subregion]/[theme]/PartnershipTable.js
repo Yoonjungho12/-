@@ -1,7 +1,6 @@
-import React from "react";
 import { supabase } from "@/lib/supabaseE";
+import PartnershipTableClient from "./PartnershipTable.client";
 import Link from "next/link";
-
 /** (1) 헬퍼 함수들 */
 function createSlug(text) {
   if (typeof text !== "string" || text.trim() === "") return "no-slug";
@@ -44,12 +43,12 @@ async function getThemeFilterId(themeName) {
   }
   // 클럽 → 27, 나이트클럽 → 28
   // themes 테이블에서 name=themeName으로 가져올 수도 있지만,
-  // 여기서는 “직접 매핑” 또는 DB에서 조회해서 만든 배열을 리턴.
+  // 여기서는 "직접 매핑" 또는 DB에서 조회해서 만든 배열을 리턴.
   if (themeName === "클럽") return [27];
   if (themeName === "나이트클럽") return [28];
 
   // 혹시 테이블에 추가 확장성 고려한다면, 
-  // “DB 조회” 해서 themeId를 찾고 배열 리턴도 가능.
+  // "DB 조회" 해서 themeId를 찾고 배열 리턴도 가능.
   // 여기선 간단히 반환
   return [];
 }
@@ -242,162 +241,5 @@ export default async function PartnershipTable({
   // (E) 정렬 링크
   const baseUrl = `/club/${regionSlug}/${subregionSlug}/${themeName}`;
 
-  return (
-    <div className="w-full" style={{ marginTop: "1rem" }}>
-      {/* 정렬 링크: 기본, 가격 낮은순, 조회수 높은순 */}
-      <div
-        style={{
-          marginBottom: "1rem",
-          display: "flex",
-          gap: "16px",
-          fontSize: "14px",
-        }}
-      >
-        {/* 기본 */}
-        <Link
-          href={baseUrl}
-          style={{
-            color: !sortParam ? "#000" : "#666",
-            fontWeight: !sortParam ? "bold" : "normal",
-          }}
-        >
-          기본
-        </Link>
-        <span style={{ color: "#ccc" }}>|</span>
-
-        {/* 가격 낮은 순 */}
-        <Link
-          href={`${baseUrl}?sort=priceAsc`}
-          style={{
-            color: sortParam === "priceAsc" ? "#000" : "#666",
-            fontWeight: sortParam === "priceAsc" ? "bold" : "normal",
-          }}
-        >
-          가격 낮은순
-        </Link>
-
-        <span style={{ color: "#ccc" }}>|</span>
-
-        {/* 조회수 높은 순 */}
-        <Link
-          href={`${baseUrl}?sort=viewsDesc`}
-          style={{
-            color: sortParam === "viewsDesc" ? "#000" : "#666",
-            fontWeight: sortParam === "viewsDesc" ? "bold" : "normal",
-          }}
-        >
-          조회수 높은순
-        </Link>
-      </div>
-
-      {/* 테이블 */}
-      <table style={tableStyle} className="text-sm PartnershipTable">
-        <thead>
-          <tr>
-            <th style={thStyle} className="desktop-only">
-              제목
-            </th>
-            <th style={thStyle} className="desktop-only">
-              최저가
-            </th>
-            <th style={thStyle} className="desktop-only">
-              조회수
-            </th>
-            <th style={thStyle} className="desktop-only">
-              리뷰수
-            </th>
-          </tr>
-        </thead>
-
-        <tbody>
-          {posts.map((item) => {
-            const isVIP = item.ad_type === "VIP" || item.ad_type === "VIP+";
-            const rowStyle = isVIP ? vipTrStyle : baseTrStyle;
-
-            // 최저가 계산
-            const priceNum = getLowestPrice(item);
-            const displayPrice =
-              priceNum > 0 ? formatPrice(priceNum) : "가격 없음";
-
-            // 모바일 info
-            const mobileInfo = `조회수 ${Number(
-              item.views || 0
-            ).toLocaleString()} / 리뷰 ${item.comment || 0} / 최저가 ${displayPrice}`;
-
-            // 슬러그
-            const slug = createSlug(item.company_name);
-
-            return (
-              <tr key={item.id} style={rowStyle}>
-                {/* 제목 (모바일은 숨기고 info로) */}
-                <td style={titleCellStyle}>
-                  {isVIP ? (
-                    <span style={vipBadgeStyle} className="badge-desktop">
-                      VIP
-                    </span>
-                  ) : (
-                    <span style={normalBadgeStyle} className="badge-desktop">
-                      일반
-                    </span>
-                  )}
-
-                  <Link
-                    href={`/board/details/${item.id}-${slug}`}
-                    style={{
-                      display: "inline-block",
-                      color:
-                        isVIP && item.ad_type === "VIP+" ? "#0066cc" : "#333",
-                      maxWidth: "80%",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                      verticalAlign: "middle",
-                    }}
-                  >
-                    {item.post_title}
-                  </Link>
-
-                  <div className="mobile-info" style={mobileInfoStyle}>
-                    {mobileInfo}
-                  </div>
-                </td>
-
-                {/* 최저가 */}
-                <td style={rightCellStyle} className="desktop-only">
-                  {displayPrice}
-                </td>
-                {/* 조회수 */}
-                <td style={rightCellStyle} className="desktop-only">
-                  {Number(item.views || 0).toLocaleString()}
-                </td>
-                {/* 리뷰수 */}
-                <td style={rightCellStyle} className="desktop-only">
-                  {item.comment || 0}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-
-      {/* CSS */}
-      <style>{`
-        @keyframes textBlink {
-          0%, 100% { color: #fff; }
-          50% { color: #c23e2d; }
-        }
-        @media (max-width: 640px) {
-          .desktop-only {
-            display: none !important;
-          }
-          .badge-desktop {
-            display: none !important;
-          }
-          .mobile-info {
-            display: block !important; 
-          }
-        }
-      `}</style>
-    </div>
-  );
+  return <PartnershipTableClient posts={posts} baseUrl={baseUrl} sortParam={sortParam} />;
 }

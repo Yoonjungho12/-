@@ -273,72 +273,135 @@ export default function MyCommentsPage() {
   // (8) 최종 렌더링
   // ─────────────────────────────────────────
   return (
-    <div className="max-w-[600px] mx-auto p-4 font-sans">
-      {/* (A) 제목 */}
-      <h1 className="text-xl font-bold mb-4">내 댓글</h1>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50">
+      <div className="max-w-[600px] mx-auto p-4 md:p-8">
+        {/* (A) 제목 */}
+        <h1 className="text-3xl font-bold mb-8 text-gray-900">내 댓글</h1>
 
-     
-     
-
-      {/* (C) 탭 */}
-      <div className="flex items-center text-sm text-gray-600 border-b border-gray-200">
-        <TabButton
-          label="전체"
-          active={currentTab === "all"}
-          onClick={() => setCurrentTab("all")}
-        />
-        <TabButton
-          label="게시글"
-          active={currentTab === "board"}
-          onClick={() => setCurrentTab("board")}
-        />
-        <TabButton
-          label="커뮤니티"
-          active={currentTab === "community"}
-          onClick={() => setCurrentTab("community")}
-        />
-      </div>
-
-      {/* (D) 댓글 목록 */}
-      <div className="mt-4">
-        {filtered.length === 0 ? (
-          <div className="mt-4 text-gray-500 text-sm">댓글 목록이 없습니다.</div>
-        ) : (
-          filtered.map((item) => (
-            <div
-              key={`${item.source}-${item.id}`}
-              className="flex justify-between items-center bg-gray-100 rounded p-3 mb-2 cursor-pointer"
+        {/* (B) 검색창 */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-lg mb-6">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="업체명, 커뮤니티 글 제목, 댓글 내용 검색"
+              className="w-full px-4 py-3 bg-neutral-50/80 border border-neutral-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <svg
+              className="w-5 h-5 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
-              {/* 왼쪽: 업체명/제목 + 내용 */}
-              <div className="flex-1" onClick={() => handleItemClick(item)}>
-                <div className="text-base font-bold mb-1">{item.mainName}</div>
-                {/* 승인 여부 표시 */}
-                {item.source === "board" ? (
-                  item.isAdmitted ? (
-                    <div className="text-sm text-gray-600">{item.content}</div>
-                  ) : (
-                    <div className="text-sm text-gray-400 italic">승인 대기중</div>
-                  )
-                ) : (
-                  <div className="text-sm text-gray-600">{item.content}</div>
-                )}
-              </div>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+          </div>
+        </div>
 
-              {/* 작성 시각 */}
-              <div className="text-xs text-gray-400 ml-3 whitespace-nowrap">
-                {timeAgo(item.created_at)}
-              </div>
+        {/* (C) 탭 */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-lg mb-6">
+          <div className="flex items-center text-sm text-gray-600">
+            <TabButton
+              label="전체"
+              active={currentTab === "all"}
+              onClick={() => setCurrentTab("all")}
+            />
+            <TabButton
+              label="게시글"
+              active={currentTab === "board"}
+              onClick={() => setCurrentTab("board")}
+            />
+            <TabButton
+              label="커뮤니티"
+              active={currentTab === "community"}
+              onClick={() => setCurrentTab("community")}
+            />
+          </div>
+        </div>
 
-              {/* 삭제 버튼 */}
-              <button
-                className="ml-4 text-red-500 text-sm border-none bg-none"
-                onClick={() => handleDelete(item.id, item.source)}
+        {/* (D) 댓글 목록 */}
+        <div className="space-y-4">
+          {filtered.length === 0 ? (
+            <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-lg text-center">
+              <svg
+                className="w-16 h-16 text-gray-400 mx-auto mb-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
               >
-                삭제
-              </button>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <p className="text-gray-500 text-lg">댓글 목록이 없습니다.</p>
             </div>
-          ))
-        )}
+          ) : (
+            filtered.map((item) => (
+              <div
+                key={`${item.source}-${item.id}`}
+                className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-lg p-6 cursor-pointer hover:shadow-xl transition-all group"
+                onClick={() => handleItemClick(item)}
+              >
+                {/* 왼쪽: 업체명/제목 + 내용 */}
+                <div className="space-y-3">
+                  <div className="flex justify-between items-start">
+                    <div className="space-y-1">
+                      <div className="text-xl font-bold text-gray-900 group-hover:text-orange-500 transition-colors">
+                        {item.mainName}
+                      </div>
+                      {/* 승인 여부 표시 */}
+                      {item.source === "board" ? (
+                        item.isAdmitted ? (
+                          <div className="text-sm text-gray-600">{item.content}</div>
+                        ) : (
+                          <div className="text-sm text-gray-400 italic">승인 대기중</div>
+                        )
+                      ) : (
+                        <div className="text-sm text-gray-600">{item.content}</div>
+                      )}
+                    </div>
+                    <button
+                      className="text-red-500 text-sm px-4 py-2 rounded-xl hover:bg-red-50 transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(item.id, item.source);
+                      }}
+                    >
+                      삭제
+                    </button>
+                  </div>
+
+                  {/* 작성 시각 */}
+                  <div className="flex items-center text-sm text-gray-400">
+                    <svg
+                      className="w-5 h-5 mr-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                    {timeAgo(item.created_at)}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </div>
     </div>
   );
@@ -347,13 +410,15 @@ export default function MyCommentsPage() {
 // 탭 버튼 컴포넌트
 function TabButton({ label, active, onClick }) {
   return (
-    <span
-      className={`mr-4 cursor-pointer pb-2 ${
-        active ? "font-bold border-b-2 border-orange-400" : ""
+    <button
+      className={`mr-4 px-4 py-2 rounded-xl transition-colors ${
+        active
+          ? "bg-orange-500 text-white"
+          : "text-gray-600 hover:bg-neutral-50/80"
       }`}
       onClick={onClick}
     >
       {label}
-    </span>
+    </button>
   );
 }

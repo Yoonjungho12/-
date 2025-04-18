@@ -44,6 +44,33 @@ function rewriteSpecialProvince(original) {
 
 export default function MainoneClient({ initialRegion, initialData }) {
   const regionCache = useRef({});
+  const sectionRef = useRef(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  // Intersection Observer 설정
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+        }
+      },
+      {
+        threshold: 0.1
+      }
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => {
+      if (sectionRef.current) {
+        observer.unobserve(sectionRef.current);
+      }
+    };
+  }, []);
+
   // 1) 지역 목록
   const regionTabs = [
     "서울", "인천", "대전", "세종", "광주", "대구", "울산", "부산",
@@ -108,9 +135,6 @@ export default function MainoneClient({ initialRegion, initialData }) {
     setShopList(sliced);
   }
 
-  // 6) 로딩 중이면 스켈레톤 렌더
-  // Removed the entire loading block
-
   // 7) 화살표 클릭 시 스크롤 이동
   function scrollLeft() {
     if (ulRef.current) {
@@ -129,15 +153,18 @@ export default function MainoneClient({ initialRegion, initialData }) {
     }
   }
 
-  // 8) 실제 렌더
   return (
-    <div className="w-full bg-white">
+    <div className="w-full bg-white" ref={sectionRef}>
       {/* 상단 타이틀 */}
-      <div className="w-full px-4 pt-8">
-        <h2 className="text-center text-xl md:text-2xl font-bold">
-          
-여기닷 제휴파트너 실시간 인기순위
-
+      <div className={`
+        w-full px-4 pt-8
+        transform
+        transition-all
+        duration-1000
+        ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}
+      `}>
+        <h2 className="text-center text-1xl md:text-3xl font-bold text-gray-800  bg-clip-text">
+          여기닷 제휴파트너 실시간 인기순위
         </h2>
         <p className="mt-2 text-center text-gray-500">
           실시간 많은 회원들이 보고 있어요!
@@ -145,7 +172,14 @@ export default function MainoneClient({ initialRegion, initialData }) {
       </div>
 
       {/* ▼▼ 가로 스크롤 탭 ▼▼ */}
-      <div className="mt-6 max-w-7xl mx-auto px-4 ">
+      <div className={`
+        mt-6 max-w-7xl mx-auto px-4
+        transform
+        transition-all
+        duration-1000
+        delay-300
+        ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}
+      `}>
         <div className="relative p-2">
           {/* 왼쪽 화살표 */}
           <button
@@ -154,9 +188,9 @@ export default function MainoneClient({ initialRegion, initialData }) {
               absolute top-1/2 left-0 z-10
               -translate-y-1/2
               w-6 h-6 md:w-9 md:h-9
-              rounded-full border border-gray-300 bg-white text-gray-700
+              rounded-full border-none bg-white/80 backdrop-blur-sm text-gray-700 shadow-lg
               flex items-center justify-center
-              hover:bg-orange-400 hover:border-transparent hover:text-white
+              hover:bg-orange-400 hover:text-white transition-all duration-300
             "
             aria-label="이전 지역"
           >
@@ -183,6 +217,7 @@ export default function MainoneClient({ initialRegion, initialData }) {
               list-none
               p-0
               m-0
+              gap-2
             "
           >
             {regionTabs.map((region, idx) => {
@@ -191,11 +226,13 @@ export default function MainoneClient({ initialRegion, initialData }) {
                 <li key={idx} className="flex-none">
                   <button
                     onClick={() => handleClickRegion(region)}
-                    className={`shadow-sm ${
-  isSelected
-    ? "px-4 py-2 bg-gradient-to-r from-red-400 to-orange-400 text-white md:w-40 text-sm md:text-base"
-    : "border-gray-200 px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 md:w-40 text-sm md:text-base"
-}`}
+                    className={`
+                      transition-all duration-300 ease-out rounded-full
+                      ${isSelected
+                        ? "px-6 py-2.5 bg-gradient-to-r from-red-400 to-orange-400 text-white shadow-lg md:text-base font-medium hover:shadow-xl transform hover:scale-105"
+                        : "px-6 py-2.5 bg-gray-50 text-gray-600 hover:bg-gray-100 md:text-base font-medium hover:shadow-md"
+                      }
+                    `}
                     aria-label={`${region} 지역 선택`}
                   >
                     {region}
@@ -212,9 +249,9 @@ export default function MainoneClient({ initialRegion, initialData }) {
               absolute top-1/2 right-0 z-10
               -translate-y-1/2
               w-6 h-6 md:w-9 md:h-9
-              rounded-full border border-gray-300 bg-white text-gray-700
+              rounded-full border-none bg-white/80 backdrop-blur-sm text-gray-700 shadow-lg
               flex items-center justify-center
-              hover:bg-orange-400 hover:border-transparent hover:text-white
+              hover:bg-orange-400 hover:text-white transition-all duration-300
             "
             aria-label="다음 지역"
           >
@@ -232,21 +269,21 @@ export default function MainoneClient({ initialRegion, initialData }) {
       </div>
 
       {/* 모바일/데스크톱 카드 */}
-      <div className="mt-6 mx-auto max-w-7xl pb-8 ">
+      <div className="mt-8 mx-auto max-w-7xl pb-12">
         {/* (모바일) 슬라이드 */}
-        <div className="block sm:hidden px-4 ">
+        <div className="block sm:hidden px-4">
           <div
             className="
               flex
               overflow-x-auto
-              gap-8
+              gap-6
               snap-x snap-mandatory
               hide-scrollbar
-              
+              pb-4
             "
             style={{ scrollBehavior: "smooth" }}
           >
-            {shopList.map((item) => {
+            {shopList.map((item, index) => {
               // ▼▼ 최저가 계산 ▼▼
               let lowestPrice = null;
               if (item.sections?.length) {
@@ -268,67 +305,64 @@ export default function MainoneClient({ initialRegion, initialData }) {
               const imageUrl =
                 process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL +'/'+
                 item.thumbnail_url;
-              console.log('Generated Image URL:', imageUrl);
-              console.log('Storage URL:', process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL);
-              console.log('Thumbnail URL:', item.thumbnail_url);
+             
+            
               const detailUrl = `/board/details/${item.id}`;
 
               return (
                 <Link
                   key={item.id}
                   href={detailUrl}
-                  className="
+                  className={`
+                    group
                     shrink-0
                     w-[270px]
                     snap-start
-                    rounded-xl
-                    border border-gray-200
+                    rounded-2xl
                     bg-white
-                    shadow-xl
-                    focus-within:ring-2 focus-within:ring-blue-500
-                  "
+                    shadow-lg
+                    hover:shadow-xl
+                    transition-all
+                    duration-700
+                    transform
+                    ${isVisible 
+                      ? 'opacity-100 translate-y-0' 
+                      : 'opacity-0 translate-y-10'
+                    }
+                  `}
+                  style={{
+                    transitionDelay: `${index * 100}ms`
+                  }}
                 >
-                  {/* 
-                    (이미지) 
-                    rounded-xl + overflow-hidden으로 둥글게 자름
-                  */}
-                  <div className="w-[240px] h-[130px] mx-auto mt-3
-                   overflow-hidden rounded-xl flex">
+                  <div className="relative w-full h-[160px] overflow-hidden">
                     <Image
                       src={imageUrl}
                       alt={`${item.company_name || item.post_title} 썸네일`}
-
-                      width={240}
-                      height={130}
-                      style={{ objectFit: "cover", objectPosition: "center",  }}
-                      quality={30}
+                      fill
+                      className="object-cover transition-transform duration-300 group-hover:scale-110"
+                      quality={50}
                       priority
-                      sizes="240px"
+                      sizes="270px"
                     />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   </div>
 
-                  <div className="p-4 w-[300px] box-border">
-                    <h3 className="mb-1 text-base font-semibold text-gray-900">
+                  <div className="p-5">
+                    <h3 className="text-lg font-bold text-gray-800 group-hover:text-orange-500 transition-colors duration-300">
                       {item.company_name || item.post_title}
                     </h3>
-                    <p className="text-sm text-gray-600">{item.address}</p>
-                    <p className="mt-0.5 text-xs text-gray-500">
-                      {item.comment
-                        ? "리뷰 " +
-                          (typeof item.comment === "string"
-                            ? item.comment.slice(0, 30)
-                            : JSON.stringify(item.comment).slice(0, 30))
-                        : "자세한 정보 보기..."}
-                    </p>
-
-                    {/* 
-                      (최저가 영역) 
-                      lowestPrice 변수를 출력 
-                    */}
-                    <div className="mt-2 text-sm font-semibold">
-                      {lowestPrice !== null
-                        ? formatPrice(lowestPrice)
-                        : "가격 정보 없음"}
+                    <p className="mt-2 text-sm text-gray-600">{item.address}</p>
+                    <div className="mt-3 flex items-center text-sm text-gray-500">
+                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                      </svg>
+                      <span>리뷰 {item.comment || 0}</span>
+                    </div>
+                    <div className="mt-4 flex justify-between items-center">
+                      <div className="text-orange-500 font-bold">
+                        {lowestPrice !== null ? formatPrice(lowestPrice) : "가격 정보 없음"}
+                      </div>
+                      <div className="text-xs text-gray-400">자세히 보기 →</div>
                     </div>
                   </div>
                 </Link>
@@ -338,10 +372,10 @@ export default function MainoneClient({ initialRegion, initialData }) {
         </div>
 
         {/* (데스크톱) 그리드 */}
-        <div className="hidden sm:grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="hidden sm:grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 px-4">
           {isLoading
             ? Array.from({ length: 8 }).map((_, i) => <ShopCardSkeleton key={i} />)
-            : shopList.map((item) => {
+            : shopList.map((item, index) => {
                 // ▼▼ 최저가 계산 ▼▼
                 let lowestPrice = null;
                 if (item.sections?.length) {
@@ -363,61 +397,61 @@ export default function MainoneClient({ initialRegion, initialData }) {
                const imageUrl =
                     process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL +'/'+
                     item.thumbnail_url;
-                console.log('Generated Image URL:', imageUrl);
-                console.log('Storage URL:', process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL);
-                console.log('Thumbnail URL:', item.thumbnail_url);
+               
+                
                 const detailUrl = `/board/details/${item.id}`;
 
                 return (
                   <Link
                     key={item.id}
                     href={detailUrl}
-                    className="
+                    className={`
+                      group
                       block
-                      overflow-hidden
-                      rounded-xl
-                      border border-gray-200
+                      rounded-2xl
                       bg-white
-                      shadow-xl
-                      focus-within:ring-2 focus-within:ring-blue-500
-                       w-[290px]
-                    "
+                      shadow-lg
+                      hover:shadow-xl
+                      transition-all
+                      duration-700
+                      transform
+                      ${isVisible 
+                        ? 'opacity-100 translate-y-0' 
+                        : 'opacity-0 translate-y-10'
+                      }
+                    `}
+                    style={{
+                      transitionDelay: `${index * 100}ms`
+                    }}
                   >
-                    {/* 
-                      (이미지) 
-                      overflow-hidden + rounded-xl 
-                    */}
-                    <div className="h-[153px] w-[263px] overflow-hidden mx-auto mt-3 rounded-xl flex">
+                    <div className="relative w-full h-[200px] overflow-hidden">
                       <Image
                         src={imageUrl}
                         alt={`${item.company_name || item.post_title} 썸네일`}
-                        width={263}
-                        height={153}
-                         style={{ objectFit: "cover", objectPosition: "center" }}
-                        quality={30}
+                        fill
+                        className="object-cover transition-transform duration-300 group-hover:scale-110"
+                        quality={50}
                         priority
                       />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     </div>
 
-                    <div className="p-4">
-                      <h3 className="mb-1 text-base font-semibold text-gray-900">
+                    <div className="p-5">
+                      <h3 className="text-lg font-bold text-gray-800 group-hover:text-orange-500 transition-colors duration-300">
                         {item.company_name || item.post_title}
                       </h3>
-                      
-                      <p className="mt-0.5 text-xs text-gray-500">
-                        {item.comment
-                          ? typeof item.comment === "string"
-                            ? item.comment.slice(0, 30)
-                            : JSON.stringify(item.comment).slice(0, 30)
-                          : "자세한 정보 보기..."
-                        }
-                      </p>
-
-                      {/* (최저가 영역) */}
-                      <div className="mt-2 text-sm font-semibold">
-                        {lowestPrice !== null
-                          ? formatPrice(lowestPrice)
-                          : "가격 정보 없음"}
+                      <p className="mt-2 text-sm text-gray-600">{item.address}</p>
+                      <div className="mt-3 flex items-center text-sm text-gray-500">
+                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        </svg>
+                        <span>리뷰 {item.comment || 0}</span>
+                      </div>
+                      <div className="mt-4 flex justify-between items-center">
+                        <div className="text-orange-500 font-bold">
+                          {lowestPrice !== null ? formatPrice(lowestPrice) : "가격 정보 없음"}
+                        </div>
+                        <div className="text-xs text-gray-400">자세히 보기 →</div>
                       </div>
                     </div>
                   </Link>
@@ -425,14 +459,36 @@ export default function MainoneClient({ initialRegion, initialData }) {
               })}
         </div>
       </div>
-      <div className="flex justify-center"> 
 
-          <Link
-        href={"/today/전체/전체/전체"}
-        className="mt-15 rounded border-[0.5px] border-gray-500 px-5 py-2 text-gray-500"
-      >
-        더보기 +
-      </Link>
+      {/* 더보기 버튼 */}
+      <div className={`
+        flex justify-center pb-12
+        transform
+        transition-all
+        duration-1000
+        delay-500
+        ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}
+      `}>
+        <Link
+          href={"/today/전체/전체/전체"}
+          className="
+            px-8
+            py-3
+            rounded-full
+            border-2
+            border-orange-400
+            text-orange-500
+            hover:bg-orange-400
+            hover:text-white
+            transition-all
+            duration-300
+            transform
+            hover:scale-105
+            font-medium
+          "
+        >
+          더보기 +
+        </Link>
       </div>
     </div>
   );

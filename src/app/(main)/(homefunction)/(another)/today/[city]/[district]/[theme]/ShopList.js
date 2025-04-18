@@ -117,119 +117,101 @@ export default async function ShopList({ city, district, theme }) {
 
   // 3) 카드 형태 UI로 렌더링 (모바일=세로, 데스크톱=가로)
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8">
-      <h2 className="text-2xl text-center font-bold mb-4">
-        {searchString || "전체"} 검색결과
-      </h2>
+    <div className="mx-auto max-w-7xl px-4 py-12">
+      <div className="mb-10 text-center">
+        <h2 className="text-2xl font-bold text-gray-900">
+          {searchString || "전체"} 검색결과
+        </h2>
+        <div className="mt-2 inline-flex items-center gap-2 text-sm text-gray-600">
+          <span className="flex items-center gap-1">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            총 {data.length}개의 검색결과
+          </span>
+        </div>
+      </div>
 
       {data.length === 0 ? (
-        <p className="text-center text-gray-600">검색 결과가 없습니다!</p>
+        <div className="flex flex-col items-center justify-center py-20">
+          <svg className="w-16 h-16 text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p className="text-gray-500 text-lg">검색 결과가 없습니다!</p>
+          <p className="text-gray-400 text-sm mt-2">다른 검색어로 시도해보세요.</p>
+        </div>
       ) : (
-        <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {data.map((item) => {
-            // 썸네일 URL
             const imageUrl = `${process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL}/${item.thumbnail_url}`;
-
-            // 상세페이지 링크
             const slug = createSlug(item.company_name || item.post_title || "");
             const detailUrl = `/board/details/${item.id}-${slug}`;
-
-            // 테마 목록
             const themeList = item.partnershipsubmit_themes || [];
 
             return (
               <Link
                 key={item.id}
                 href={detailUrl}
-                className="
-                  block
-                  flex flex-col md:flex-row
-                  items-stretch
-                  p-4
-                  rounded-lg
-                  overflow-hidden
-                  hover:bg-gray-100
-                  transition-colors
-                "
+                className="group relative bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300"
               >
-                {/* (1) 이미지 컨테이너: 모바일 w-full h-48, md에서 373×217 */}
-                <div className="relative w-full h-48 mb-3 md:mb-0 md:w-[373px] md:h-[217px] flex-shrink-0">
-                  <Image
-                    src={imageUrl}
-                    alt={item.company_name || "썸네일"}
-                    fill
-                    className="object-cover rounded-xl"
-                  />
-                </div>
-
-                {/* (2) 오른쪽 텍스트 영역 */}
-                <div className="flex-1 px-4 py-2">
-                  {/* 업체명 */}
-                  <h3 className="text-lg font-semibold mb-1">
-                    {item.company_name || item.post_title}
-                  </h3>
-
-                  {/* 주소 + 리뷰 */}
-                  <div className="flex items-center text-sm text-gray-600 mb-1 gap-3">
-                    {/* 주소 */}
-                    <div className="flex items-center gap-1">
-                      <svg
-                        className="w-4 h-4 text-gray-500"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M12 11c1.656 0
-                             3-1.344
-                             3-3s-1.344-3
-                             -3-3-3
-                             1.344-3
-                             3 1.344
-                             3 3
-                             3z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M19.5 9.5c0
-                             7.168-7.5
-                             11-7.5
-                             11s-7.5-3.832
-                             -7.5-11a7.5
-                             7.5 0
-                             1115
-                             0z"
-                        />
-                      </svg>
-                      <span>
-                        {item.address || item.address_street || "주소 없음"}
-                      </span>
-                    </div>
-                    {/* 리뷰수 */}
-                    <div className="text-gray-500">
-                      리뷰 {item.comment ?? 0}
-                    </div>
+                <div className="flex flex-col">
+                  {/* 이미지 영역 */}
+                  <div className="relative w-full h-[200px] flex-shrink-0">
+                    <Image
+                      src={imageUrl}
+                      alt={item.company_name || "썸네일"}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   </div>
 
-                  {/* 소개(greeting 등) */}
-                  <p className="text-sm text-gray-800">
-                    {item.greeting || ""}
-                  </p>
+                  {/* 컨텐츠 영역 */}
+                  <div className="flex-1 p-4">
+                    <div className="flex items-start justify-between">
+                      <h3 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-orange-500 transition-colors line-clamp-1">
+                        {item.company_name || item.post_title}
+                      </h3>
+                    </div>
 
-                  {/* 해시태그(테마) */}
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {themeList.map((pt) => (
-                      <span
-                        key={pt.themes.id}
-                        className="rounded-full border border-gray-300 px-2 py-1 text-xs text-gray-600"
-                      >
-                        #{pt.themes.name}
-                      </span>
-                    ))}
+                    {/* 주소 + 리뷰 */}
+                    <div className="flex items-center text-xs text-gray-600 mb-3 gap-3">
+                      <div className="flex items-center gap-1.5 flex-1">
+                        <svg className="w-3.5 h-3.5 flex-shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <span className="truncate">
+                          {item.address || item.address_street || "주소 없음"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-shrink-0 text-gray-500">
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                            d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                        </svg>
+                        리뷰 {item.comment ?? 0}
+                      </div>
+                    </div>
+
+                    {/* 소개 텍스트 */}
+                    <p className="text-gray-600 text-xs line-clamp-2 mb-4 min-h-[2rem]">
+                      {item.greeting || ""}
+                    </p>
+
+                    {/* 해시태그 */}
+                    <div className="flex flex-wrap gap-1.5">
+                      {themeList.map((pt) => (
+                        <span
+                          key={pt.themes.id}
+                          className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-orange-50 text-orange-600"
+                        >
+                          #{pt.themes.name}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </Link>

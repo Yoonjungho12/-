@@ -164,61 +164,108 @@ export default function MyCommunityPostsCardPage() {
   // (8) 최종 렌더링 (카드 UI)
   // ─────────────────────────────────────────
   return (
-    <div className="max-w-[600px] mx-auto p-4 font-sans">
-      {/* (A) 상단 제목 */}
-      <h1 className="text-xl font-bold mb-4">내 커뮤니티 게시글</h1>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50">
+      <div className="max-w-[600px] mx-auto p-4 md:p-8">
+        {/* (A) 상단 제목 */}
+        <h1 className="text-3xl font-bold mb-8 text-gray-900">내 커뮤니티 게시글</h1>
 
-      {/* (B) 검색창 */}
-      <div className="flex items-center mb-4">
-        <input
-          type="text"
-          placeholder="게시판명, 제목, 내용 검색"
-          className="flex-1 mr-2 p-2 text-sm border border-gray-300 rounded"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-      </div>
-
-      {/* (C) 목록 카드 스타일 */}
-      {filtered.length === 0 ? (
-        <div className="text-gray-500 text-sm">게시글이 없습니다.</div>
-      ) : (
-        <div className="space-y-4">
-          {filtered.map((post) => {
-            const boardName = post.boards?.name || "알 수 없음";
-            const formatted = formatDate(post.created_at);
-
-            return (
-              <div
-                key={post.id}
-                onClick={() => handleCardClick(post)}
-                className="bg-white rounded-xl shadow-sm p-4 cursor-pointer hover:bg-gray-50 transition"
-              >
-                {/* (1) 상단: 게시판 이름 + 삭제 버튼 */}
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium text-orange-500">
-                    {boardName}
-                  </span>
-                  <button
-                    onClick={(e) => handleDelete(e, post)}
-                    className="text-red-500 text-xs px-2 py-1 border border-red-500 rounded hover:bg-red-500 hover:text-white transition"
-                  >
-                    삭제
-                  </button>
-                </div>
-
-                {/* (2) 제목 */}
-                <h2 className="text-base font-bold text-gray-800 mb-1">
-                  {post.title || "(제목 없음)"}
-                </h2>
-
-                {/* (3) 날짜 */}
-                <p className="text-xs text-gray-400">{formatted}</p>
-              </div>
-            );
-          })}
+        {/* (B) 검색창 */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-lg mb-6">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="게시판명, 제목, 내용 검색"
+              className="w-full px-4 py-3 bg-neutral-50/80 border border-neutral-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <svg
+              className="w-5 h-5 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+          </div>
         </div>
-      )}
+
+        {/* (C) 목록 카드 스타일 */}
+        {filtered.length === 0 ? (
+          <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-lg text-center">
+            <svg
+              className="w-16 h-16 text-gray-400 mx-auto mb-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <p className="text-gray-500 text-lg">게시글이 없습니다.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {filtered.map((post) => {
+              const boardName = post.boards?.name || "알 수 없음";
+              const formatted = formatDate(post.created_at);
+
+              return (
+                <div
+                  key={post.id}
+                  onClick={() => handleCardClick(post)}
+                  className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-lg p-6 cursor-pointer hover:shadow-xl transition-all group"
+                >
+                  {/* (1) 상단: 게시판 이름 + 삭제 버튼 */}
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="text-sm font-medium text-orange-500">
+                      {boardName}
+                    </span>
+                    <button
+                      onClick={(e) => handleDelete(e, post)}
+                      className="text-red-500 text-sm px-4 py-2 rounded-xl hover:bg-red-50 transition-colors"
+                    >
+                      삭제
+                    </button>
+                  </div>
+
+                  {/* (2) 제목 */}
+                  <h2 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-orange-500 transition-colors">
+                    {post.title || "(제목 없음)"}
+                  </h2>
+
+                  {/* (3) 날짜 */}
+                  <div className="flex items-center text-sm text-gray-400">
+                    <svg
+                      className="w-5 h-5 mr-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                    {formatted}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

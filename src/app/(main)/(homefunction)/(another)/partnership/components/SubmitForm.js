@@ -71,8 +71,8 @@ export default function SubmitForm({
   return (
     <>
       {/* (1) 광고위치 */}
-      <div className="flex flex-col sm:flex-row gap-2 items-center">
-        <label className="w-32 font-semibold">상품(광고위치)*</label>
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center mb-6">
+        <label className="w-32 font-medium text-gray-700">상품(광고위치)*</label>
         <div className="flex gap-3">
           <button
             type="button"
@@ -83,11 +83,11 @@ export default function SubmitForm({
                 setAdType("VIP");
               }
             }}
-            className={`px-6 py-2 rounded border-[0.3px] ${
+            className={`px-6 py-2.5 rounded-lg transition-all duration-200 ${
               adType === "VIP"
-                ? "bg-orange-500 text-white"
-                : "bg-white text-gray-700 border-zinc-700"
-            } hover:opacity-80`}
+                ? "bg-orange-500 text-white shadow-md"
+                : "bg-white text-gray-700 border border-gray-300 hover:border-orange-500"
+            }`}
           >
             VIP
           </button>
@@ -100,22 +100,22 @@ export default function SubmitForm({
                 setAdType("VIP+");
               }
             }}
-            className={`px-6 py-2 rounded border-[0.3px] ${
+            className={`px-6 py-2.5 rounded-lg transition-all duration-200 ${
               adType === "VIP+"
-                ? "bg-orange-500 text-white"
-                : "bg-white text-gray-700 border-zinc-700"
-            } hover:opacity-80`}
+                ? "bg-orange-500 text-white shadow-md"
+                : "bg-white text-gray-700 border border-gray-300 hover:border-orange-500"
+            }`}
           >
             VIP+
           </button>
           <button
             type="button"
             onClick={() => setAdType("")}
-            className={`px-6 py-2 rounded border-[0.3px] ${
+            className={`px-6 py-2.5 rounded-lg transition-all duration-200 ${
               adType === ""
-                ? "bg-orange-500 text-white"
-                : "bg-white text-gray-700 border-zinc-700"
-            } hover:opacity-80`}
+                ? "bg-orange-500 text-white shadow-md"
+                : "bg-white text-gray-700 border border-gray-300 hover:border-orange-500"
+            }`}
           >
             선택 안함
           </button>
@@ -123,14 +123,14 @@ export default function SubmitForm({
       </div>
 
       {/* (2) 상위 지역 */}
-      <div className="mt-4">
-        <label className="block font-semibold mb-1">
+      <div className="mb-6">
+        <label className="block font-medium text-gray-700 mb-2">
           지역선택 <span className="text-red-500">*</span>
         </label>
         <select
           value={selectedRegionId || ""}
           onChange={(e) => setSelectedRegionId(Number(e.target.value))}
-          className="border-[0.3px] border-zinc-700 rounded px-2 py-1 w-full"
+          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
         >
           <option value="">지역 선택</option>
           {regions.map((region) => (
@@ -143,14 +143,14 @@ export default function SubmitForm({
 
       {/* (3) 하위 지역 */}
       {childRegions.length > 0 && (
-        <div className="mt-4">
-          <label className="block font-semibold mb-1">
+        <div className="mb-6">
+          <label className="block font-medium text-gray-700 mb-2">
             세부 지역선택 <span className="text-red-500">*</span>
           </label>
           <select
             value={selectedSubRegionId || ""}
             onChange={(e) => setSelectedSubRegionId(Number(e.target.value))}
-            className="border-[0.3px] border-zinc-700 rounded px-2 py-1 w-full"
+            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
           >
             <option value="">하위 지역 선택</option>
             {childRegions.map((sub) => (
@@ -164,14 +164,14 @@ export default function SubmitForm({
 
       {/* (4) 테마 (단일 선택) */}
       {themes.length > 0 && (
-        <div className="mt-4">
-          <label className="block font-semibold mb-1">
+        <div className="mb-6">
+          <label className="block font-medium text-gray-700 mb-2">
             테마 <span className="text-red-500">*</span>
           </label>
           <select
             value={selectedThemeIds[0] || ""}
             onChange={handleSingleThemeSelect}
-            className="border-[0.3px] border-zinc-700 rounded px-2 py-1 w-full"
+            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
           >
             <option value="">테마 선택</option>
             {themes.map((theme) => (
@@ -184,8 +184,8 @@ export default function SubmitForm({
       )}
 
       {/* (5) 업체 정보 */}
-      <div className="flex flex-col sm:flex-row gap-2 mt-4">
-        <label className="w-32 font-semibold">
+      <div className="mb-6">
+        <label className="block font-medium text-gray-700 mb-2">
           업체명 <span className="text-red-500">*</span>
         </label>
         <input
@@ -193,11 +193,11 @@ export default function SubmitForm({
           placeholder="지역+업체명"
           value={companyName}
           onChange={(e) => setCompanyName(e.target.value)}
-          className="flex-1 border-[0.3px] border-zinc-700 rounded px-2 py-1"
+          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
         />
       </div>
-      <div className="flex flex-col sm:flex-row gap-2 mt-2">
-        <label className="w-32 font-semibold">
+      <div className="mb-6">
+        <label className="block font-medium text-gray-700 mb-2">
           전화번호 <span className="text-red-500">*</span>
         </label>
         <input
@@ -205,11 +205,11 @@ export default function SubmitForm({
           placeholder="영업용 010 번호"
           value={phoneNumber}
           onChange={(e) => setPhoneNumber(e.target.value)}
-          className="flex-1 border-[0.3px] border-zinc-700 rounded px-2 py-1"
+          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
         />
       </div>
-      <div className="flex flex-col sm:flex-row gap-2 mt-2">
-        <label className="w-32 font-semibold">
+      <div className="mb-6">
+        <label className="block font-medium text-gray-700 mb-2">
           담당자 연락처 <span className="text-red-500">*</span>
         </label>
         <input
@@ -217,14 +217,14 @@ export default function SubmitForm({
           placeholder="실제 연락가능 번호"
           value={managerContact}
           onChange={(e) => setManagerContact(e.target.value)}
-          className="flex-1 border-[0.3px] border-zinc-700 rounded px-2 py-1"
+          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
         />
       </div>
 
       {/* (6) 업체 휴무일 */}
-      <div className="flex flex-col sm:flex-row gap-2 mt-4">
-        <label className="w-32 font-semibold">업체 휴무일</label>
-        <div className="flex flex-col sm:flex-row gap-2 flex-1">
+      <div className="mb-6">
+        <label className="block font-medium text-gray-700 mb-2">업체 휴무일</label>
+        <div className="flex flex-col sm:flex-row gap-4">
           <select
             value={holidaySelectVal}
             onChange={(e) => {
@@ -233,7 +233,7 @@ export default function SubmitForm({
                 setHolidayDirect("");
               }
             }}
-            className="border-[0.3px] border-zinc-700 rounded px-2 py-1 w-full sm:w-1/2 mb-2"
+            className="w-full sm:w-1/2 px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
           >
             <option value="">선택</option>
             <option value="직접입력">직접입력</option>
@@ -249,10 +249,10 @@ export default function SubmitForm({
           {holidaySelectVal === "직접입력" && (
             <input
               type="text"
-              placeholder="예: 공휴일 휴무 / 둘째주 수요일 휴무 등"
               value={holidayDirect}
               onChange={(e) => setHolidayDirect(e.target.value)}
-              className="border-[0.3px] border-zinc-700 rounded px-2 py-1 w-full sm:w-1/2"
+              placeholder="직접 입력"
+              className="w-full sm:w-1/2 px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
             />
           )}
         </div>

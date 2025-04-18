@@ -52,27 +52,45 @@ export default function TrRow({ post, boardInfo, number }) {
 
   return (
     <tr
-      className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
+      className="group hover:bg-gray-50 cursor-pointer transition-colors"
       onClick={handleRowClick}
     >
-      <td className="py-1.5 text-center text-xs text-gray-600">{number}</td>
-      <td className="py-1.5">
-        <div className="flex items-center gap-1">
-          <span className="text-xs text-gray-900">{post.title}</span>
-          {commentCount > 0 && (
-            <span className="text-[11px] text-blue-600 font-medium">[{commentCount}]</span>
-          )}
-          {/* 방문후기면 theme_id 표시 */}
-          {boardInfo.name === "방문후기" && post.theme_id ? (
-            <span className="text-[11px] text-gray-500">
-              [{THEMES.find((t) => t.id === post.theme_id)?.name || "기타"}]
-            </span>
-          ) : null}
+      <td className="py-4 text-center">
+        <div className="text-sm text-gray-600">{number}</div>
+      </td>
+      <td className="py-4">
+        <div className="flex items-center gap-2">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-900 group-hover:text-orange-500 transition-colors truncate">
+                {post.title}
+              </span>
+              {commentCount > 0 && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-600">
+                  {commentCount}
+                </span>
+              )}
+            </div>
+            {/* 방문후기면 theme_id 표시 */}
+            {boardInfo.name === "방문후기" && post.theme_id ? (
+              <div className="mt-1">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                  {THEMES.find((t) => t.id === post.theme_id)?.name || "기타"}
+                </span>
+              </div>
+            ) : null}
+          </div>
         </div>
       </td>
-      <td className="py-1.5 text-center text-xs text-gray-600">{nickname}</td>
-      <td className="py-1.5 text-center text-xs text-gray-500">{formattedDate}</td>
-      <td className="py-1.5 text-center text-xs text-gray-500">{views}</td>
+      <td className="py-4 text-center">
+        <div className="text-sm text-gray-600">{nickname}</div>
+      </td>
+      <td className="py-4 text-center">
+        <div className="text-sm text-gray-500">{formattedDate}</div>
+      </td>
+      <td className="py-4 text-center">
+        <div className="text-sm text-gray-500">{views}</div>
+      </td>
     </tr>
   );
 }
