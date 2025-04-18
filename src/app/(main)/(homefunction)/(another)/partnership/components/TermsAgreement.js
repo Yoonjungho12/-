@@ -7,7 +7,7 @@ export default function TermsAgreement({ termsAgreed, setTermsAgreed }) {
 
       <div className="prose prose-orange max-w-none mb-8">
         <p className="text-gray-700 leading-relaxed">
-          여기닷(이하 "회사")와 제휴사는 인터넷을 통한 중개 서비스 이용과
+          여기닷(이하 &quot;회사&quot;)와 제휴사는 인터넷을 통한 중개 서비스 이용과
           관련하여 제휴를 진행하는 데 있어, 아래에 해당하는 사항이 발생할 경우 회사는
           어떠한 책임도 지지 않음을 명확히 하며, 제휴사의 동의를 받고 있습니다.
         </p>
@@ -16,7 +16,7 @@ export default function TermsAgreement({ termsAgreed, setTermsAgreed }) {
           <div>
             <h3 className="text-lg font-semibold text-gray-800 mb-2">1. 정보의 정확성 및 신뢰성</h3>
             <p className="text-gray-700 leading-relaxed">
-              회사는 제휴사를 통해 제공되는 모든 정보(이하 "자료")의 정확성과
+              회사는 제휴사를 통해 제공되는 모든 정보(이하 &quot;자료&quot;)의 정확성과
               신뢰성을 보장하지 않으며, 자료의 저작권 준수 여부, 재화 및 서비스의 가성비,
               용도, 적법성, 도덕성 등에 대한 법적 책임을 지지 않습니다.
             </p>
