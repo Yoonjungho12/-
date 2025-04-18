@@ -42,7 +42,10 @@
     "suneditor": "^2.47.5",
     "suneditor-react": "^3.6.1",
     "urlencode": "^2.0.0",
-    "uuid": "^11.1.0"
+    "uuid": "^11.1.0",
+    "framer-motion": "^11.0.3",
+    "react-icons": "^5.0.1",
+    "sass": "^1.71.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
