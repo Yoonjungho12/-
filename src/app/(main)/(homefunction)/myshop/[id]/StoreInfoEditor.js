@@ -461,7 +461,7 @@ export default function StoreInfoEditor({ storeInfo, setStoreInfo, sections, set
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">프로그램 정보</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1 m">프로그램 정보</label>
               <textarea
                 value={isEditing ? tempInfo.program_info : storeInfo.program_info}
                 onChange={(e) => setTempInfo(prev => ({ ...prev, program_info: e.target.value }))}
