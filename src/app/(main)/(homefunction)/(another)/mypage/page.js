@@ -173,10 +173,16 @@ export default function MyMobileUI() {
               <div className="bg-white rounded-2xl p-6 shadow-sm mb-4 lg:mb-6">
                 <div className="flex flex-col items-center text-center lg:py-4">
                   {/* 아바타 */}
-                  <div className="w-24 h-24 lg:w-32 lg:h-32 bg-neutral-100 rounded-full flex items-center justify-center mb-4 lg:mb-6">
-                    <svg className="w-12 h-12 lg:w-16 lg:h-16 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
+                  <div className="w-24 h-24 lg:w-32 lg:h-32 bg-gradient-to-br from-orange-400 to-orange-500 rounded-[24px] flex items-center justify-center mb-4 lg:mb-6 shadow-lg">
+                    {isLoggedIn ? (
+                      <span className="text-4xl lg:text-5xl font-bold text-white">
+                        {nickname[0]?.toUpperCase() || '?'}
+                      </span>
+                    ) : (
+                      <svg className="w-12 h-12 lg:w-16 lg:h-16 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    )}
                   </div>
 
                   {/* 프로필 정보 */}

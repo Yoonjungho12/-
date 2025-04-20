@@ -225,161 +225,197 @@ export default function MyMobileUI() {
   // [D] 최종 UI 렌더링
   // ------------------------------------------------------------------------
   return (
-    <div className="max-w-[600px] mx-auto p-4 text-base text-gray-700 leading-relaxed">
+    <div className="max-w-[600px] mx-auto bg-gray-50/30 min-h-screen">
       {/* 상단: 프로필 영역 */}
-      <div className="flex items-center justify-between mb-4">
-        {/* 왼쪽: 프로필 or "로그인을 해주세요" */}
-        {isLoggedIn ? (
-          <div className="flex items-center space-x-3">
-            {/* 임시 아바타 */}
-            <div className="w-12 h-12 rounded-full bg-gray-500" />
-            <span className="font-semibold text-lg">{nickname}</span>
-          </div>
-        ) : (
-          <div className="text-lg text-gray-600 font-semibold">로그인을 해주세요</div>
-        )}
-
-        {/* 오른쪽: 정보수정/로그아웃 or 로그인/회원가입 */}
-        {isLoggedIn ? (
-          <div className="space-x-3 text-gray-600">
-            <button onClick={handleEditNickname} className="hover:underline">
-              정보수정
-            </button>
-            <button onClick={handleLogout} className="hover:underline">
-              로그아웃
-            </button>
-          </div>
-        ) : (
-          <div className="flex space-x-2">
-            <button
-              onClick={handleLogin}
-              className="text-sm px-2 py-1 border border-gray-300 rounded"
-            >
-              로그인
-            </button>
-            <button
-              onClick={handleSignup}
-              className="text-sm px-2 py-1 border border-gray-300 rounded"
-            >
-              회원가입
-            </button>
-          </div>
-        )}
+      <div className="bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] mb-4">
+        <div className="p-6">
+          {isLoggedIn ? (
+            <div className="flex items-center gap-5">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-500 flex items-center justify-center text-xl font-medium text-white shadow-lg">
+                {nickname[0]}
+              </div>
+              <div className="flex-1">
+                <span className="font-bold text-xl text-gray-900">{nickname}</span>
+                <div className="flex gap-2 mt-3">
+                  <button onClick={handleEditNickname} className="px-4 py-2 text-sm bg-gray-50 text-gray-700 rounded-xl hover:bg-gray-100 transition-all">
+                    정보수정
+                  </button>
+                  <button onClick={handleLogout} className="px-4 py-2 text-sm bg-gray-50 text-gray-700 rounded-xl hover:bg-gray-100 transition-all">
+                    로그아웃
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-4">
+              <div className="text-xl font-bold text-gray-900">로그인을 해주세요</div>
+              <div className="flex gap-2">
+                <button onClick={handleLogin} className="flex-1 px-4 py-2.5 bg-orange-500 text-white rounded-xl font-medium hover:bg-orange-600 transition-all shadow-sm">
+                  로그인
+                </button>
+                <button onClick={handleSignup} className="flex-1 px-4 py-2.5 bg-gray-50 text-gray-700 rounded-xl font-medium hover:bg-gray-100 transition-all">
+                  회원가입
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* 닉네임 수정모드 UI */}
       {isEditingNickname && (
-        <div className="mb-4">
-          <input
-            type="text"
-            value={editNicknameInput}
-            onChange={(e) => setEditNicknameInput(e.target.value)}
-            className="w-48 border border-gray-300 rounded px-2 py-1 mr-2"
-          />
-          <button
-            onClick={handleUpdateNickname}
-            className="bg-green-500 text-white px-3 py-1 rounded mr-2"
-          >
-            변경
-          </button>
-          <button
-            onClick={handleCancelEdit}
-            className="bg-gray-300 text-gray-700 px-3 py-1 rounded"
-          >
-            취소
-          </button>
+        <div className="mx-4 mb-4">
+          <div className="bg-white p-4 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+            <input
+              type="text"
+              value={editNicknameInput}
+              onChange={(e) => setEditNicknameInput(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-orange-500 outline-none mb-3"
+              placeholder="새로운 닉네임"
+            />
+            <div className="flex gap-2">
+              <button onClick={handleUpdateNickname} className="flex-1 px-4 py-2.5 bg-orange-500 text-white rounded-xl font-medium hover:bg-orange-600 transition-all">
+                변경
+              </button>
+              <button onClick={handleCancelEdit} className="flex-1 px-4 py-2.5 bg-gray-50 text-gray-700 rounded-xl font-medium hover:bg-gray-100 transition-all">
+                취소
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
-      <hr className="mb-2" />
+      <div className="space-y-3 px-4">
+        {/* 아코디언: 지역별 검색 */}
+        <Accordion
+          title="지역별 검색"
+          titleClass="text-gray-900 font-bold text-lg"
+          isOpen={openDropdown === "region"}
+          onToggle={() => toggleDropdown("region")}
+        >
+          <div className="p-2">
+            <div className="grid grid-cols-2 gap-2">
+              {regionLinks.map((r) => (
+                <Link 
+                  key={r.href} 
+                  href={r.href}
+                  className="p-3 bg-white rounded-xl hover:bg-orange-50 transition-all text-gray-600 hover:text-orange-500"
+                >
+                  {r.label}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </Accordion>
 
-      {/* 아코디언: 지역별 검색 */}
-      <Accordion
-        title="지역별 검색"
-        titleClass="text-red-500 font-semibold"
-        isOpen={openDropdown === "region"}
-        onToggle={() => toggleDropdown("region")}
-      >
-        <ul className="space-y-1">
-          {regionLinks.map((r) => (
-            <li key={r.href}>
-              <Link href={r.href} className="block hover:underline">
-                {r.label}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </Accordion>
-
-      {/* 실시간 인기 업체 */}
-      <div className="space-y-2 mt-2">
+        {/* 실시간 인기 업체 */}
         <Accordion
           title="실시간 인기 업체"
+          titleClass="text-gray-900 font-bold text-lg"
           isOpen={openDropdown === "chulgeun"}
           onToggle={() => toggleDropdown("chulgeun")}
         >
-          <ul className="space-y-1">
-            {chulgeunRegions.map((item) => (
-              <li key={item.label}>
-                <Link href={item.href} className="block hover:underline">
+          <div className="p-2">
+            <div className="grid grid-cols-3 gap-2">
+              {chulgeunRegions.map((item) => (
+                <Link 
+                  key={item.label} 
+                  href={item.href}
+                  className="p-3 bg-white rounded-xl text-center hover:bg-orange-50 transition-all text-gray-600 hover:text-orange-500"
+                >
                   {item.label}
                 </Link>
-              </li>
-            ))}
-          </ul>
+              ))}
+            </div>
+          </div>
         </Accordion>
 
-        <Link
-          href="/near-me"
-          className="block w-full p-3 bg-gray-100 text-left rounded"
+        <Link 
+          href="/near-me" 
+          className="block p-5 bg-white rounded-2xl font-medium hover:bg-orange-50 transition-all group shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
         >
-          내 주변 업체 찾기
+          <div className="flex items-center justify-between">
+            <span className="text-gray-900 group-hover:text-orange-500 transition-colors">내 주변 업체 찾기</span>
+            <svg className="w-5 h-5 text-gray-400 group-hover:text-orange-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
         </Link>
 
-        <Link
-          href="/club/전체/전체/전체"
-          className="block w-full p-3 bg-gray-100 text-left rounded"
+        <Link 
+          href="/club/전체/전체/전체" 
+          className="block p-5 bg-white rounded-2xl font-medium hover:bg-orange-50 transition-all group shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
         >
-          클럽/나이트클럽
+          <div className="flex items-center justify-between">
+            <span className="text-gray-900 group-hover:text-orange-500 transition-colors">클럽/나이트클럽</span>
+            <svg className="w-5 h-5 text-gray-400 group-hover:text-orange-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
         </Link>
 
-        {/* boards 테이블에서 불러온 커뮤니티 목록 */}
+        {/* 커뮤니티 */}
         <Accordion
           title="커뮤니티"
-          titleClass=""
+          titleClass="text-gray-900 font-bold text-lg"
           isOpen={openDropdown === "community"}
           onToggle={() => toggleDropdown("community")}
         >
-          <ul className="space-y-1">
+          <div className="p-2">
             {communityBoards.length === 0 ? (
-              <li className="text-sm text-gray-500">등록된 커뮤니티가 없습니다.</li>
+              <div className="p-4 text-center text-gray-500">등록된 커뮤니티가 없습니다.</div>
             ) : (
-              communityBoards.map((board) => (
-                <li key={board.name}>
-                  {/* Link 예: /community/board/자유게시판 */}
-                  <Link
+              <div className="space-y-2">
+                {communityBoards.map((board) => (
+                  <Link 
+                    key={board.name} 
                     href={`/community/board/${board.name}`}
-                    className="block hover:underline"
+                    className="block p-3 bg-white rounded-xl hover:bg-orange-50 transition-all text-gray-600 hover:text-orange-500"
                   >
                     {board.name}
                   </Link>
-                </li>
-              ))
+                ))}
+              </div>
             )}
-          </ul>
+          </div>
         </Accordion>
       </div>
 
-      {/* 구분선 */}
-      <hr className="my-4" />
-
       {/* 고객센터 */}
-      <div>
-        <div className="text-lg font-semibold mb-1">고객센터</div>
-        <div className="text-sm leading-5">
-          <div>평일 오전 9:30~18:00</div>
-          <div>0504-1361-3000 (문자문의)</div>
-          <div>카톡 1:1상담 입점문의</div>
+      <div className="mt-6 mx-4 mb-4">
+        <div className="bg-white p-6 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+          <div className="text-xl font-bold text-gray-900 mb-4">고객센터</div>
+          <div className="space-y-3">
+            <div className="flex items-center gap-3 text-gray-600">
+              <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center flex-shrink-0">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <span>평일 오전 9:30~18:00</span>
+            </div>
+            <div className="flex items-center gap-3 text-gray-600">
+              <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center flex-shrink-0">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                </svg>
+              </div>
+              <span>010-2117-7392</span>
+            </div>
+            <a 
+              href="https://open.kakao.com/o/sF0jBaqh" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="flex items-center gap-3 text-gray-600 hover:text-orange-500 transition-colors"
+            >
+              <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center flex-shrink-0">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+              </div>
+              <span>카톡 1:1상담 입점문의</span>
+            </a>
+          </div>
         </div>
       </div>
     </div>
@@ -392,19 +428,25 @@ export default function MyMobileUI() {
  */
 function Accordion({ title, titleClass = "", isOpen, onToggle, children }) {
   return (
-    <div className="transition-all">
+    <div className="bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
       <button
         onClick={onToggle}
-        className="w-full p-3 bg-gray-100 text-left rounded flex justify-between items-center"
+        className="w-full p-5 text-left flex justify-between items-center"
       >
         <span className={titleClass}>{title}</span>
-        <span>{isOpen ? "▲" : "▼"}</span>
+        <svg 
+          className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} 
+          fill="none" 
+          stroke="currentColor" 
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
       </button>
 
-      {/* 여기서 max-h를 크게 잡으면 길어도 잘리지 않음 */}
       <div
-        className={`overflow-hidden transition-all duration-300 ease-in-out bg-gray-50 rounded mt-1 px-3 ${
-          isOpen ? "max-h-[9999px] py-2" : "max-h-0 py-0"
+        className={`overflow-hidden transition-all duration-200 ease-in-out ${
+          isOpen ? "max-h-[9999px] border-t border-gray-100" : "max-h-0"
         }`}
       >
         {children}

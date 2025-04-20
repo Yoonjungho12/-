@@ -89,11 +89,13 @@ export default function LoginPage() {
         <div className="bg-white rounded-2xl shadow-xl p-8 space-y-8">
           {/* 로고 */}
           <div className="text-center">
-            <img 
-              src="/logo/logo.png" 
-              alt="로고" 
-              className="h-40 mx-auto object-cover object-center -mt-8 -mb-16" 
-            />
+            <Link href="/">
+              <img 
+                src="/logo/logo.png" 
+                alt="로고" 
+                className="h-40 mx-auto object-cover object-center -mt-8 -mb-16 cursor-pointer hover:scale-105 transition-transform duration-200" 
+              />
+            </Link>
           </div>
 
           {/* 입력 폼 */}

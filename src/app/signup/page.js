@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import ReCAPTCHA from "react-google-recaptcha";
 import { supabase } from "../lib/supabaseF";
+import Link from "next/link";
 
 export default function SignupPage() {
   // ─────────────────────────────────────────
@@ -339,157 +340,175 @@ const term3 = `제1조 (목적)본 개인정보 처리 방침은 "여기닷(yeog
 `;
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center px-4">
-      <div className="mb-6 text-center">
-        <h1 className="text-2xl font-bold text-orange-500">여기닷</h1>
-      </div>
-
-      <div className="w-full max-w-md rounded-md bg-white p-6 shadow">
-        <h2 className="mb-4 text-xl font-semibold text-gray-700">간편 회원가입</h2>
-
-        {/* 약관동의 */}
-        <div className="mb-5 border border-gray-200">
-          {/* 민제님 이곳 수정했습니다: 전체동의 */}
-          <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                checked={checkedAll}
-                onChange={handleCheckAll} // 전체동의
-                className="h-4 w-4 rounded border-gray-300 text-red-500"
+    <div className="min-h-screen w-full bg-gradient-to-br from-orange-50 to-red-50 flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-xl">
+        {/* 메인 카드 */}
+        <div className="bg-white rounded-3xl shadow-2xl p-8 space-y-8">
+          {/* 로고 */}
+          <div className="text-center">
+            <Link href="/">
+              <img 
+                src="/logo/logo.png" 
+                alt="로고" 
+                className="h-40 mx-auto object-cover object-center -mt-8 -mb-16 cursor-pointer hover:scale-105 transition-transform duration-200" 
               />
-              <span className="text-sm font-medium text-gray-700">전체동의</span>
+            </Link>
+          </div>
+
+          <h2 className="text-2xl font-bold text-gray-800 text-center mb-8">회원가입</h2>
+
+          {/* 소셜 로그인 */}
+          <div className="flex items-center justify-center gap-4 mb-8">
+            <button
+              type="button"
+              onClick={handleGoogleLogin}
+              className="flex-1 py-3 px-4 rounded-xl bg-white border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 transition-all duration-200 flex items-center justify-center gap-2 shadow-sm hover:shadow-md"
+            >
+              <img src="/icons/google.svg" alt="google" width={20} />
+              <span>구글 계정으로 가입</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleKakaoLogin}
+              className="flex-1 py-3 px-4 rounded-xl bg-[#FEE500] text-[#391B1B] font-medium hover:bg-[#FDD800] transition-all duration-200 flex items-center justify-center gap-2 shadow-sm hover:shadow-md"
+            >
+              <img src="/icons/kakao.svg" alt="kakao" width={20} />
+              <span>카카오 계정으로 가입</span>
+            </button>
+          </div>
+
+          {/* 구분선 */}
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-4 bg-white text-gray-500">또는 이메일로 가입</span>
             </div>
           </div>
-          <div className="px-4 py-3 space-y-2">
-            {/* 약관1 */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
+
+          {/* 약관동의 */}
+          <div className="bg-gray-50/50 rounded-xl p-4 space-y-3">
+            <div className="flex items-center justify-between border-b border-gray-200/70 pb-3">
+              <div className="flex items-center gap-3">
                 <input
                   type="checkbox"
-                  checked={checkedTerm1}
-                  onChange={() => setCheckedTerm1(!checkedTerm1)}
-                  className="h-4 w-4 rounded border-gray-300 text-red-500"
+                  checked={checkedAll}
+                  onChange={handleCheckAll}
+                  className="w-5 h-5 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
                 />
-                <span className="text-sm text-gray-700">회원가입약관의 내용에 동의 (필수)</span>
+                <span className="text-gray-700 font-medium">전체동의</span>
               </div>
-              <button
-                type="button"
-                onClick={() => openModal(term1)}
-                className="text-sm text-gray-500 hover:underline"
-              >
-                보기
-              </button>
             </div>
-            {/* 약관2 */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  checked={checkedTerm2}
-                  onChange={() => setCheckedTerm2(!checkedTerm2)}
-                  className="h-4 w-4 rounded border-gray-300 text-red-500"
-                />
-                <span className="text-sm text-gray-700">
-                  개인정보 이용 및 활용 동의 (필수)
-                </span>
+            <div className="space-y-3 pt-1">
+              {/* 약관1 */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={checkedTerm1}
+                    onChange={handleCheckTerm1}
+                    className="w-5 h-5 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+                  />
+                  <span className="text-sm text-gray-600">회원가입약관의 내용에 동의 (필수)</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => openModal(term1)}
+                  className="text-sm text-gray-400 hover:text-orange-500 transition-colors"
+                >
+                  보기
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => openModal(term2)}
-                className="text-sm text-gray-500 hover:underline"
-              >
-                보기
-              </button>
-            </div>
-            {/* 약관3 */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  checked={checkedTerm3}
-                  onChange={() => setCheckedTerm2(!checkedTerm3)}
-                  className="h-4 w-4 rounded border-gray-300 text-red-500"
-                />
-                <span className="text-sm text-gray-700">
-                  책임의 한계와 법적 고지 (필수)
-                </span>
+              {/* 약관2 */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={checkedTerm2}
+                    onChange={handleCheckTerm2}
+                    className="w-5 h-5 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+                  />
+                  <span className="text-sm text-gray-600">개인정보 이용 및 활용 동의 (필수)</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => openModal(term2)}
+                  className="text-sm text-gray-400 hover:text-orange-500 transition-colors"
+                >
+                  보기
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => openModal(term2)}
-                className="text-sm text-gray-500 hover:underline"
-              >
-                보기
-              </button>
+              {/* 약관3 */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={checkedTerm3}
+                    onChange={handleCheckTerm3}
+                    className="w-5 h-5 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+                  />
+                  <span className="text-sm text-gray-600">책임의 한계와 법적고지 동의 (필수)</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => openModal(term3)}
+                  className="text-sm text-gray-400 hover:text-orange-500 transition-colors"
+                >
+                  보기
+                </button>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* 가입 폼 */}
-        <form onSubmit={handleSubmit} className="space-y-3">
-          {/* 이메일(아이디) */}
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-600">
-              아이디(이메일) <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={userId}
-              onChange={(e) => setUserId(e.target.value)}
-              className="w-full rounded border border-gray-300 px-3 py-2 text-sm 
-                         focus:outline-none focus:ring-2 focus:ring-orange-400"
-              placeholder="예: user@example.com"
-            />
-          </div>
-
-          {/* 비밀번호 */}
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-600">
-              비밀번호 <span className="text-red-500">*</span>
-            </label>
-            {/* 비밀번호 강도 바 */}
-            <div className="mb-1 flex space-x-1">
-              {[0, 1, 2, 3].map((barIndex) => (
-                <div
-                  key={barIndex}
-                  className={`h-1 flex-1 transition-colors duration-300 ${getBarColor(
-                    passwordStrength,
-                    barIndex
-                  )}`}
-                />
-              ))}
+          {/* 가입 폼 */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* 이메일 */}
+            <div>
+              <input
+                type="text"
+                value={userId}
+                onChange={(e) => setUserId(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-gray-100 focus:bg-white"
+                placeholder="아이디(이메일)"
+              />
             </div>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded border border-gray-300 px-3 py-2 text-sm 
-                         focus:outline-none focus:ring-2 focus:ring-orange-400"
-              placeholder="비밀번호 (8자 이상, 숫자/특수문자/대문자 포함 시 보안 강화)"
-            />
-          </div>
 
-          {/* 비밀번호 확인 */}
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-600">
-              비밀번호 확인 <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="password"
-              value={passwordConfirm}
-              onChange={(e) => setPasswordConfirm(e.target.value)}
-              className="w-full rounded border border-gray-300 px-3 py-2 text-sm 
-                         focus:outline-none focus:ring-2 focus:ring-orange-400"
-              placeholder="비밀번호 재입력"
-            />
-          </div>
+            {/* 비밀번호 */}
+            <div>
+              <div className="mb-1 flex space-x-1">
+                {bars.map((index) => (
+                  <div
+                    key={index}
+                    className={`h-1 flex-1 rounded-full transition-colors duration-300 ${getBarColor(
+                      passwordStrength,
+                      index
+                    )}`}
+                  />
+                ))}
+              </div>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-gray-100 focus:bg-white"
+                placeholder="비밀번호 (8자 이상, 숫자/특수문자/대문자 포함)"
+              />
+            </div>
 
-          {/* 닉네임 + 중복확인 */}
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-600">
-              닉네임 <span className="text-red-500">*</span>
-            </label>
+            {/* 비밀번호 확인 */}
+            <div>
+              <input
+                type="password"
+                value={passwordConfirm}
+                onChange={(e) => setPasswordConfirm(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-gray-100 focus:bg-white"
+                placeholder="비밀번호 재입력"
+              />
+            </div>
+
+            {/* 닉네임 */}
             <div className="flex gap-2">
               <input
                 type="text"
@@ -499,128 +518,114 @@ const term3 = `제1조 (목적)본 개인정보 처리 방침은 "여기닷(yeog
                   setNicknameAvailable(null);
                   setNicknameCheckError("");
                 }}
-                className="flex-1 border border-gray-300 px-3 py-2 rounded text-sm 
-                           focus:outline-none focus:ring-2 focus:ring-orange-400"
+                className="flex-1 px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-gray-100 focus:bg-white"
                 placeholder="닉네임"
               />
               <button
                 type="button"
                 onClick={handleCheckNickname}
-                className="px-3 py-2 rounded bg-gray-300 text-sm text-gray-700 hover:bg-gray-400"
+                className="px-6 py-3 rounded-xl bg-gray-50 text-gray-700 font-medium hover:bg-gray-100 transition-all duration-200"
               >
                 중복확인
               </button>
             </div>
-            {/* 결과 메시지 */}
-            {nicknameAvailable === false && (
-              <p className="mt-1 text-sm text-red-500">
-                {nicknameCheckError || "이미 사용 중입니다."}
+
+            {/* 닉네임 확인 메시지 */}
+            {nicknameCheckError && (
+              <p className={`text-sm ${nicknameAvailable ? 'text-green-500' : 'text-red-500'}`}>
+                {nicknameCheckError}
               </p>
             )}
-            {nicknameAvailable === true && (
-              <p className="mt-1 text-sm text-green-600">
-                {nicknameCheckError || "사용 가능합니다."}
-              </p>
-            )}
+
+            {/* reCAPTCHA */}
+            <div className="flex justify-center pt-2">
+              <ReCAPTCHA
+                sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}
+                onChange={handleRecaptchaChange}
+              />
+            </div>
+
+            {/* 가입하기 버튼 */}
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className={`w-full py-3 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 
+                text-white font-medium hover:from-orange-600 hover:to-red-600 
+                transform hover:scale-[1.02] transition-all duration-200 shadow-md hover:shadow-lg
+                ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
+            >
+              {isSubmitting ? (
+                <div className="flex items-center justify-center gap-2">
+                  <svg
+                    className="animate-spin h-5 w-5 text-white"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      fill="none"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8v8z"
+                    />
+                  </svg>
+                  <span>가입 중...</span>
+                </div>
+              ) : (
+                "가입하기"
+              )}
+            </button>
+          </form>
+
+          {/* 로그인 링크 */}
+          <div className="text-center pt-4 border-t border-gray-200">
+            <Link 
+              href="/login" 
+              className="text-orange-500 hover:text-orange-600 font-medium inline-flex items-center gap-1 group"
+            >
+              <span>이미 계정이 있으신가요?</span>
+              <svg 
+                className="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-200" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
           </div>
-
-          {/* reCAPTCHA 체크박스 */}
-          <div className="mt-5 flex justify-center">
-            <ReCAPTCHA
-              sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}
-              onChange={handleRecaptchaChange}
-            />
-          </div>
-
-          {/* 가입하기 버튼 */}
-                  {/* 가입하기 버튼 */}
-          <button
-            type="submit"
-            disabled={isSubmitting} // 버튼 비활성화
-            className={`mt-3 w-full rounded py-2 text-base font-medium text-white 
-                       hover:bg-orange-600
-                       ${isSubmitting ? "bg-orange-300" : "bg-orange-400"} 
-                      `}
-          >
-            {isSubmitting ? (
-              <div className="flex items-center justify-center gap-2">
-                <svg
-                  className="animate-spin h-5 w-5 text-white"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                    fill="none"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8v8z"
-                  />
-                </svg>
-                <span>가입 중...</span>
-              </div>
-            ) : (
-              "가입하기"
-            )}
-          </button>
-        </form>
-
-        {/* 소셜 로그인 */}
-        <div className="flex items-center justify-center gap-5 mt-4">
-          <button
-            type="button"
-            onClick={handleGoogleLogin}
-            className="flex items-center justify-center gap-2 rounded bg-white border border-blue-600 
-                       text-base font-medium text-black hover:bg-blue-500 hover:text-white w-full py-3"
-          >
-            <img src="/icons/google.svg" alt="google" width={20} />
-            <span>구글 가입</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleKakaoLogin}
-            className="flex items-center justify-center gap-2 rounded bg-yellow-300 
-                       text-base font-medium text-gray-800 hover:bg-yellow-400 w-full py-3"
-          >
-            <img src="/icons/kakao.svg" alt="kakao" width={20} />
-            <span>카카오 가입</span>
-          </button>
         </div>
-
-        {errorMessage && (
-          <div className="mt-2 text-sm text-red-500 text-center">
-            {errorMessage}
-          </div>
-        )}
       </div>
 
-      {/* (모달) */}
+      {/* 약관 모달 */}
       {isModalOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-orange-50/95 backdrop-blur-sm"
           onClick={handleBackdropClick}
         >
-          <div
-            className="bg-white w-full max-w-md p-6 rounded shadow-lg relative 
-                       max-h-[90vh] overflow-auto"
-            onClick={(e) => e.stopPropagation()} // 내부 클릭 -> 모달 유지
-          >
-            {/* 닫기 버튼 */}
-            <button
-              className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
-              onClick={closeModal}
-            >
-              ✕
-            </button>
-            <h3 className="text-lg font-semibold mb-2">이용 약관</h3>
-            <p className="text-sm whitespace-pre-wrap">{modalContent}</p>
+          <div className="bg-white w-full max-w-lg rounded-2xl p-6 max-h-[80vh] overflow-auto shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold text-gray-900">약관 상세</h3>
+              <button
+                onClick={closeModal}
+                className="text-gray-400 hover:text-orange-500 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="prose prose-sm max-w-none prose-orange">
+              <pre className="whitespace-pre-wrap font-sans text-sm text-gray-600 bg-orange-50/50 p-4 rounded-xl">
+                {modalContent}
+              </pre>
+            </div>
           </div>
         </div>
       )}

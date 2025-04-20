@@ -154,7 +154,7 @@ export default function RecommendedShopsClient({ initialTag, initialShops }) {
           mb-8
           transition-all 
           duration-1000 
-          delay-300
+          delay-200
           transform
           ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}
         `}>
@@ -186,7 +186,7 @@ export default function RecommendedShopsClient({ initialTag, initialShops }) {
                   }
                 `}
                 style={{
-                  transitionDelay: `${index * 100 + 600}ms`
+                  transitionDelay: `${index * 100 + 50}ms`
                 }}
               >
                 {tag}
@@ -319,7 +319,7 @@ export default function RecommendedShopsClient({ initialTag, initialShops }) {
 
       {/* 더보기 버튼 */}
       <Link
-        href={"/board/전체/전체"}
+        href={"/board/전체/전체/전체"}
         className={`
           relative z-10
           mt-12

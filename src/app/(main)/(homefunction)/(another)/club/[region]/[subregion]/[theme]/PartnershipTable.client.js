@@ -5,16 +5,25 @@ import Link from "next/link";
 export default function PartnershipTableClient({ posts, baseUrl, sortParam }) {
   return (
     <div className="w-full mt-4">
-      <div className="mb-4 flex gap-2 text-sm font-medium text-gray-600">
-        <Link href={`${baseUrl}`} className={sortParam === "" ? "text-orange-500 underline" : "hover:text-orange-500"}>
+      <div className="mb-4 flex justify-center items-center gap-4 text-sm font-medium">
+        <Link 
+          href={`${baseUrl}`} 
+          className={sortParam === "" ? "text-orange-500 underline" : "text-gray-500 hover:text-orange-500"}
+        >
           기본
         </Link>
-        <span>|</span>
-        <Link href={`${baseUrl}?sort=lowest`} className={sortParam === "lowest" ? "text-orange-500 underline" : "hover:text-orange-500"}>
+        <span className="text-gray-300">•</span>
+        <Link 
+          href={`${baseUrl}?sort=lowest`} 
+          className={sortParam === "lowest" ? "text-orange-500 underline" : "text-gray-500 hover:text-orange-500"}
+        >
           가격 낮은순
         </Link>
-        <span>|</span>
-        <Link href={`${baseUrl}?sort=views`} className={sortParam === "views" ? "text-orange-500 underline" : "hover:text-orange-500"}>
+        <span className="text-gray-300">•</span>
+        <Link 
+          href={`${baseUrl}?sort=views`} 
+          className={sortParam === "views" ? "text-orange-500 underline" : "text-gray-500 hover:text-orange-500"}
+        >
           조회수 높은순
         </Link>
       </div>
