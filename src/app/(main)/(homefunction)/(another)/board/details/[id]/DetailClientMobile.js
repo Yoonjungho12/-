@@ -158,7 +158,7 @@ function NearbyShops({ currentShopId }) {
           className="block rounded hover:bg-gray-50"
         >
           <div className="flex items-center gap-3">
-            <div className="relative w-40 h-25 flex-shrink-0 rounded overflow-hidden">
+            <div className="relative w-40 h-[100px] flex-shrink-0 rounded overflow-hidden">
               {shop.thumbnail_url ? (
                 <Image
                   src={baseUrl + "/" + shop.thumbnail_url}
@@ -978,7 +978,7 @@ export default function DetailClientMobile({ row, images, numericId }) {
       </section>
 
       {/* (F) 주변샵 */}
-      <section className="px-4 pt-4 pb-20 border-t">
+      <section className="px-4 pt-4 pb-0 md:pb-20 border-t">
         <h2 className="text-xl font-bold mb-2">주변샵</h2>
         <NearbyShops currentShopId={numericId} />
       </section>
