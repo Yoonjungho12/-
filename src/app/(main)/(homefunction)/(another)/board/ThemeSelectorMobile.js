@@ -37,21 +37,7 @@ export default function ThemeSelectorMobile({
         </div>
 
         {/* 정렬 옵션: 전체 | 최저가 순 | 조회수 순 */}
-        <div className="flex items-center gap-2 text-xs">
-          {/* 예시는 “최저가 순 / 조회수 순”에 대한 링크만 # 처리. 
-              실제로 /board/... 형태로 교체하면 됩니다. */}
-          <Link href="#" className="font-bold text-black no-underline">
-            전체
-          </Link>
-          <span className="text-gray-300">|</span>
-          <Link href="#" className="text-gray-600 no-underline">
-            최저가 순
-          </Link>
-          <span className="text-gray-300">|</span>
-          <Link href="#" className="text-gray-600 no-underline">
-            조회수 순
-          </Link>
-        </div>
+       
       </div>
 
       {/* (B) 테마 표: isOpen일 때만 표시 */}
@@ -70,17 +56,20 @@ export default function ThemeSelectorMobile({
 
                   // 스타일
                   const tdClass = isSelected
-                    ? "bg-[#f9665e] text-white"
-                    : "bg-white text-gray-800";
+                    ? "bg-gradient-to-r from-rose-500 to-orange-400 text-white font-medium"
+                    : "bg-white text-gray-600 hover:bg-gray-50";
 
                   return (
                     <td
                       key={th.id}
-                      className={`border border-gray-200 p-2 text-center align-middle text-sm cursor-pointer ${tdClass}`}
+                      className={`border border-gray-100 p-2 text-center align-middle text-sm cursor-pointer relative overflow-hidden ${tdClass}`}
                     >
                       <Link href={href} className="block no-underline text-xs">
                         {th.name}
                       </Link>
+                      {isSelected && (
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.1),transparent)]" />
+                      )}
                     </td>
                   );
                 })}
@@ -90,7 +79,7 @@ export default function ThemeSelectorMobile({
                   Array.from({ length: 4 - row.length }).map((_, extraIdx) => (
                     <td
                       key={`extra_${extraIdx}`}
-                      className="border border-gray-200 p-2 bg-gray-100"
+                      className="border border-gray-100 p-2 bg-gray-50"
                     />
                   ))}
               </tr>

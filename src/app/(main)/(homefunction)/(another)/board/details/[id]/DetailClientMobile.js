@@ -570,41 +570,6 @@ export default function DetailClientMobile({ row, images, numericId }) {
   // (6) 리뷰 개수
   const [reviewCount, setReviewCount] = useState(0);
 
-  // (7) 출근부
-  const [members, setMembers] = useState([]);
-  const [loadingMembers, setLoadingMembers] = useState(true);
-
-  useEffect(() => {
-    if (!numericId) {
-      setLoadingMembers(false);
-      return;
-    }
-    (async () => {
-      try {
-        const { data: memRows, error } = await supabase
-          .from("register")
-          .select("member")
-          .eq("partnershipsubmit_id", numericId);
-        if (error) throw error;
-
-        setMembers(memRows || []);
-      } catch (err) {
-        console.error("멤버 로드 오류:", err);
-      } finally {
-        setLoadingMembers(false);
-      }
-    })();
-  }, [numericId]);
-
-  const pastelArr = [
-    "bg-blue-50 text-blue-500",
-    "bg-pink-50 text-pink-500",
-    "bg-purple-50 text-purple-500",
-    "bg-green-50 text-green-500",
-    "bg-red-50 text-red-500",
-    "bg-yellow-50 text-yellow-500",
-  ];
-
   // (8) 연락방법
   const fullContact = row.contact_method
     ? row.contact_method + (row.near_building ? ` / ${row.near_building}` : "")
@@ -928,33 +893,6 @@ export default function DetailClientMobile({ row, images, numericId }) {
           <DetailRow label="연락방법" value={fullContact} />
           <DetailRow label="영업시간" value={row.open_hours} />
           <DetailRow label="주차안내" value={row.parking_type} />
-
-          {/* (C-1) 출근부 */}
-          {loadingMembers ? (
-            <DetailRow label="출근부" value="불러오는 중..." />
-          ) : members.length === 0 ? (
-            <DetailRow label="출근부" value=" " />
-          ) : (
-            <div className="mb-2">
-              <span className="inline-block w-24 font-semibold text-gray-700 shrink-0">
-                출근부
-              </span>
-              <div className="flex flex-wrap gap-2 mt-1">
-                {members.map((m, idx) => {
-                  const colorClass =
-                    pastelArr[Math.floor(Math.random() * pastelArr.length)];
-                  return (
-                    <span
-                      key={idx}
-                      className={`inline-block px-2 py-1 text-sm rounded ${colorClass}`}
-                    >
-                      {m.member}
-                    </span>
-                  );
-                })}
-              </div>
-            </div>
-          )}
         </div>
       </section>
 

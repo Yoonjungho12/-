@@ -151,9 +151,16 @@ export default function RegionSelectorSSR({
         </div>
       </div>
 
+      {/* 모바일 헤더 추가 */}
+      <div className="block md:hidden mb-3">
+        <h3 className="text-lg font-bold text-gray-900">
+          {regionSlug === "전체" ? "지역 선택" : "상세 지역"}
+        </h3>
+      </div>
+
       {/* (1) 상위 지역 */}
       {regionSlug === "전체" && (
-        <div className="region-grid-container gap-3 mb-4">
+        <div className="region-grid-container mb-4">
           {mainRegionItems.map((item) => {
             const isSelected = item.id === selectedParentId;
             const href = `/board/${item.region_slug}/전체/${themeName || "전체"}`;
@@ -170,7 +177,7 @@ export default function RegionSelectorSSR({
               <p className="text-gray-500">상위 지역을 먼저 선택해주세요.</p>
             </div>
           ) : (
-            <div className="region-grid-container gap-3 mb-4">
+            <div className="region-grid-container mb-4">
               {subregionItems.map((child) => {
                 const isSelected = child.id === selectedSubregionId;
                 const href = `/board/${regionSlug}/${child.region_slug}/${themeName || "전체"}`;
@@ -186,7 +193,7 @@ export default function RegionSelectorSSR({
         <h3 className="text-xl font-bold mb-4 bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
           테마 선택
         </h3>
-        <div className="theme-grid-container gap-3 mb-4">
+        <div className="theme-grid-container mb-4">
           {THEMES.map((th) => {
             const isSelected = selectedThemeIds.includes(th.id);
             const href = `/board/${regionSlug || "전체"}/${subregionSlug || "전체"}/${th.name}`;
@@ -196,7 +203,10 @@ export default function RegionSelectorSSR({
       </div>
 
       {/* (4) 모바일 테마 */}
-      <div className="mobile-theme mt-3">
+      <div className="mobile-theme mt-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-lg font-bold text-gray-900">테마 선택</h3>
+        </div>
         <ThemeSelectorMobile
           regionSlug={regionSlug}
           subregionSlug={subregionSlug}

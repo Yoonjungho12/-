@@ -742,34 +742,6 @@ export default function DetailClient({ row, images, numericId, showBlurDefault }
             <DetailRow label="휴무일" value={row.holiday} />
             <DetailRow label="주차안내" value={row.parking_type} />
           </div>
-
-          {/* 출근부 */}
-          {loadingMembers ? (
-            <div className="mb-4 flex items-center mt-6">
-              <span className="w-24 font-semibold text-gray-600 text-sm">출근부</span>
-              <span className="text-gray-800 text-sm">불러오는 중...</span>
-            </div>
-          ) : members.length > 0 ? (
-            <div className="mb-4 flex items-center mt-6">
-              <span className="w-24 font-semibold text-gray-600 text-sm">출근부</span>
-              <div className="flex flex-wrap gap-3">
-                {members.map((m, index) => {
-                  const colorClass = pastelColors[index % pastelColors.length];
-                  return (
-                    <motion.span
-                      key={index}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      className={`inline-block px-3 py-1.5 text-xs rounded-full ${colorClass} shadow-sm hover:shadow-md transition-shadow duration-300`}
-                    >
-                      {m.member}
-                    </motion.span>
-                  );
-                })}
-              </div>
-            </div>
-          ) : null}
         </motion.div>
 
         <div className="border-[0.5px] border-gray-200 my-8"></div>

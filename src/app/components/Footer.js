@@ -42,12 +42,12 @@ export default function Footer() {
             </div>
 
             <div className="flex justify-center gap-6 mt-6">
-              <button className="px-6 py-2.5 rounded-full text-sm font-medium bg-white text-orange-400 border border-orange-400 flex items-center gap-1">
+              <a href="https://open.kakao.com/o/sF0jBaqh" target="_blank" rel="noopener noreferrer" className="px-6 py-2.5 rounded-full text-sm font-medium bg-white text-orange-400 border border-orange-400 flex items-center gap-1 hover:bg-orange-50">
                 1:1 문의
-              </button>
-              <button className="px-6 py-2.5 rounded-full text-sm font-medium bg-white text-orange-400 border border-orange-400 flex items-center gap-1">
+              </a>
+              <a href="https://open.kakao.com/o/sF0jBaqh" target="_blank" rel="noopener noreferrer" className="px-6 py-2.5 rounded-full text-sm font-medium bg-white text-orange-400 border border-orange-400 flex items-center gap-1 hover:bg-orange-50">
                 제휴문의
-              </button>
+              </a>
             </div>
 
             <div className="text-slate-400 text-[10px] mt-3 text-center">
@@ -83,12 +83,12 @@ export default function Footer() {
 
             <div className="mt-6 pt-5 border-t border-slate-200 flex justify-center gap-6">
               <div className="flex items-center gap-6">
-                <button className="px-6 py-2.5 rounded-full text-sm font-medium bg-white text-orange-400 border border-orange-400 flex items-center gap-1">
+                <a href="https://open.kakao.com/o/sF0jBaqh" target="_blank" rel="noopener noreferrer" className="px-6 py-2.5 rounded-full text-sm font-medium bg-white text-orange-400 border border-orange-400 flex items-center gap-1 hover:bg-orange-50">
                   1:1 문의
-                </button>
-                <button className="px-6 py-2.5 rounded-full text-sm font-medium bg-white text-orange-400 border border-orange-400 flex items-center gap-1">
+                </a>
+                <a href="https://open.kakao.com/o/sF0jBaqh" target="_blank" rel="noopener noreferrer" className="px-6 py-2.5 rounded-full text-sm font-medium bg-white text-orange-400 border border-orange-400 flex items-center gap-1 hover:bg-orange-50">
                   제휴문의
-                </button>
+                </a>
               </div>
             </div>
           </div>
