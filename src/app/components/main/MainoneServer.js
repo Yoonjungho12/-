@@ -44,6 +44,9 @@ export default async function MainoneServer() {
           id,
           name
         )
+      ),
+      sections (
+        courses ( price )
       )
     `)
     .eq("final_admitted", true)

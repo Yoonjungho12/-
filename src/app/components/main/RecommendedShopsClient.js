@@ -151,23 +151,23 @@ export default function RecommendedShopsClient({ initialTag, initialShops }) {
         {/* 제목 섹션 */}
         <div className={`
           text-center 
-          mb-8 
+          mb-8
           transition-all 
           duration-1000 
           delay-300
           transform
           ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}
         `}>
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">
+          <h2 className="text-xl md:text-2xl font-bold text-white mb-2">
             여기닷! 테마별 제휴점 추천
           </h2>
-          <p className="text-white/90 text-sm md:text-base">
+          <p className="text-white/90 text-xs md:text-sm">
             회원님께서 필요한 제휴점을 테마별로 빠르게 찾아보세요!
           </p>
         </div>
 
         {/* 태그 버튼들 */}
-        <div className="flex flex-wrap justify-center gap-3 mb-12">
+        <div className="flex flex-wrap justify-center gap-2 mb-8">
           {tags.map((tag, index) => {
             const isSelected = tag === selectedTag;
             return (
@@ -181,8 +181,8 @@ export default function RecommendedShopsClient({ initialTag, initialShops }) {
                   ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}
                   hover:scale-105
                   ${isSelected
-                    ? "rounded-full bg-white shadow-lg px-6 py-2.5 text-orange-500 font-semibold border-2 border-white text-sm md:text-base"
-                    : "rounded-full bg-white/20 backdrop-blur-sm px-6 py-2.5 text-white hover:bg-white/30 text-sm md:text-base"
+                    ? "rounded-full bg-white shadow-lg px-4 py-1.5 md:px-6 md:py-2.5 text-orange-500 font-semibold border-2 border-white text-xs md:text-sm"
+                    : "rounded-full bg-white/20 backdrop-blur-sm px-4 py-1.5 md:px-6 md:py-2.5 text-white hover:bg-white/30 text-xs md:text-sm"
                   }
                 `}
                 style={{
@@ -203,7 +203,7 @@ export default function RecommendedShopsClient({ initialTag, initialShops }) {
               className="
                 flex
                 overflow-x-auto
-                gap-6
+                gap-3
                 snap-x 
                 snap-mandatory
                 hide-scrollbar
@@ -217,10 +217,10 @@ export default function RecommendedShopsClient({ initialTag, initialShops }) {
                   href={`/board/details/${shop.id}`}
                   className={`
                     shrink-0
-                    w-[293px]
-                    h-[362px]
+                    w-[220px]
+                    h-[260px]
                     snap-start
-                    rounded-2xl
+                    rounded-xl
                     shadow-lg
                     relative
                     overflow-hidden
@@ -233,7 +233,7 @@ export default function RecommendedShopsClient({ initialTag, initialShops }) {
                     bg-black
                   `}
                   style={{
-                    transitionDelay: `${index * 100 + 900}ms`
+                    transitionDelay: `${index * 50 + 300}ms`
                   }}
                 >
                   <div className="w-full h-full transition-transform duration-300 ease-out hover:scale-105">
@@ -245,16 +245,16 @@ export default function RecommendedShopsClient({ initialTag, initialShops }) {
                       style={{ objectFit: "cover", opacity: "0.9" }}
                       quality={30}
                       priority
-                      sizes="293px"
+                      sizes="220px"
                       className="transition-all duration-300 ease-out hover:opacity-100"
                     />
                   </div>
-                  <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/90 via-black/60 to-transparent transform transition-all duration-300 ease-out hover:translate-y-0">
-                    <h3 className="text-lg font-bold text-white mb-2 transform transition-all duration-300 ease-out group-hover:translate-y-0">
+                  <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/90 via-black/60 to-transparent">
+                    <h3 className="text-base font-bold text-white mb-1">
                       {shop.company_name}
                     </h3>
-                    <p className="text-gray-200 text-sm mb-1 transform transition-all duration-300 ease-out group-hover:translate-y-0">{shop.address}</p>
-                    <p className="text-gray-300 text-sm transform transition-all duration-300 ease-out group-hover:translate-y-0">
+                    <p className="text-gray-200 text-xs mb-1">{shop.address}</p>
+                    <p className="text-gray-300 text-xs">
                       리뷰 {shop.reviewCount}
                     </p>
                   </div>
@@ -288,7 +288,7 @@ export default function RecommendedShopsClient({ initialTag, initialShops }) {
                   group
                 `}
                 style={{
-                  transitionDelay: `${index * 100 + 900}ms`
+                  transitionDelay: `${index * 50 + 300}ms`
                 }}
               >
                 <div className="w-full h-full transition-transform duration-300 ease-out group-hover:scale-105">

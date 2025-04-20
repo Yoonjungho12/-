@@ -231,9 +231,8 @@ export default async function PartnershipTable({
 
   if (!posts || posts.length === 0) {
     return (
-      <div style={{ marginTop: "1rem" }}>
-        <b>{regionSlug}</b> / <b>{subregionSlug}</b> / <b>{themeName}</b>
-        에 해당하는 업체가 없습니다.
+      <div className="mt-4 text-center text-gray-600">
+        <b>{regionSlug}</b> / <b>{subregionSlug}</b> / <b>{themeName}</b> 에 해당하는 업체가 없습니다.
       </div>
     );
   }
@@ -241,5 +240,11 @@ export default async function PartnershipTable({
   // (E) 정렬 링크
   const baseUrl = `/club/${regionSlug}/${subregionSlug}/${themeName}`;
 
-  return <PartnershipTableClient posts={posts} baseUrl={baseUrl} sortParam={sortParam} />;
+  // (F) 각 포스트에 displayPrice 추가
+  const postsWithPrice = posts.map(post => ({
+    ...post,
+    displayPrice: formatPrice(getLowestPrice(post))
+  }));
+
+  return <PartnershipTableClient posts={postsWithPrice} baseUrl={baseUrl} sortParam={sortParam} />;
 }

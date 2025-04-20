@@ -1,4 +1,3 @@
-// PartnershipRow.client.jsx
 "use client";
 
 import Link from "next/link";
@@ -54,7 +53,10 @@ export default function PartnershipRow({ item, displayPrice, mobileInfo, slug })
         ? "bg-gradient-to-r from-rose-50/80 via-orange-50/60 to-amber-50/50 hover:from-rose-100/80 hover:via-orange-50/70 hover:to-amber-50/60 shadow-[inset_0_0_0_1px_rgba(244,63,94,0.1)]" 
         : "hover:bg-orange-50/50"
     }`}>
-      <td className="py-4 px-6 desktop-only">
+      <td className="py-4 px-6 desktop-only relative">
+        {isVIP && (
+          <span className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-rose-300 via-rose-400 to-orange-300 opacity-70" />
+        )}
         <Link href={`/board/details/${item.id}`} className="block group">
           <div className="flex items-center gap-3">
             {isVIP && (
@@ -113,10 +115,6 @@ export default function PartnershipRow({ item, displayPrice, mobileInfo, slug })
           {item.comment || 0}
         </span>
       </td>
-
-      {isVIP && (
-        <div className="absolute inset-y-0 -left-1 w-1 bg-gradient-to-b from-rose-300 via-rose-400 to-orange-300 opacity-70" />
-      )}
     </tr>
   );
 }

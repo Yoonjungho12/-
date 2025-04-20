@@ -192,7 +192,7 @@ export default function WritePage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="max-w-6xl mx-auto mb-10">
       {/* 게시판 이름과 등록 버튼을 포함하는 헤더 */}
       <div className="flex justify-between items-center mt-1 md:mt-3 pl-3 md:pl-0 mb-2 md:mb-4">
         <h2>

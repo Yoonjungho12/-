@@ -41,7 +41,7 @@ export default function BannerClient() {
 
       {/* 2) 모바일 배너 */}
       <div className="block md:hidden">
-        <div className="w-full h-[150px] relative">
+        <div className="w-full h-[130px] relative">
           {currentBanner === 1 ? (
             <Image
               src="/logo/banner1.gif"

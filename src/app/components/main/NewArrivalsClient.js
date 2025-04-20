@@ -144,7 +144,7 @@ export default function NewArrivalsSectionClient({ shopCards }) {
       </div>
 
       <Link
-        href={"/board/전체/전체"}
+        href={"/board/전체/전체/전체"}
         className="mt-16 rounded-full border border-gray-300 px-8 py-3 text-gray-600 hover:bg-orange-50 hover:border-orange-200 hover:text-orange-500 transition-all duration-300 font-medium"
       >
         더보기 +

@@ -141,24 +141,38 @@ export default function NewListingPage() {
   // 5) 지역(상위·하위) 및 테마 정보 가져오기
   // ─────────────────────────────────────────────
   useEffect(() => {
-    // 상위 지역
+    // 1. useEffect 실행 확인
+    console.log("useEffect 실행됨");
+
     async function fetchRegions() {
       try {
+        // 2. 함수 실행 확인
+        console.log("fetchRegions 함수 시작");
+
         const { data, error } = await supabase
           .from("regions")
           .select("*")
           .is("parent_id", null)
           .order("sort_order", { ascending: true });
 
+        // 3. 결과 확인
+        console.log("supabase 쿼리 완료");
+        console.log("데이터:", data);
+        console.log("에러:", error);
+
         if (error) {
           console.error("지역 가져오기 에러:", error);
         } else {
           setRegions(data || []);
+          // 4. regions 상태 업데이트 확인
+          console.log("regions 상태 업데이트:", data);
         }
       } catch (err) {
-        console.error("fetchRegions 오류:", err);
+        // 5. 전체 에러 확인
+        console.error("fetchRegions 전체 오류:", err);
       }
     }
+
     fetchRegions();
 
     // 테마
