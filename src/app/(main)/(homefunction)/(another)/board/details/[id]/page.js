@@ -100,6 +100,23 @@ export default async function DetailPage({ params:param }) {
     return sectionMin < min ? sectionMin : min;
   }, Infinity);
 
+  const { data: nearbyShopsRaw } = await supabase
+    .from("partnershipsubmit")
+    .select("id, lat, lng, company_name, address, near_building, thumbnail_url")
+    .eq("final_admitted", true);
+
+  const nearbyShops = nearbyShopsRaw
+    ?.filter(shop => shop.lat !== null && shop.lng !== null)
+    .map(shop => ({
+      id: shop.id,
+      lat: shop.lat,
+      lng: shop.lng,
+      company_name: shop.company_name,
+      address: shop.address,
+      near_building: shop.near_building,
+      thumbnail_url: shop.thumbnail_url
+    })) || [];
+
   const userAgent = requestHeaders.get("user-agent") || "";
   const isMobile = /Mobile|Android|iP(hone|od)|IEMobile|BlackBerry/i.test(userAgent);
 
@@ -144,6 +161,7 @@ export default async function DetailPage({ params:param }) {
       showBlurDefault={showBlurDefault}
       sectionsData={sectionsData}
       lowestPrice={lowestPrice}
+      nearbyShops={nearbyShops}
     />
   );
 }

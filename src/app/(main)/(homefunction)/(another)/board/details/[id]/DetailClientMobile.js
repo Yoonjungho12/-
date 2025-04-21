@@ -192,16 +192,25 @@ function NearbyShops({ currentShopId }) {
 }
 
 /** (G) 메인 모바일 상세페이지 컴포넌트 */
-export default function DetailClientMobile({ row, images, numericId, showBlurDefault }) {
+export default function DetailClientMobile({
+  row,
+  images,
+  numericId,
+  showBlurDefault,
+  sectionsData,
+  lowestPrice,
+  nearbyShops
+}) {
   const [session, setSession] = useState(null);
   const [showBlur, setShowBlur] = useState(showBlurDefault);
   const [isLoading, setIsLoading] = useState(true);
   const [loadingPopup, setLoadingPopup] = useState(false);
-  // "가고싶다" 여부
   const [isSaved, setIsSaved] = useState(false);
-  // 조회수
   const [views, setViews] = useState(row.views || 0);
   const [hasCountedView, setHasCountedView] = useState(false);
+
+  // sections 상태 관리 (sectionsData를 초기값으로 사용)
+  const [sections, setSections] = useState(sectionsData);
 
   // 세션 체크 및 성인 인증 상태 확인
   useEffect(() => {
@@ -472,70 +481,11 @@ export default function DetailClientMobile({ row, images, numericId, showBlurDef
   }
 
   // (5) 코스 + 최저가
-  const [sectionsData, setSectionsData] = useState([]);
   const [loadingSections, setLoadingSections] = useState(true);
-  const [lowestPrice, setLowestPrice] = useState(0);
 
-  useEffect(() => {
-    if (!numericId) {
-      setLoadingSections(false);
-      return;
-    }
-    (async () => {
-      try {
-        const { data: secRows } = await supabase
-          .from("sections")
-          .select("*")
-          .eq("post_id", numericId)
-          .order("display_order", { ascending: true });
-
-        if (!secRows || secRows.length === 0) {
-          setSectionsData([]);
-          setLoadingSections(false);
-          return;
-        }
-        const secIds = secRows.map((s) => s.id);
-        const { data: couRows } = await supabase
-          .from("courses")
-          .select("*")
-          .in("section_id", secIds)
-          .order("display_order", { ascending: true });
-
-        const merged = secRows.map((sec) => {
-          const related = (couRows || []).filter((c) => c.section_id === sec.id);
-          return {
-            ...sec,
-            isOpen: true,
-            courses: related.map((c) => ({
-              id: c.id,
-              course_name: c.course_name,
-              duration: c.duration || "",
-              price: c.price || 0,
-              etc_info: c.etc_info || "",
-            })),
-          };
-        });
-
-        setSectionsData(merged);
-
-        let minP = Infinity;
-        (couRows || []).forEach((cc) => {
-          if (cc.price && cc.price < minP) {
-            minP = cc.price;
-          }
-        });
-        if (minP === Infinity) minP = 0;
-        setLowestPrice(minP);
-      } catch (err) {
-        console.error("섹션/코스 오류:", err);
-      } finally {
-        setLoadingSections(false);
-      }
-    })();
-  }, [numericId]);
-
+  // 섹션 토글 함수
   function toggleSectionOpen(secId) {
-    setSectionsData((prev) =>
+    setSections((prev) =>
       prev.map((s) => (s.id === secId ? { ...s, isOpen: !s.isOpen } : s))
     );
   }
@@ -556,7 +506,7 @@ export default function DetailClientMobile({ row, images, numericId, showBlurDef
 
   function getTabClass(tabId) {
     return `flex-1 py-3 text-center font-semibold ${
-      activeTab === tabId ? "border-b-2 border-red-500 text-red-500" : ""
+      activeTab === tabId ? "border-b-2 border-orange-500 tex-orange-500" : ""
     }`;
   }
   function scrollToRef(ref) {
@@ -708,7 +658,7 @@ export default function DetailClientMobile({ row, images, numericId, showBlurDef
             className={getTabClass("course")}
             onClick={() => handleTabClick("course")}
           >
-            안내글
+            코스안내
           </button>
           <button
             className={getTabClass("review")}
@@ -760,34 +710,37 @@ export default function DetailClientMobile({ row, images, numericId, showBlurDef
         </div>
       </section>
 
+      {/* 이벤트 정보 추가 */}
+      {row.event_info?.trim() && (
+        <section className="px-4 pt-4 pb-6 border-t">
+          <h2 className="text-xl font-bold mb-2">이벤트</h2>
+          <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+            <div className="text-gray-800 whitespace-pre-wrap text-sm">
+              {row.event_info}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* (D) 코스안내 섹션 */}
       <section id="course" ref={courseRef} className="px-4 pt-4 pb-6 border-t">
-        <h2 className="text-xl font-bold mb-2">안내글</h2>
+        <h2 className="text-xl font-bold mb-2">코스안내</h2>
         <p className="text-sm text-gray-500 mb-2">
-          ※ 휴대폰 전원이 OFF인 경우, 샵 휴무 또는 예약이 꽉 찼을 수 있습니다.
+          {row.program_info || "※ 휴대폰 전원이 OFF인 경우, 샵 휴무 또는 예약이 꽉 찼을 수 있습니다."}
         </p>
 
-        {loadingSections ? (
-          <div className="py-4 text-center text-gray-500">로딩중...</div>
-        ) : sectionsData.length === 0 ? (
+        {sections.length === 0 ? (
           <div className="py-4 text-gray-500">등록된 코스가 없습니다.</div>
         ) : (
           <div className="space-y-3">
-            {sectionsData.map((sec) => (
-              <div
-                key={sec.id}
-                className="border border-gray-200 rounded overflow-hidden"
-              >
+            {sections.map((sec) => (
+              <div key={sec.id} className="border border-gray-200 rounded overflow-hidden">
                 <button
                   onClick={() => toggleSectionOpen(sec.id)}
                   className="w-full flex items-center justify-between bg-gray-100 px-4 py-2"
                 >
-                  <span className="font-semibold text-gray-700">
-                    {sec.section_title}
-                  </span>
-                  <span className="text-sm text-gray-400">
-                    {sec.isOpen ? "▲" : "▼"}
-                  </span>
+                  <span className="font-semibold text-gray-700">{sec.title}</span>
+                  <span className="text-sm text-gray-400">{sec.isOpen ? "▲" : "▼"}</span>
                 </button>
 
                 {sec.isOpen && (
