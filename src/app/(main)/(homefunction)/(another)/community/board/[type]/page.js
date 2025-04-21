@@ -102,23 +102,23 @@ export default async function BoardPage({ params:param}) {
             <svg className="w-4 h-4 mx-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
-            <span className="text-orange-500 font-medium">{boardInfo.name}</span>
+            <span className="text-orange-500 font-medium truncate">{boardInfo.name}</span>
           </nav>
         </div>
 
-        <div className="flex gap-8">
+        <div className="flex flex-col lg:flex-row gap-8">
           {/* 왼쪽 게시판 영역 */}
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             {/* 상단 네비게이션 */}
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 mb-6">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900 mb-1">{boardInfo.name}</h1>
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1 break-all">{boardInfo.name}</h1>
                 <p className="text-sm text-gray-500">다양한 의견을 자유롭게 나누어보세요</p>
               </div>
               {boardInfo.id !== 1 && (
                 <Link
                   href={`/community/board/${decodedType}/write`}
-                  className="flex items-center gap-2 px-6 py-2.5 bg-orange-500 text-white rounded-xl hover:bg-orange-600 text-sm font-medium transition-all duration-200 shadow-sm hover:shadow-md"
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 bg-orange-500 text-white rounded-xl hover:bg-orange-600 text-sm font-medium transition-all duration-200 shadow-sm hover:shadow-md"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -132,10 +132,10 @@ export default async function BoardPage({ params:param}) {
             <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead>
+                  <thead className="hidden sm:table-header-group">
                     <tr className="bg-gray-50">
                       <th className="py-4 w-16 text-center text-xs font-medium text-gray-500">번호</th>
-                      <th className="py-4 text-left text-xs font-medium text-gray-500">제목</th>
+                      <th className="py-4 text-left text-xs font-medium text-gray-500 px-4">제목</th>
                       <th className="py-4 w-24 text-center text-xs font-medium text-gray-500">글쓴이</th>
                       <th className="py-4 w-20 text-center text-xs font-medium text-gray-500">작성일</th>
                       <th className="py-4 w-16 text-center text-xs font-medium text-gray-500">조회</th>
@@ -164,15 +164,15 @@ export default async function BoardPage({ params:param}) {
             </div>
 
             {/* 페이지네이션 */}
-            <div className="mt-8">
+            <div className="mt-6 sm:mt-8">
               <div className="flex justify-center gap-1">
-                <button className="px-4 py-2 text-sm text-gray-600 hover:text-orange-500 transition-colors">
+                <button className="p-2 sm:px-4 sm:py-2 text-sm text-gray-600 hover:text-orange-500 transition-colors">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
-                <button className="px-4 py-2 text-sm bg-orange-500 text-white rounded-lg">1</button>
-                <button className="px-4 py-2 text-sm text-gray-600 hover:text-orange-500 transition-colors">
+                <button className="p-2 sm:px-4 sm:py-2 text-sm bg-orange-500 text-white rounded-lg">1</button>
+                <button className="p-2 sm:px-4 sm:py-2 text-sm text-gray-600 hover:text-orange-500 transition-colors">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
@@ -181,8 +181,8 @@ export default async function BoardPage({ params:param}) {
             </div>
           </div>
 
-          {/* 오른쪽 광고 영역 */}
-          <div className="w-[300px] shrink-0">
+          {/* 오른쪽 광고 영역 - 모바일에서는 숨김 */}
+          <div className="hidden lg:block w-[300px] shrink-0">
             <div className="sticky top-5">
               <div className="bg-white rounded-2xl shadow-sm p-6 h-[600px] flex items-center justify-center text-gray-400 text-sm">
                 광고 영역

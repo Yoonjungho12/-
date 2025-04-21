@@ -182,23 +182,23 @@ export default function ClientUI({ city, district, theme }) {
           </div>
 
           {/* 필터 버튼들 */}
-          <div className="mx-auto mt-6 flex max-w-2xl items-center justify-center gap-3">
+          <div className="mx-auto mt-6 flex max-w-2xl items-center justify-center gap-3 flex-wrap">
             <button
               onClick={handleToggleFilter}
-              className="flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-gray-700 ring-1 ring-gray-200 transition-all hover:bg-gray-50"
+              className="flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-gray-700 ring-1 ring-gray-200 transition-all hover:bg-gray-50 text-sm sm:text-base w-full sm:w-auto justify-center"
             >
-              <span>{city} {district}</span>
-              <svg className={`h-4 w-4 transition-transform ${isFilterOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <span className="truncate">{city} {district}</span>
+              <svg className={`h-4 w-4 transition-transform ${isFilterOpen ? 'rotate-180' : ''} flex-shrink-0`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </button>
 
             <button
               onClick={handleToggleTheme}
-              className="flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-gray-700 ring-1 ring-gray-200 transition-all hover:bg-gray-50"
+              className="flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-gray-700 ring-1 ring-gray-200 transition-all hover:bg-gray-50 text-sm sm:text-base w-full sm:w-auto justify-center"
             >
-              <span>테마: {theme}</span>
-              <svg className={`h-4 w-4 transition-transform ${isThemeOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <span className="truncate">테마: {theme}</span>
+              <svg className={`h-4 w-4 transition-transform ${isThemeOpen ? 'rotate-180' : ''} flex-shrink-0`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </button>
@@ -206,10 +206,10 @@ export default function ClientUI({ city, district, theme }) {
 
           {/* 테마 선택 영역 */}
           <div className={`mx-auto mt-3 max-w-4xl overflow-hidden transition-all duration-300 ease-in-out ${
-            isThemeOpen ? 'max-h-[200px] opacity-100' : 'max-h-0 opacity-0'
+            isThemeOpen ? 'max-h-[400px] sm:max-h-[200px] opacity-100' : 'max-h-0 opacity-0'
           }`}>
-            <div className="max-h-[200px] overflow-y-auto px-4">
-              <div className="flex flex-wrap justify-center gap-2">
+            <div className="max-h-[400px] sm:max-h-[200px] overflow-y-auto px-4">
+              <div className="flex flex-wrap justify-center gap-2 py-2">
                 {THEMES.map((th) => (
                   <button
                     key={th.id}
@@ -217,7 +217,7 @@ export default function ClientUI({ city, district, theme }) {
                       handleSelectTheme(th.name);
                       setIsThemeOpen(false);
                     }}
-                    className={`rounded-full px-4 py-2 text-sm transition-all ${
+                    className={`rounded-full px-4 py-2.5 text-sm transition-all min-w-[80px] ${
                       theme === th.name 
                         ? 'bg-orange-500 text-white' 
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -235,43 +235,45 @@ export default function ClientUI({ city, district, theme }) {
       {/* 필터 영역 */}
       <div className={`w-full bg-white border-t border-gray-100 ${
         isInitialRender 
-          ? isFilterOpen ? 'h-[400px] opacity-100' : 'h-0 opacity-0 overflow-hidden'
+          ? isFilterOpen ? 'h-[500px] sm:h-[400px] opacity-100' : 'h-0 opacity-0 overflow-hidden'
           : `transition-all duration-300 ease-in-out ${
-              isFilterOpen ? 'h-[400px] opacity-100' : 'h-0 opacity-0 overflow-hidden'
+              isFilterOpen ? 'h-[500px] sm:h-[400px] opacity-100' : 'h-0 opacity-0 overflow-hidden'
             }`
       }`}>
         <div className="mx-auto max-w-6xl h-full py-6 px-4">
-          <div className="flex gap-12 h-full">
+          <div className="flex flex-col sm:flex-row gap-6 sm:gap-12 h-full">
             {/* 왼쪽 시·도 목록 */}
-            <div className="w-48 h-full">
+            <div className="w-full sm:w-48 h-1/2 sm:h-full">
               <h3 className="mb-3 text-sm font-medium text-gray-500">시·도</h3>
-              <div className="h-[calc(100%-2rem)] overflow-y-auto pr-2 space-y-1">
-                {REGIONS.map((region) => (
-                  <button
-                    key={region.id}
-                    onClick={() => handleSelectCity(region.name)}
-                    className={`w-full rounded-lg px-4 py-2 text-left text-sm transition-all ${
-                      city === region.name 
-                        ? "bg-orange-500 text-white" 
-                        : "text-gray-600 hover:bg-gray-100"
-                    }`}
-                  >
-                    {region.name}
-                  </button>
-                ))}
+              <div className="h-[calc(100%-2rem)] overflow-y-auto pr-2">
+                <div className="grid grid-cols-4 sm:grid-cols-1 gap-2">
+                  {REGIONS.map((region) => (
+                    <button
+                      key={region.id}
+                      onClick={() => handleSelectCity(region.name)}
+                      className={`w-full rounded-lg px-4 py-2.5 text-center sm:text-left text-sm transition-all ${
+                        city === region.name 
+                          ? "bg-orange-500 text-white" 
+                          : "text-gray-600 hover:bg-gray-100"
+                      }`}
+                    >
+                      {region.name}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
             {/* 오른쪽 구·군 목록 */}
-            <div className="flex-1 h-full">
+            <div className="flex-1 h-1/2 sm:h-full">
               <h3 className="mb-3 text-sm font-medium text-gray-500">구·군</h3>
               <div className="h-[calc(100%-2rem)] overflow-y-auto pr-2">
-                <div className="grid grid-cols-6 gap-2">
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
                   {districtsData.map((dist) => (
                     <button
                       key={dist.id}
                       onClick={() => handleSelectDistrict(dist.name)}
-                      className={`rounded-lg py-2 px-3 text-sm transition-all ${
+                      className={`rounded-lg py-2.5 px-3 text-sm transition-all ${
                         district === dist.name 
                           ? "bg-orange-500 text-white" 
                           : "text-gray-600 hover:bg-gray-100"

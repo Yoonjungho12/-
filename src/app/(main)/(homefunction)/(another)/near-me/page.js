@@ -105,7 +105,7 @@ export default function NearMeListPage() {
   // 주소 (reverse geocoding)
   const [address, setAddress] = useState("");
 
-  // 지도 보임/숨김
+  // 지도 보임/숨김 - 모바일일 때 기본값 true로 설정
   const [mapHidden, setMapHidden] = useState(false);
 
   // 위치/데이터 로딩 완료 여부
@@ -113,6 +113,9 @@ export default function NearMeListPage() {
 
   // 최초 한 번만 자동 닫기
   const [didAutoClose, setDidAutoClose] = useState(false);
+
+  // 모바일 체크
+  const [isMobile, setIsMobile] = useState(false);
 
   // ─────────────────────────────────────────────────────
   // (A) 사용자 위치 받아오기 (IP 기반)
@@ -176,6 +179,19 @@ export default function NearMeListPage() {
       });
     }
   }, [userLat, userLng]);
+
+  // 모바일 체크 useEffect 추가
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+      setMapHidden(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   /** 지도 초기화 */
   function initMap(lat, lng) {
@@ -253,7 +269,7 @@ export default function NearMeListPage() {
     setLocationLoaded(true);
   }
 
-  // 지도 열고 닫기
+  // 지도 열고 닫기 함수 수정
   function handleToggleMap() {
     if (!locationLoaded) {
       alert("아직 위치/데이터 로딩 중입니다!");
@@ -357,7 +373,11 @@ async function handleSearchAddress() {
                 </div>
                 <button
                   onClick={handleToggleMap}
-                  className="px-4 py-2 bg-white border border-gray-200 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                    mapHidden 
+                      ? "bg-orange-500 text-white hover:bg-orange-600" 
+                      : "bg-white border border-gray-200 text-gray-700 hover:bg-gray-50"
+                  }`}
                 >
                   {mapHidden ? "지도 보기" : "지도 접기"}
                 </button>
@@ -485,12 +505,108 @@ function ShopCard({ shop, userLat, userLng }) {
       <div className="flex flex-col md:flex-row">
         {/* 이미지 영역 */}
         <div className="relative w-full md:w-[373px] h-[300px] md:h-[250px] flex-shrink-0">
-          <Image
-            src={url}
-            alt={shop.company_name}
-            fill
-            className="object-cover group-hover:scale-105 transition-transform duration-500"
-          />
+          <div className="relative w-full aspect-[16/9] bg-gray-100">
+            <div className="absolute inset-0">
+              {Array.isArray(url) ? (
+                <div
+                  className="relative w-full h-full"
+                  onTouchStart={handleTouchStart}
+                  onTouchMove={handleTouchMove}
+                  onTouchEnd={handleTouchEnd}
+                >
+                  {url.map((imgUrl, idx) => (
+                    <div
+                      key={idx}
+                      className="absolute inset-0 transition-opacity duration-300"
+                      style={{ opacity: currentIndex === idx ? 1 : 0 }}
+                    >
+                      <Image
+                        src={imgUrl}
+                        alt={`슬라이드 이미지 ${idx + 1}`}
+                        fill
+                        sizes="100vw"
+                        priority={idx === 0}
+                        className="object-contain"
+                        style={{
+                          backgroundColor: 'rgba(0, 0, 0, 0.05)'
+                        }}
+                      />
+                    </div>
+                  ))}
+
+                  {url.length > 1 && (
+                    <>
+                      <button
+                        onClick={handlePrev}
+                        className="absolute top-1/2 left-2 -translate-y-1/2 bg-black/40 text-white w-8 h-8 rounded-full flex items-center justify-center z-10"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          viewBox="0 0 24 24"
+                          className="w-4 h-4"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M15.75 19.5L8.25 12l7.5-7.5"
+                          />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={handleNext}
+                        className="absolute top-1/2 right-2 -translate-y-1/2 bg-black/40 text-white w-8 h-8 rounded-full flex items-center justify-center z-10"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          viewBox="0 0 24 24"
+                          className="w-4 h-4"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M8.25 4.5l7.5 7.5-7.5 7.5"
+                          />
+                        </svg>
+                      </button>
+                    </>
+                  )}
+
+                  {url.length > 0 && (
+                    <div className="absolute bottom-2 right-2 px-2 py-1 text-sm bg-black/60 text-white rounded z-10">
+                      {currentIndex + 1} / {url.length}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="relative flex-shrink-0 w-full aspect-[4/3]">
+                  <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+                    <div className="animate-pulse">로딩중...</div>
+                  </div>
+                  <Image
+                    src={url}
+                    alt={shop.company_name}
+                    fill
+                    sizes="100vw"
+                    priority={true}
+                    className="object-cover"
+                    style={{
+                      objectFit: 'contain',
+                      backgroundColor: 'rgba(0, 0, 0, 0.05)'
+                    }}
+                    onLoadingComplete={(img) => {
+                      img.style.opacity = '1';
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
           <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         </div>
 
@@ -545,5 +661,17 @@ function ShopCard({ shop, userLat, userLng }) {
         </div>
       </div>
     </Link>
+  );
+}
+
+function handleNext() {
+  setCurrentIndex((prev) => 
+    prev === allImages.length - 1 ? 0 : prev + 1
+  );
+}
+
+function handlePrev() {
+  setCurrentIndex((prev) => 
+    prev === 0 ? allImages.length - 1 : prev - 1
   );
 }

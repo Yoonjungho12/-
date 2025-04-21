@@ -192,132 +192,123 @@ function NearbyShops({ currentShopId }) {
 }
 
 /** (G) 메인 모바일 상세페이지 컴포넌트 */
-export default function DetailClientMobile({ row, images, numericId }) {
-  // 세션 관련
+export default function DetailClientMobile({ row, images, numericId, showBlurDefault }) {
   const [session, setSession] = useState(null);
-  const [isAdultUser, setIsAdultUser] = useState(false);
-  const [isAdultContent, setIsAdultContent] = useState(false);
+  const [showBlur, setShowBlur] = useState(showBlurDefault);
   const [isLoading, setIsLoading] = useState(true);
-  const [showBlur, setShowBlur] = useState(true);
+  const [loadingPopup, setLoadingPopup] = useState(false);
   // "가고싶다" 여부
   const [isSaved, setIsSaved] = useState(false);
   // 조회수
   const [views, setViews] = useState(row.views || 0);
   const [hasCountedView, setHasCountedView] = useState(false);
 
-  // 세션 체크 및 성인 여부 확인
+  // 세션 체크 및 성인 인증 상태 확인
   useEffect(() => {
-    // 초기 세션 체크
-    supabase.auth
-      .getSession()
-      .then(({ data, error }) => {
-        if (error) {
-          console.error("[getSession error]:", error);
-        } else {
-          setSession(data.session || null);
-          if (data.session?.user) {
-            // 성인 여부 확인
-            supabase
-              .from('profiles')
-              .select('is_adult')
-              .eq('user_id', data.session.user.id)
-              .single()
-              .then(({ data: profile, error: profileError }) => {
-                if (profileError) {
-                  console.error("[profile error]:", profileError);
-                } else {
-                  setIsAdultUser(profile?.is_adult || false);
-                }
-              });
-          }
-        }
-      })
-      .catch((err) => {
-        console.error("[getSession catch]:", err);
-      });
-
-    // 세션 변경 감지
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, newSession) => {
-        setSession(newSession);
-        if (event === "SIGNED_IN" && newSession?.user?.id) {
-          // 성인 여부 확인
+    const checkAdultStatus = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user?.id) {
           const { data: profile } = await supabase
-            .from('profiles')
-            .select('is_adult')
-            .eq('user_id', newSession.user.id)
+            .from("profiles")
+            .select("is_adult")
+            .eq("user_id", user.id)
             .single();
           
-          setIsAdultUser(profile?.is_adult || false);
-
-          // 익명 사용자 처리
-          const realId = newSession.user.id;
-          const anonId = localStorage.getItem("anon_user_id");
-          if (anonId && anonId !== realId) {
-            await supabase
-              .from("partnershipsubmit_views_log")
-              .update({ user_id: realId })
-              .eq("user_id", anonId);
-            localStorage.setItem("anon_user_id", realId);
+          if (profile?.is_adult) {
+            setShowBlur(false);
           }
-        } else if (event === "SIGNED_OUT") {
-          setIsAdultUser(false);
-        }
-      }
-    );
-
-    return () => {
-      authListener?.subscription.unsubscribe();
-    };
-  }, []);
-
-  // 성인 컨텐츠 체크
-  useEffect(() => {
-    const checkAdultContent = async () => {
-      try {
-        const { data: themeRows, error: themeErr } = await supabase
-          .from("partnershipsubmit_themes")
-          .select(`
-            theme_id,
-            themes!inner (
-              adult_admitted
-            )
-          `)
-          .eq("submit_id", numericId);
-
-        if (themeErr) console.log('테마 조회 에러:', themeErr);
-
-        if (themeRows && themeRows.length > 0) {
-          const isAdult = themeRows.some((row) => {
-            return row.themes?.adult_admitted === true;
-          });
-          setIsAdultContent(isAdult);
-        } else {
-          setIsAdultContent(false);
         }
       } catch (error) {
-        console.error('성인 컨텐츠 체크 에러:', error);
-        setIsAdultContent(false);
+        console.error("[⚠️ 성인 인증 상태 확인 실패]", error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    checkAdultContent();
-  }, [numericId]);
+    // 초기 상태 확인
+    checkAdultStatus();
 
-  // 블러 처리 여부 결정
-  useEffect(() => {
-    if (!isLoading) {
-      if (!isAdultContent) {
-        setShowBlur(false);
-      } else if (session && isAdultUser) {
-        setShowBlur(false);
-      } else {
-        setShowBlur(true);
+    // 인증 상태 변경 감지
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === "SIGNED_IN") {
+        await checkAdultStatus();
+      } else if (event === "SIGNED_OUT") {
+        setShowBlur(showBlurDefault);
       }
+    });
+
+    return () => {
+      subscription?.unsubscribe();
+    };
+  }, [showBlurDefault]);
+
+  // 인증 완료 메시지 처리
+  useEffect(() => {
+    const listener = (event) => {
+      if (event.data?.type === "MOK_AUTH_SUCCESS") {
+        console.log("✅ 드림시큐리티 인증 완료 메시지 수신됨!");
+        // 인증 완료 후 DB에서 다시 성인 여부 확인
+        const recheckAdultStatus = async () => {
+          try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user?.id) {
+              const { data: profile } = await supabase
+                .from("profiles")
+                .select("is_adult")
+                .eq("user_id", user.id)
+                .single();
+              
+              if (profile?.is_adult) {
+                setShowBlur(false); // 🔓 블러 제거!
+              }
+            }
+          } catch (error) {
+            console.error("[⚠️ 인증 후 is_adult 재확인 실패]", error);
+          }
+        };
+        recheckAdultStatus();
+      }
+    };
+    window.addEventListener("message", listener);
+    return () => window.removeEventListener("message", listener);
+  }, []);
+
+  // 인증 요청 처리
+  async function handleAuthClick() {
+    setLoadingPopup(true);
+    const { data } = await supabase.auth.getUser();
+    const userId = data?.user?.id;
+    console.log("🔍 인증 요청 직전 userId:", userId);
+    console.log("📦 body payload:", JSON.stringify({ userId }));
+
+    if (!userId) {
+      alert("로그인이 필요합니다.");
+      return;
     }
-  }, [isLoading, isAdultContent, session, isAdultUser]);
+
+    const response = await fetch("/mok/mok_std_request", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId }),
+    });
+    const payload = await response.json();
+    if (payload.error) {
+      alert("인증 요청 에러: " + payload.error);
+      return;
+    }
+
+    setTimeout(() => setLoadingPopup(false), 2000);
+    const isMobile = /Mobile|Android|iP(hone|od)|BlackBerry|IEMobile|Silk/i.test(
+      navigator.userAgent
+    );
+    const popupType = isMobile ? "MB" : "WB";
+    window.MOBILEOK.process(
+      "https://www.yeogidot.com/mok/mok_std_request",
+      popupType,
+      "result"
+    );
+  }
 
   // (2) userId 결정 + 조회수
   let userId = null;
@@ -451,16 +442,6 @@ export default function DetailClientMobile({ row, images, numericId }) {
   // 인덱스
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // 자동 넘김
-  useEffect(() => {
-    if (allImages.length <= 1) return;
-    const timer = setInterval(() => {
-      handleNext();
-    }, 3000);
-    return () => clearInterval(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allImages]);
-
   // 직접 드래그(스와이프)
   const startXRef = useRef(0);
 
@@ -468,20 +449,12 @@ export default function DetailClientMobile({ row, images, numericId }) {
     startXRef.current = e.touches[0].clientX;
   }
 
-  function handleTouchMove(e) {
-    // e.touches[0].clientX - startXRef.current 로 이동 거리 계산 가능
-    // 여기서는 애니메이션까지 하려면 추가 로직이 필요하지만,
-    // 간단히 "어느 방향으로 얼마나 움직였는지"만 확인해도 됩니다.
-  }
-
   function handleTouchEnd(e) {
     const endX = e.changedTouches[0].clientX;
     const diff = endX - startXRef.current;
     if (diff > 50) {
-      // 오른쪽 스와이프 → 이전
       handlePrev();
     } else if (diff < -50) {
-      // 왼쪽 스와이프 → 다음
       handleNext();
     }
   }
@@ -603,67 +576,6 @@ export default function DetailClientMobile({ row, images, numericId }) {
     }
   }
 
-  // 본인인증 스크립트 로드
-  useEffect(() => {
-    const script = document.createElement('script');
-    script.src = 'https://scert.mobile-ok.com/resources/js/index.js';
-    script.async = true;
-    document.body.appendChild(script);
-
-    const resultScript = document.createElement('script');
-    resultScript.innerHTML = `
-      function result(data) {
-        try {
-          const parsed = JSON.parse(data);
-          if (parsed) {
-            window.postMessage({ type: "MOK_AUTH_SUCCESS", payload: parsed }, "*");
-          }
-        } catch (e) {
-          console.error("인증 결과 파싱 실패:", e);
-        }
-      }
-    `;
-    document.body.appendChild(resultScript);
-
-    return () => {
-      document.body.removeChild(script);
-      document.body.removeChild(resultScript);
-    };
-  }, []);
-
-  useEffect(() => {
-    function handleAuthSuccess(event) {
-      if (event.data?.type === "MOK_AUTH_SUCCESS") {
-        if (session?.user?.id) {
-          supabase
-            .from("profiles")
-            .select("is_adult")
-            .eq("user_id", session.user.id)
-            .single()
-            .then(({ data: profile }) => {
-              if (profile?.is_adult) {
-                setIsAdultUser(true);
-                setShowBlur(false);
-              }
-            });
-        }
-      }
-    }
-
-    window.addEventListener("message", handleAuthSuccess);
-    return () => window.removeEventListener("message", handleAuthSuccess);
-  }, [session?.user?.id]);
-
-  const handleAuthClick = () => {
-    const isMobile = /Mobile|Android|iP(hone|od)|BlackBerry|IEMobile|Silk/i.test(navigator.userAgent);
-    const popupType = isMobile ? "MB" : "WB";
-    window.MOBILEOK.process(
-      'https://www.yeogidot.com/mok/mok_std_request',
-      popupType,
-      'result'
-    );
-  };
-
   return (
     <div className="relative max-w-md mx-auto bg-white">
       {/* 블러 오버레이 */}
@@ -702,130 +614,82 @@ export default function DetailClientMobile({ row, images, numericId }) {
       )}
 
       {/* 이미지 슬라이드 영역 */}
-      <div
-        className="relative w-full overflow-hidden"
-        style={{
-          // 414:241 ≈ 58.21%
-          paddingBottom: "58.21%",
-        }}
-      >
-        <div className="absolute top-0 left-0 w-full h-full">
-          {allImages.length > 0 ? (
+      <div className="relative w-full overflow-hidden bg-gray-100">
+        <div 
+          className="flex transition-transform duration-300"
+          style={{
+            transform: `translateX(-${currentIndex * 100}%)`
+          }}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+        >
+          {allImages.map((imgUrl, idx) => (
             <div
-              className="flex h-full transition-transform duration-500 ease-in-out"
-              style={{
-                width: `${allImages.length * 100}%`,
-                transform: `translateX(-${currentIndex * 100}%)`,
-              }}
-              onTouchStart={handleTouchStart}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
+              key={idx}
+              className="w-full flex-shrink-0 relative aspect-[4/3]"
             >
-              {allImages.map((imgUrl, idx) => (
-                <div
-                  key={idx}
-                  className="relative flex-shrink-0 justify-center"
-                  style={{
-                    width: "100%",
-                    height: "250px",
-                  }}
-                >
-                  <Image
-                    src={imgUrl}
-                    alt={`슬라이드 이미지 ${idx + 1}`}
-                    width={450}
-                    height={262}
-                    className="object-contain object-center bg-black/10"
-                  />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="flex items-center justify-center w-full h-full text-gray-500">
-              이미지 없음
-            </div>
-          )}
-
-          {/* 이전/다음 버튼 (이미지가 2장이상일 때만) */}
-          {allImages.length > 1 && (
-            <>
-              <button
-                onClick={handlePrev}
-                className="absolute top-1/2 left-2 -translate-y-1/2 bg-black/40 text-white w-8 h-8 rounded-full flex items-center justify-center"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                  className="w-4 h-4"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M15.75 19.5L8.25 12l7.5-7.5"
-                  />
-                </svg>
-              </button>
-              <button
-                onClick={handleNext}
-                className="absolute top-1/2 right-2 -translate-y-1/2 bg-black/40 text-white w-8 h-8 rounded-full flex items-center justify-center"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                  className="w-4 h-4"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M8.25 4.5l7.5 7.5-7.5 7.5"
-                  />
-                </svg>
-              </button>
-            </>
-          )}
-
-          {/* 인덱스 표시 */}
-          {allImages.length > 0 && (
-            <div className="absolute bottom-2 right-2 px-2 py-1 text-sm bg-black/60 text-white rounded">
-              {currentIndex + 1} / {allImages.length}
-            </div>
-          )}
-
-          {/* "가고싶다" 버튼 */}
-          <button
-            onClick={handleSave}
-            className={`absolute top-2 right-2 w-8 h-8 bg-black/60 rounded-full
-              flex items-center justify-center
-              ${isSaved ? "text-red-400" : "text-white"}`}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              strokeWidth="2"
-              stroke="currentColor"
-              className="w-4 h-4"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 21l-1.45-1.342C5.4
-                  15.36 2 12.28 2 8.5 2 5.42 4.42 3
-                  7.5 3c1.74 0 3.41.81 4.5
-                  2.09A5.987 5.987 0 0 1
-                  16.5 3c3.08 0 5.5 2.42
-                  5.5 5.5 0 3.78-3.4
-                  6.86-8.55 11.158L12 21z"
+              <Image
+                src={imgUrl}
+                alt={`슬라이드 이미지 ${idx + 1}`}
+                fill
+                className="object-cover"
+                sizes="100vw"
+                quality={100}
               />
-            </svg>
-          </button>
+            </div>
+          ))}
         </div>
+        
+        {/* 이전/다음 버튼 (이미지가 2장이상일 때만) */}
+        {allImages.length > 1 && (
+          <>
+            <button
+              onClick={handlePrev}
+              className="absolute top-1/2 left-2 -translate-y-1/2 bg-black/40 text-white w-8 h-8 rounded-full flex items-center justify-center z-10"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+                className="w-4 h-4"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15.75 19.5L8.25 12l7.5-7.5"
+                />
+              </svg>
+            </button>
+            <button
+              onClick={handleNext}
+              className="absolute top-1/2 right-2 -translate-y-1/2 bg-black/40 text-white w-8 h-8 rounded-full flex items-center justify-center z-10"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+                className="w-4 h-4"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M8.25 4.5l7.5 7.5-7.5 7.5"
+                />
+              </svg>
+            </button>
+          </>
+        )}
+
+        {/* 인덱스 표시 */}
+        {allImages.length > 0 && (
+          <div className="absolute bottom-2 right-2 px-2 py-1 text-sm bg-black/60 text-white rounded z-10">
+            {currentIndex + 1} / {allImages.length}
+          </div>
+        )}
       </div>
 
       {/* 탭 영역 */}
