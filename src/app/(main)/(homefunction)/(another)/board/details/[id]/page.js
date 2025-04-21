@@ -9,7 +9,7 @@ import DetailClientMobile from "./DetailClientMobile";
  * (1) 메타데이터 설정 함수 (generateMetadata)
  */
 export async function generateMetadata({ params:param }) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const supabase = createServerComponentClient({ cookies: () => cookieStore });
   
   const params = await param;
@@ -43,7 +43,7 @@ export async function generateMetadata({ params:param }) {
  * (2) 실제 상세 페이지 컴포넌트
  */
 export default async function DetailPage({ params:param }) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const supabase = createServerComponentClient({ cookies: () => cookieStore });
   
   const requestHeaders = await headers();
@@ -63,6 +63,42 @@ export default async function DetailPage({ params:param }) {
     .from("partnershipsubmit_images")
     .select("image_url")
     .eq("submit_id", numericId);
+
+  const { data: sections } = await supabase
+    .from("sections")
+    .select(`
+      id,
+      title,
+      courses (
+        id,
+        course_name,
+        duration,
+        price,
+        etc_info
+      )
+    `)
+    .eq("partnershipsubmit_id", numericId)
+    .order("id", { ascending: true });
+
+  const sectionsData = sections?.map(section => ({
+    id: section.id,
+    title: section.title,
+    isOpen: true,
+    courses: section.courses.map(course => ({
+      id: course.id,
+      course_name: course.course_name,
+      duration: course.duration,
+      price: course.price,
+      etc_info: course.etc_info
+    }))
+  })) || [];
+
+  const lowestPrice = sectionsData.reduce((min, section) => {
+    const sectionMin = section.courses.reduce((sectionMin, course) => {
+      return course.price < sectionMin ? course.price : sectionMin;
+    }, Infinity);
+    return sectionMin < min ? sectionMin : min;
+  }, Infinity);
 
   const userAgent = requestHeaders.get("user-agent") || "";
   const isMobile = /Mobile|Android|iP(hone|od)|IEMobile|BlackBerry/i.test(userAgent);
@@ -106,6 +142,8 @@ export default async function DetailPage({ params:param }) {
       images={images || []}
       numericId={numericId}
       showBlurDefault={showBlurDefault}
+      sectionsData={sectionsData}
+      lowestPrice={lowestPrice}
     />
   );
 }

@@ -15,6 +15,8 @@ export default function NavBar() {
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [myNickname, setMyNickname] = useState("(닉네임 없음)");
+  const refreshListenerRef = useRef(null);
+  const authListenerRef = useRef(null);
   const [showMegaMenu, setShowMegaMenu] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const menuRef = useRef(null);
@@ -102,9 +104,20 @@ export default function NavBar() {
     };
 
     checkAuthStatus();
-
+    
+    refreshListenerRef.current = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'TOKEN_REFRESH_FAILED') {
+        console.warn("토큰 리프레시 실패 → 강제 로그아웃");
+        supabase.auth.signOut().finally(() => {
+          setIsLoggedIn(false);
+          setMyNickname("");
+          router.refresh(); // 상태 반영
+        });
+      }
+    }).data;
+    
     // 로그인 상태 변경 감지
-    const { data: authListener } = supabase.auth.onAuthStateChange(
+    authListenerRef.current = supabase.auth.onAuthStateChange(
       async (event, session) => {
         const isAuthenticated = !!session?.user;
         setIsLoggedIn(isAuthenticated);
@@ -123,10 +136,11 @@ export default function NavBar() {
           setMyNickname("");
         }
       }
-    );
+    ).data;
 
     return () => {
-      authListener?.subscription.unsubscribe();
+      authListenerRef.current?.subscription.unsubscribe();
+      refreshListenerRef.current?.subscription.unsubscribe();
     };
   }, []);
 

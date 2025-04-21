@@ -5,6 +5,7 @@ import Image from "next/image";
 import { supabase } from "@/lib/supabaseF";
 import CommentsUI from "./comment";
 import MapKakao from "./MapKakao";
+import { MegaphoneIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
@@ -53,14 +54,7 @@ function formatPrice(num) {
  *  images: partnershipsubmit_images[]
  *  numericId: partnershipsubmit.id
  */
-export default function DetailClient({
-  row,
-  images,
-  numericId,
-  showBlurDefault,
-  sectionsData,
-  lowestPrice
-}) {
+export default function DetailClient({ row, images, numericId, showBlurDefault }) {
     console.log("✅ DetailClient 렌더링됨!", numericId);
   const router = useRouter();
   const [session, setSession] = useState(null);
@@ -72,9 +66,6 @@ export default function DetailClient({
   const [loadingPopup, setLoadingPopup] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
-  const [sections, setSections] = useState(sectionsData);
-  const [loadingSections, setLoadingSections] = useState(false);
-
   const checkAuthStatus = async () => {
     try {
       const { data, error } = await supabase.auth.getSession();
@@ -268,12 +259,97 @@ export default function DetailClient({
   }
 
   // (F) 섹션/코스
+  const [sectionsData, setSectionsData] = useState([]);
+  const [loadingSections, setLoadingSections] = useState(true);
+  const [lowestPrice, setLowestPrice] = useState(0);
+
   useEffect(() => {
-    // 이 부분은 서버에서 데이터를 가져오므로 제거
+    if (numericId === undefined) {
+      console.log("❌ numericId undefined");
+      return;
+    }
+
+    const parsedId = Number(numericId);
+    if (Number.isNaN(parsedId)) {
+      console.log("❌ numericId invalid:", numericId);
+      setLoadingSections(false);
+      return;
+    }
+
+    console.log("✅ numericId OK:", parsedId);
+    supabase.auth.getUser().then(({ data }) => {
+      console.log("📡 유저 인증 정보:", data?.user);
+    });
+    console.log("📍 섹션 로딩 트리거됨. parsedId =", parsedId);
+
+    (async () => {
+      try {
+        console.log("🔥 sections 요청 시작");
+        const { data: secRows, error } = await supabase
+          .from("sections")
+          .select("*")
+          .eq("post_id", parsedId)
+          .order("display_order", { ascending: true });
+
+        console.log("📦 sections 응답:", secRows, error);
+        if (error) {
+          console.error("❌ Supabase 에러:", error);
+        }
+        if (!secRows) {
+          console.warn("⚠️ 섹션 데이터 없음 (null)");
+        }
+        if (Array.isArray(secRows) && secRows.length === 0) {
+          console.warn("⚠️ 섹션 데이터 length 0");
+        }
+
+        if (!secRows || secRows.length === 0) {
+          console.log("⚠️ 섹션 없음");
+          setSectionsData([]);
+          setLoadingSections(false);
+          return;
+        }
+
+        const secIds = secRows.map((s) => s.id);
+        const { data: couRows } = await supabase
+          .from("courses")
+          .select("*")
+          .in("section_id", secIds)
+          .order("display_order", { ascending: true });
+
+        const merged = secRows.map((sec) => {
+          const rel = (couRows || []).filter((c) => c.section_id === sec.id);
+          return {
+            id: sec.id,
+            title: sec.section_title,
+            isOpen: true,
+            courses: rel.map((c) => ({
+              id: c.id,
+              course_name: c.course_name,
+              duration: c.duration || "",
+              price: c.price || 0,
+              etc_info: c.etc_info || "",
+            })),
+          };
+        });
+
+        setSectionsData(merged);
+
+        let minP = Infinity;
+        (couRows || []).forEach((co) => {
+          if (co.price && co.price < minP) minP = co.price;
+        });
+        if (minP === Infinity) minP = 0;
+        setLowestPrice(minP);
+      } catch (err) {
+        console.error("❗ sections 요청 실패", err);
+      } finally {
+        setLoadingSections(false);
+      }
+    })();
   }, [numericId]);
 
   function toggleSectionOpen(secId) {
-    setSections((prev) =>
+    setSectionsData((prev) =>
       prev.map((s) => (s.id === secId ? { ...s, isOpen: !s.isOpen } : s))
     );
   }
@@ -741,7 +817,7 @@ export default function DetailClient({
           >
             <span className="text-sm">로딩중...</span>
           </motion.div>
-        ) : sections.length > 0 && (
+        ) : sectionsData.length > 0 && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -751,21 +827,21 @@ export default function DetailClient({
             <h2 className="text-xl font-bold mb-4 text-gray-800">코스안내</h2>
             <p className="text-sm text-gray-500 mb-4">{row.program_info || "코스 정보 없음"}</p>
             <div className="space-y-4">
-              {sections.map((section) => (
+              {sectionsData.map((sec) => (
                 <motion.div 
-                  key={section.id} 
+                  key={sec.id} 
                   className="border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300"
                 >
                   <button
-                    onClick={() => toggleSectionOpen(section.id)}
+                    onClick={() => toggleSectionOpen(sec.id)}
                     className="w-full flex items-center justify-between bg-gray-50 px-4 py-3 focus:outline-none text-left hover:bg-gray-100 transition-colors duration-300"
                   >
-                    <span className="font-semibold text-gray-700 text-sm">{section.title}</span>
+                    <span className="font-semibold text-gray-700 text-sm">{sec.title}</span>
                     <span className="text-xs text-gray-400 transition-transform duration-300">
-                      {section.isOpen ? "▲" : "▼"}
+                      {sec.isOpen ? "▲" : "▼"}
                     </span>
                   </button>
-                  {section.isOpen && (
+                  {sec.isOpen && (
                     <motion.div 
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: "auto" }}
@@ -773,11 +849,11 @@ export default function DetailClient({
                       transition={{ duration: 0.3 }}
                       className="px-4 py-3"
                     >
-                      {section.courses.length === 0 ? (
+                      {sec.courses.length === 0 ? (
                         <div className="text-sm text-gray-500">코스가 없습니다.</div>
                       ) : (
                         <ul className="space-y-3">
-                          {section.courses.map((c) => (
+                          {sec.courses.map((c) => (
                             <motion.li 
                               key={c.id}
                               initial={{ opacity: 0, x: -10 }}
