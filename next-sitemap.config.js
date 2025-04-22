@@ -295,5 +295,29 @@ module.exports = {
 
     return result;
   },
+  transform: async (config, path) => {
+    // 기본 priority 설정
+    let priority = 0.7;
+    
+    // 특정 경로에 대한 priority 조정
+    if (path === '/') {
+      priority = 1.0;
+    } else if (path === '/board') {
+      priority = 0.9;
+    } else if (path.startsWith('/board/details/')) {
+      priority = 0.8;
+    } else if (path.startsWith('/today/')) {
+      priority = 0.8;
+    } else if (['/mypage', '/near-me', '/partnership'].includes(path)) {
+      priority = 0.8;
+    }
+
+    return {
+      loc: path,
+      changefreq: 'daily',
+      priority,
+      lastmod: new Date().toISOString(),
+    };
+  },
 };
 
