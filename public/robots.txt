@@ -1,0 +1,9 @@
+# *
+User-agent: *
+Allow: /
+
+# Host
+Host: https://yeogidot.com
+
+# Sitemaps
+Sitemap: https://yeogidot.com/sitemap.xml
