@@ -214,6 +214,31 @@ module.exports = {
       priority: 1.0,
     });
 
+    // 정적 페이지 추가
+    const staticPages = [
+      { path: '/login', priority: 0.7 },
+      { path: '/signup', priority: 0.7 },
+      { path: '/change-password', priority: 0.7 },
+      { path: '/auth/callback', priority: 0.7 },
+      { path: '/email-confirmation', priority: 0.7 },
+      { path: '/mypage', priority: 0.8 },
+      { path: '/mypage/account-setting', priority: 0.7 },
+      { path: '/mypage/myComments', priority: 0.7 },
+      { path: '/mypage/myCommunityPosts', priority: 0.7 },
+      { path: '/messages', priority: 0.7 },
+      { path: '/near-me', priority: 0.8 },
+      { path: '/partnership', priority: 0.8 },
+      { path: '/all', priority: 0.7 },
+    ];
+
+    staticPages.forEach(page => {
+      result.push({
+        loc: `https://yeogidot.com${page.path}`,
+        changefreq: 'daily',
+        priority: page.priority,
+      });
+    });
+
     // Supabase에서 partnershipsubmit 테이블의 id 가져오기
     const { createClient } = require('@supabase/supabase-js');
     const supabase = createClient(
