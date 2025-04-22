@@ -9,17 +9,23 @@ module.exports = {
   exclude: [
     '/api/*',
     '/master/*',
-    '/mypage/*',
-    '/messages/*',
-    '/auth/*',
-    '/cert-test',
-    '/email-confirmation',
-    '/change-password',
-    '/socialSignUp',
-    '/moktest',
-    '/signup',
-    '/login',
+    '/server-sitemap.xml',
   ],
+  robotsTxtOptions: {
+    policies: [
+      {
+        userAgent: '*',
+        allow: '/',
+        disallow: [
+          '/api',
+          '/master',
+        ],
+      },
+    ],
+    additionalSitemaps: [
+      'https://yeogidot.com/server-sitemap.xml',
+    ],
+  },
   additionalPaths: async (config) => {
     // Today용 지역 구조 (기존 구조 유지)
     const todayMainRegions = [
@@ -200,6 +206,41 @@ module.exports = {
     };
 
     const result = [];
+
+    // 루트 페이지 추가
+    result.push({
+      loc: 'https://yeogidot.com/',
+      changefreq: 'daily',
+      priority: 1.0,
+    });
+
+    // Supabase에서 partnershipsubmit 테이블의 id 가져오기
+    const { createClient } = require('@supabase/supabase-js');
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    );
+
+    try {
+      const { data: posts, error } = await supabase
+        .from('partnershipsubmit')
+        .select('id, created_at')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // 상세 페이지 URL 추가
+      posts.forEach(post => {
+        result.push({
+          loc: `https://yeogidot.com/board/details/${post.id}`,
+          lastmod: post.created_at,
+          changefreq: 'daily',
+          priority: 0.8,
+        });
+      });
+    } catch (error) {
+      console.error('Error fetching posts:', error);
+    }
 
     // Today URL 생성 (기존 구조)
     todayMainRegions.forEach(mainRegion => {

@@ -1,13 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:mobile="http://www.google.com/schemas/sitemap-mobile/1.0" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
-<url><loc>https://yeogidot.com/robots.txt</loc><lastmod>2025-04-22T09:30:46.936Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://yeogidot.com/sitemap.xml</loc><lastmod>2025-04-22T09:30:46.938Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://yeogidot.com/master</loc><lastmod>2025-04-22T09:30:46.938Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://yeogidot.com/all</loc><lastmod>2025-04-22T09:30:46.938Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://yeogidot.com/messages</loc><lastmod>2025-04-22T09:30:46.938Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://yeogidot.com/mypage</loc><lastmod>2025-04-22T09:30:46.938Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://yeogidot.com/partnership</loc><lastmod>2025-04-22T09:30:46.938Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://yeogidot.com/near-me</loc><lastmod>2025-04-22T09:30:46.938Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://yeogidot.com/sitemap.xml</loc><lastmod>2025-04-22T09:58:38.158Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://yeogidot.com/robots.txt</loc><lastmod>2025-04-22T09:58:38.159Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://yeogidot.com/auth/callback</loc><lastmod>2025-04-22T09:58:38.159Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://yeogidot.com/cert-test</loc><lastmod>2025-04-22T09:58:38.159Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://yeogidot.com/email-confirmation</loc><lastmod>2025-04-22T09:58:38.159Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://yeogidot.com/login</loc><lastmod>2025-04-22T09:58:38.159Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://yeogidot.com/socialSignUp</loc><lastmod>2025-04-22T09:58:38.159Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://yeogidot.com/moktest</loc><lastmod>2025-04-22T09:58:38.159Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://yeogidot.com/signup</loc><lastmod>2025-04-22T09:58:38.159Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://yeogidot.com/change-password</loc><lastmod>2025-04-22T09:58:38.159Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://yeogidot.com/master</loc><lastmod>2025-04-22T09:58:38.159Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://yeogidot.com/messages</loc><lastmod>2025-04-22T09:58:38.159Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://yeogidot.com/all</loc><lastmod>2025-04-22T09:58:38.159Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://yeogidot.com/mypage/account-setting</loc><lastmod>2025-04-22T09:58:38.159Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://yeogidot.com/near-me</loc><lastmod>2025-04-22T09:58:38.159Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://yeogidot.com/mypage/myCommunityPosts</loc><lastmod>2025-04-22T09:58:38.159Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://yeogidot.com/partnership</loc><lastmod>2025-04-22T09:58:38.159Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://yeogidot.com/mypage</loc><lastmod>2025-04-22T09:58:38.159Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://yeogidot.com/mypage/myComments</loc><lastmod>2025-04-22T09:58:38.159Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://yeogidot.com</loc><changefreq>daily</changefreq><priority>1</priority></url>
+<url><loc>https://yeogidot.com/board/details/75</loc><lastmod>2025-04-17T16:03:26.30723+00:00</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>
+<url><loc>https://yeogidot.com/board/details/74</loc><lastmod>2025-04-17T03:41:23.783407+00:00</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>
+<url><loc>https://yeogidot.com/board/details/72</loc><lastmod>2025-03-30T09:42:56.318471+00:00</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>
+<url><loc>https://yeogidot.com/board/details/67</loc><lastmod>2025-03-21T12:38:51.929108+00:00</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>
 <url><loc>https://yeogidot.com/today/전체/전체/전체</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
 <url><loc>https://yeogidot.com/today/전체/전체/신규업체</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
 <url><loc>https://yeogidot.com/today/전체/전체/눈썹문신</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
