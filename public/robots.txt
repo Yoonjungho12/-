@@ -1,12 +1,9 @@
 # *
 User-agent: *
 Allow: /
-Disallow: /api/*
-Disallow: /master/*
 
 # Host
 Host: https://yeogidot.com
 
 # Sitemaps
 Sitemap: https://yeogidot.com/sitemap.xml
-Sitemap: https://yeogidot.com/server-sitemap.xml
