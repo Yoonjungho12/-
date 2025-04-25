@@ -6,6 +6,7 @@ import PartnershipTable from "./PartnershipTable";
 /* -----------------------------------------------------
    (0) 테마별 메타 정보 (title + description)
    - {region}은 generateMetadata에서 치환됩니다.
+   - 클럽과 나이트클럽 테마만 포함
 ------------------------------------------------------ */
 const themeMetaMap = {
   "클럽": {
@@ -22,31 +23,42 @@ const themeMetaMap = {
 
 /**
  * (A) "하이픈 -> 슬래시" 단순 치환
+ *     "인천-부천-부평" => "인천/부천/부평"
  */
 function convertSlugToSlash(str) {
   return str.replace(/-/g, "/");
 }
 
-/**
- * (1) 메타데이터를 동적으로 생성
- */
+/* -----------------------------------------------------
+   (1) 메타데이터를 동적으로 생성
+   - subregion은 메타 태그에 포함 X
+   - theme에 따라 다른 title, description 적용
+   - regionDecoded => regionName(= 슬래시 치환) => {region} 치환
+------------------------------------------------------ */
 export async function generateMetadata({ params:a, searchParams:b}) {
   const params = await a;
   const searchParams = await b;
   const { region, subregion, theme } = params;
 
-  // 1) 퍼센트 인코딩을 풀어준다
-  const regionDecoded = decodeURIComponent(region);
-  const themeDecoded = decodeURIComponent(theme);
+  // 1) 퍼센트 인코딩을 풀어준다.
+  const regionDecoded = decodeURIComponent(region); // 예: "인천-부천-부평"
+  const themeDecoded = decodeURIComponent(theme);   // 예: "클럽"
 
   // 2) 하이픈 -> 슬래시 치환
   const regionName = convertSlugToSlash(regionDecoded);
 
+  console.log("===== [DEBUG] generateMetadata Params =====");
+  console.log("region:", region, "=> regionDecoded:", regionDecoded, "=> regionName:", regionName);
+  console.log("subregion:", subregion, "(not used in meta)");
+  console.log("theme:", theme, "=> themeDecoded:", themeDecoded);
+
   // 3) themeMetaMap에서 해당 테마 정보 가져오기
   const metaObj = themeMetaMap[themeDecoded];
+  console.log("[DEBUG] metaObj:", metaObj);
 
   // 4) 매핑이 없으면 fallback
   if (!metaObj) {
+    console.log("[DEBUG] Fallback triggered!");
     const fallbackTitle = `${regionName} ${themeDecoded} 추천 및 정보 - 여기닷`;
     const fallbackDesc = `${regionName}의 ${themeDecoded} 업소 정보 및 리뷰를 확인하세요!`;
     return {
@@ -66,6 +78,9 @@ export async function generateMetadata({ params:a, searchParams:b}) {
   const replacedTitle = metaObj.title.replace(/{region}/g, regionName);
   const replacedDesc = metaObj.description.replace(/{region}/g, regionName);
 
+  console.log("[DEBUG] replacedTitle:", replacedTitle);
+  console.log("[DEBUG] replacedDesc :", replacedDesc);
+
   return {
     title: replacedTitle,
     description: replacedDesc,
@@ -79,21 +94,28 @@ export async function generateMetadata({ params:a, searchParams:b}) {
   };
 }
 
-/**
- * (2) 페이지 컴포넌트
- */
+/* -----------------------------------------------------
+   (2) 페이지 컴포넌트
+   - subregion은 필요 없으니 메타태그에 안 쓰고,
+     굳이 UI에 표시도 안 해도 됨(필요 시만 사용)
+------------------------------------------------------ */
 export default async function BoardPage({ params:a, searchParams:b }) {
   const params = await a;
   const searchParams = await b;
   const { region, subregion, theme } = params;
 
-  // 퍼센트 인코딩된 한글을 디코딩
+  // 퍼센트 인코딩 풀기
   const regionDecoded = decodeURIComponent(region);
   const subregionDecoded = decodeURIComponent(subregion);
   const themeDecoded = decodeURIComponent(theme);
 
   // 하이픈 -> 슬래시 치환
   const regionName = convertSlugToSlash(regionDecoded);
+
+  console.log("===== [DEBUG] BoardPage Params =====");
+  console.log("region:", region, "=> regionDecoded:", regionDecoded, "=> regionName:", regionName);
+  console.log("subregion:", subregion, "=> subregionDecoded:", subregionDecoded);
+  console.log("theme:", theme, "=> themeDecoded:", themeDecoded);
 
   return (
     <div className="mx-auto w-full max-w-7xl md:px-4">
