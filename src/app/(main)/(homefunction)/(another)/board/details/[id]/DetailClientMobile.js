@@ -652,13 +652,13 @@ export default function DetailClientMobile({
             className={getTabClass("info")}
             onClick={() => handleTabClick("info")}
           >
-            샵정보
+            제휴사 소개
           </button>
           <button
             className={getTabClass("course")}
             onClick={() => handleTabClick("course")}
           >
-            코스안내
+            가격 안내
           </button>
           <button
             className={getTabClass("review")}
@@ -801,13 +801,13 @@ export default function DetailClientMobile({
       </section>
 
       {/* (G) 하단 fixed 바 (문자하기 / 전화하기) */}
-      <div className="fixed bottom-0 left-0 w-full flex bg-white border-t border-gray-200">
+      <div className="fixed bottom-[60px] left-0 w-full flex shadow-sm">
         <button
           onClick={() => {
             if (!row.phone_number) return alert("전화번호 없음");
             window.location.href = `sms:${row.phone_number}`;
           }}
-          className="flex-1 py-3 text-white bg-red-500 text-center font-semibold"
+          className="flex-1 py-3.5 text-white bg-orange-500 text-center font-semibold relative after:absolute after:right-0 after:top-[20%] after:h-[60%] after:w-[1px] after:bg-white/20"
         >
           문자하기
         </button>
@@ -816,7 +816,7 @@ export default function DetailClientMobile({
             if (!row.phone_number) return alert("전화번호 없음");
             window.location.href = `tel:${row.phone_number}`;
           }}
-          className="flex-1 py-3 text-white bg-red-500 text-center font-semibold"
+          className="flex-1 py-3.5 text-white bg-orange-500 text-center font-semibold"
         >
           전화하기
         </button>

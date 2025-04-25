@@ -320,6 +320,19 @@ export default function NavBar() {
   // (4) UI: 모바일은 "/" 경로일 때만 상단바 표시
   // --------------------------------------
 
+  useEffect(() => {
+    const handleScroll = () => {
+      if (showMegaMenu) {
+        setShowMegaMenu(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [showMegaMenu]);
+
   return (
     <>
       {/* 팝업 모달 */}

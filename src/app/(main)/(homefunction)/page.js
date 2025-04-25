@@ -4,6 +4,7 @@ import RecommendedShopsServer from "@/components/main/RecommendedShopsServer";
 import NewArrivalsSection from "@/components/main/newbie";
 import MainoneServer from "@/components/main/MainoneServer";
 import BannerClient from "@/components/main/BannerClient";
+import SnsLinks from "@/components/main/SnsLinks";
 
 export default function Home() {
   return (
@@ -17,6 +18,7 @@ export default function Home() {
         <MainoneServer />
         <RecommendedShopsServer />
         <NewArrivalsSection />
+        <SnsLinks />
       </div>
     </>
   );

@@ -842,19 +842,19 @@ export default function DetailClientMobile({ row, images, numericId, showBlurDef
       </section>
 
       {/* (F) 주변샵 */}
-      <section className="px-4 pt-4 pb-0 md:pb-20 border-t">
+      <section className="px-4 pt-4 pb-32 border-t">
         <h2 className="text-xl font-bold mb-2">주변샵</h2>
         <NearbyShops currentShopId={numericId} />
       </section>
 
       {/* (G) 하단 fixed 바 (문자하기 / 전화하기) */}
-      <div className="fixed bottom-0 left-0 w-full flex bg-white border-t border-gray-200">
+      <div className="fixed bottom-[60px] left-0 w-full flex bg-white border-t border-b border-gray-200 z-[51]">
         <button
           onClick={() => {
             if (!row.phone_number) return alert("전화번호 없음");
             window.location.href = `sms:${row.phone_number}`;
           }}
-          className="flex-1 py-3 text-white bg-red-500 text-center font-semibold"
+          className="flex-1 py-3 text-white bg-red-500 text-center font-semibold border-r border-white/30"
         >
           문자하기
         </button>
