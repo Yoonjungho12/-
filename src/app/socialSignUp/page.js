@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseF";
@@ -303,7 +304,13 @@ const term3Text = `제1조 (목적)본 개인정보 처리 방침은 "여기닷(
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center px-4">
       <div className="mb-6 text-center">
-        <h1 className="text-2xl font-bold text-orange-500">여기닷</h1>
+         <Link href="/">
+              <img 
+                src="/logo/logo.png" 
+                alt="로고" 
+                className="h-40 mx-auto object-cover object-center -mt-8 -mb-16 cursor-pointer hover:scale-105 transition-transform duration-200" 
+              />
+            </Link>
       </div>
 
       <div className="w-full max-w-md rounded-md bg-white p-6 shadow">

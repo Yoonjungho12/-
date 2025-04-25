@@ -155,7 +155,7 @@ export default function SignupPage() {
       alert("닉네임 중복확인을 해주세요!");
       return;
     }
-     if (!checkedTerm1 || !checkedTerm2 || !checkedTerm3) {
+    if (!checkedTerm1 || !checkedTerm2 || !checkedTerm3) {
       alert("약관에 모두 동의해주셔야 가입 가능합니다!");
       return;
     }
@@ -163,20 +163,33 @@ export default function SignupPage() {
       alert("로봇이 아님을 인증해주세요.");
       return;
     }
-    //로딩 시작
+
     setIsSubmitting(true);
     try {
-      // (1) Supabase Auth 가입
+      // 1. 먼저 profiles 테이블에서 이메일 중복 체크
+      const { data: existingProfiles, error: profileError } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('email', userId);
+
+      if (profileError) {
+        throw new Error(profileError.message);
+      }
+
+      if (existingProfiles?.length > 0) {
+        alert('이미 가입된 이메일입니다. 로그인을 진행해주세요.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // 2. 이메일 중복이 없으면 회원가입 진행
       const { data, error } = await supabase.auth.signUp({
         email: userId,
         password,
       });
+
       if (error) {
-        if (error.message === "User already registered") {
-          alert("이미 가입된 이메일 주소입니다.");
-        } else {
-          alert(error.message);
-        }
+        alert(error.message);
         return;
       }
 
@@ -186,7 +199,7 @@ export default function SignupPage() {
         return;
       }
 
-      // (2) profiles 테이블에 정보 저장
+      // 3. profiles 테이블에 정보 저장
       const { error: insertError } = await supabase
         .from("profiles")
         .insert({
@@ -194,6 +207,7 @@ export default function SignupPage() {
           email: userId,
           nickname,
         });
+
       if (insertError) {
         throw new Error(insertError.message);
       }
@@ -202,6 +216,8 @@ export default function SignupPage() {
       router.push("/email-confirmation");
     } catch (err) {
       alert("프로필 저장 중 오류: " + err.message);
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
