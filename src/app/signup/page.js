@@ -166,30 +166,18 @@ export default function SignupPage() {
 
     setIsSubmitting(true);
     try {
-      // 1. 먼저 profiles 테이블에서 이메일 중복 체크
-      const { data: existingProfiles, error: profileError } = await supabase
-        .from('profiles')
-        .select('email')
-        .eq('email', userId);
-
-      if (profileError) {
-        throw new Error(profileError.message);
-      }
-
-      if (existingProfiles?.length > 0) {
-        alert('이미 가입된 이메일입니다. 로그인을 진행해주세요.');
-        setIsSubmitting(false);
-        return;
-      }
-
-      // 2. 이메일 중복이 없으면 회원가입 진행
+      // 1. 먼저 회원가입 시도
       const { data, error } = await supabase.auth.signUp({
         email: userId,
         password,
       });
 
       if (error) {
-        alert(error.message);
+        if (error.message === "User already registered") {
+          alert("이미 가입된 이메일 주소입니다.");
+        } else {
+          alert(error.message);
+        }
         return;
       }
 
@@ -199,7 +187,7 @@ export default function SignupPage() {
         return;
       }
 
-      // 3. profiles 테이블에 정보 저장
+      // 2. 회원가입 성공 시에만 profiles 테이블에 정보 저장
       const { error: insertError } = await supabase
         .from("profiles")
         .insert({

@@ -66,7 +66,8 @@ export async function POST(request) {
       lat,
       lng,
       holiday, // nullable
-      isMaster // 마스터 모드 여부 (true이면 자동 승인 처리)
+      isMaster, // 마스터 모드 여부 (true이면 자동 승인 처리)
+      title_color,  // title_color 추가
 
       // 아래는 모두 제거 (프론트에서 업로드하므로 서버에서는 처리 X)
       // thumbnail_image,
@@ -149,6 +150,7 @@ export async function POST(request) {
       holiday: holiday || null,
       destructed_address,
       theme_text,
+      title_color: payload.title_color,  // title_color 추가
     };
 
     // 마스터 모드이면 자동 승인 처리
@@ -231,6 +233,7 @@ export async function PUT(request) {
       lng,
       holiday,    // nullable
       isMaster,   // 클라이언트에서 전달된 isMaster 값
+      title_color,  // title_color 추가
 
       // 이미지 필드는 서버에서 처리 X (프론트 업로드)
       // thumbnail_image,
@@ -323,6 +326,7 @@ export async function PUT(request) {
       holiday: holiday || null,
       destructed_address,
       theme_text,
+      title_color: payload.title_color,  // title_color 추가
     };
 
     // 마스터 모드이면 자동 승인 처리

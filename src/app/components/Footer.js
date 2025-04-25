@@ -31,7 +31,7 @@ export default function Footer() {
             <div className="text-slate-500 leading-[1.4] text-[10px] text-center">
               <p className="font-bold text-lg mb-6 text-slate-900">여기닷 ▼</p>
               <p className="mb-1">사업자명 : 여기닷</p>
-              <p className="mb-1">대표자명 : 윤정호</p>
+              <p className="mb-1">대표자명 : 윤지호</p>
               <p className="mb-1">사업자등록번호 : 476-14-02880</p>
               <p className="mb-1">대표번호 : 010-2117-7392</p>
               <br />
@@ -66,7 +66,7 @@ export default function Footer() {
               <div className="grid grid-cols-3 gap-12 relative">
                 <div className="text-slate-500 leading-[1.4] text-xs">
                   <p className="mb-1">사업자명 : 여기닷</p>
-                  <p className="mb-1">대표자명 : 윤정호</p>
+                  <p className="mb-1">대표자명 윤지호</p>
                   <p className="mb-1">사업자등록번호 : 476-14-02880</p>
                   <p className="mb-1">대표번호 : 010-2117-7392</p>
                 </div>

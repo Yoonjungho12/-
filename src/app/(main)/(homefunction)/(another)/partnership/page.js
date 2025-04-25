@@ -45,6 +45,9 @@ export default function NewListingPage() {
   // 광고 타입
   const [adType, setAdType] = useState("");
   
+  // 제목 색상 (VIP+ 전용)
+  const [titleColor, setTitleColor] = useState("red");
+  
   // 휴무일
   const [holidaySelectVal, setHolidaySelectVal] = useState("");
   const [holidayDirect, setHolidayDirect] = useState("");
@@ -249,6 +252,7 @@ export default function NewListingPage() {
       setCompanyName(row.company_name || "");
       setPhoneNumber(row.phone_number || "");
       setManagerContact(row.manager_contact || "");
+      setTitleColor(row.title_color || "red");  // title_color 복원, 기본값은 red
 
       // 주차
       const knownParkingValues = ["주차 가능(문의)", "건물 내 주차(문의)"];
@@ -499,17 +503,32 @@ export default function NewListingPage() {
   // ─────────────────────────────────────────────
   // 10) 폼 전송 (등록/수정)
   // ─────────────────────────────────────────────
+  const [isSubmitting, setIsSubmitting] = useState(false);  // 로딩 상태 추가
+
   async function handleSubmit(e) {
     e.preventDefault();
+    
+    // 이미 제출 중이면 중복 제출 방지
+    if (isSubmitting) return;
+    
     const msg = validateForm();
     if (msg) {
       alert(msg);
       return;
     }
-    if (!editId) {
-      doSubmitOrUpdate(false);
-    } else {
-      doSubmitOrUpdate(true);
+
+    setIsSubmitting(true);  // 제출 시작
+    try {
+      if (!editId) {
+        await doSubmitOrUpdate(false);
+      } else {
+        await doSubmitOrUpdate(true);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("오류 발생: " + err.message);
+    } finally {
+      setIsSubmitting(false);  // 제출 완료
     }
   }
 
@@ -536,6 +555,7 @@ export default function NewListingPage() {
       sub_region_id: selectedSubRegionId,
       company_name: companyName,
       phone_number: phoneNumber,
+      title_color: adType === "VIP+" ? titleColor : null,  // VIP+ 일때만 색상 저장
       manager_contact: managerContact,
       parking_type: finalParkingType,
       contact_method: contactMethod,
@@ -587,8 +607,7 @@ export default function NewListingPage() {
       alert(isEdit ? "수정 완료!" : "등록 완료!");
       window.location.reload();
     } catch (err) {
-      console.error(err);
-      alert("오류 발생: " + err.message);
+      throw err;  // 상위 함수에서 처리하도록 에러 전파
     }
   }
 
@@ -631,6 +650,8 @@ export default function NewListingPage() {
               isMaster={isMaster}
               adType={adType}
               setAdType={setAdType}
+              titleColor={titleColor}
+              setTitleColor={setTitleColor}
               regions={regions}
               selectedRegionId={selectedRegionId}
               setSelectedRegionId={setSelectedRegionId}
@@ -687,9 +708,24 @@ export default function NewListingPage() {
             <div className="flex justify-center mt-8">
               <button
                 type="submit"
-                className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors duration-200 font-medium text-lg shadow-md hover:shadow-lg"
+                disabled={isSubmitting}
+                className={`px-6 py-3 rounded-lg transition-colors duration-200 font-medium text-lg shadow-md hover:shadow-lg flex items-center gap-2 ${
+                  isSubmitting 
+                    ? "bg-gray-400 cursor-not-allowed" 
+                    : "bg-orange-500 hover:bg-orange-600 text-white"
+                }`}
               >
-                {editId ? "수정하기" : "등록하기"}
+                {isSubmitting ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    저장 중...
+                  </>
+                ) : (
+                  editId ? "수정하기" : "등록하기"
+                )}
               </button>
             </div>
           </form>

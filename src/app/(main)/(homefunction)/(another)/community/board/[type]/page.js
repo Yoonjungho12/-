@@ -45,6 +45,15 @@ export default async function BoardPage({ params:param}) {
     case "맛집/핫플/데이트 코스 공유":
       boardInfo = { name: "맛집/핫플/데이트 코스 공유", id: 8 };
       break;
+    case "패션 골팁":
+      boardInfo = { name: "패션 꿀팁", id: 9 };
+      break;
+    case "여성 조각 모임":
+      boardInfo = { name: "여성 조각 모임", id: 10 };
+      break;
+    case "남성 조각 모임":
+      boardInfo = { name: "남성 조각 모임", id: 11 };
+      break;
     default:
       boardInfo = { name: "알 수 없는 게시판", id: -1 };
   }

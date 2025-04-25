@@ -8,6 +8,8 @@ export default function SubmitForm({
   isMaster = false,
   adType,
   setAdType,
+  titleColor,
+  setTitleColor,
   regions,
   selectedRegionId,
   setSelectedRegionId,
@@ -71,54 +73,210 @@ export default function SubmitForm({
   return (
     <>
       {/* (1) 광고위치 */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center mb-6">
-        <label className="w-32 font-medium text-gray-700">상품(광고위치)*</label>
-        <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={() => {
-              if (adType === "VIP") {
-                setAdType("");
-              } else {
-                setAdType("VIP");
-              }
-            }}
-            className={`px-6 py-2.5 rounded-lg transition-all duration-200 ${
-              adType === "VIP"
-                ? "bg-orange-500 text-white shadow-md"
-                : "bg-white text-gray-700 border border-gray-300 hover:border-orange-500"
-            }`}
-          >
-            VIP
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              if (adType === "VIP+") {
-                setAdType("");
-              } else {
-                setAdType("VIP+");
-              }
-            }}
-            className={`px-6 py-2.5 rounded-lg transition-all duration-200 ${
-              adType === "VIP+"
-                ? "bg-orange-500 text-white shadow-md"
-                : "bg-white text-gray-700 border border-gray-300 hover:border-orange-500"
-            }`}
-          >
-            VIP+
-          </button>
-          <button
-            type="button"
-            onClick={() => setAdType("")}
-            className={`px-6 py-2.5 rounded-lg transition-all duration-200 ${
-              adType === ""
-                ? "bg-orange-500 text-white shadow-md"
-                : "bg-white text-gray-700 border border-gray-300 hover:border-orange-500"
-            }`}
-          >
-            선택 안함
-          </button>
+      <div className="mb-6">
+        <label className="block font-medium text-gray-700 mb-2">
+          상품(광고위치) <span className="text-red-500">*</span>
+        </label>
+        <div className="flex flex-col gap-4 w-full">
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => setAdType("VIP")}
+              className={`px-6 py-2.5 rounded-lg transition-all duration-200 ${
+                adType === "VIP"
+                  ? "bg-orange-500 text-white shadow-md"
+                  : "bg-white text-gray-700 border border-gray-300 hover:border-orange-500"
+              }`}
+            >
+              VIP
+            </button>
+            <button
+              type="button"
+              onClick={() => setAdType("VIP+")}
+              className={`px-6 py-2.5 rounded-lg transition-all duration-200 ${
+                adType === "VIP+"
+                  ? "bg-orange-500 text-white shadow-md"
+                  : "bg-white text-gray-700 border border-gray-300 hover:border-orange-500"
+              }`}
+            >
+              VIP+
+            </button>
+            <input
+              type="radio"
+              name="adType"
+              value="선택 안함"
+              checked={adType === ""}
+              onChange={() => setAdType("")}
+              className="hidden"
+            />
+          </div>
+
+          {/* VIP 미리보기 */}
+          {adType === "VIP" && (
+            <div className="w-full bg-white rounded-2xl shadow-sm overflow-hidden">
+              <table className="table-fixed w-full text-sm border-separate border-spacing-0">
+                <colgroup>
+                  <col className="w-[55%]" />
+                  <col className="w-[15%]" />
+                  <col className="w-[15%]" />
+                  <col className="w-[15%]" />
+                </colgroup>
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="py-4 px-6 text-left text-gray-600 font-medium border-b border-gray-100">제목</th>
+                    <th className="py-4 px-6 text-center text-gray-600 font-medium border-b border-gray-100">최저가</th>
+                    <th className="py-4 px-6 text-center text-gray-600 font-medium border-b border-gray-100">조회수</th>
+                    <th className="py-4 px-6 text-center text-gray-600 font-medium border-b border-gray-100">리뷰수</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  <tr className="group transition-all duration-300 relative bg-gradient-to-r from-rose-50/80 via-orange-50/60 to-amber-50/50 hover:from-rose-100/80 hover:via-orange-50/70 hover:to-amber-50/60 shadow-[inset_0_0_0_1px_rgba(244,63,94,0.1)]">
+                    <td className="py-4 px-6 relative">
+                      <span className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-rose-300 via-rose-400 to-orange-300 opacity-70" />
+                      <div className="flex items-center gap-3">
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-rose-500 to-orange-400 text-white shadow-sm">
+                          VIP
+                        </span>
+                        <div className="flex-1">
+                          <h3 className="font-medium text-rose-900 group-hover:text-rose-500 transition-colors">
+                            반갑습니다.
+                          </h3>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-4 px-6 text-center whitespace-nowrap">
+                      <span className="font-medium text-rose-600">가격 없음</span>
+                    </td>
+                    <td className="py-4 px-6 text-center whitespace-nowrap">
+                      <span className="text-rose-600/80">130</span>
+                    </td>
+                    <td className="py-4 px-6 text-center whitespace-nowrap">
+                      <span className="text-rose-600/80">0</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* VIP+ 미리보기 */}
+          {adType === "VIP+" && (
+            <>
+              <div className="w-full bg-white rounded-2xl shadow-sm overflow-hidden">
+                <table className="table-fixed w-full text-sm border-separate border-spacing-0">
+                  <colgroup>
+                    <col className="w-[55%]" />
+                    <col className="w-[15%]" />
+                    <col className="w-[15%]" />
+                    <col className="w-[15%]" />
+                  </colgroup>
+                  <thead>
+                    <tr className="bg-gray-50">
+                      <th className="py-4 px-6 text-left text-gray-600 font-medium border-b border-gray-100">제목</th>
+                      <th className="py-4 px-6 text-center text-gray-600 font-medium border-b border-gray-100">최저가</th>
+                      <th className="py-4 px-6 text-center text-gray-600 font-medium border-b border-gray-100">조회수</th>
+                      <th className="py-4 px-6 text-center text-gray-600 font-medium border-b border-gray-100">리뷰수</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    <tr className="group transition-all duration-300 relative bg-gradient-to-r from-rose-50/80 via-orange-50/60 to-amber-50/50 hover:from-rose-100/80 hover:via-orange-50/70 hover:to-amber-50/60 shadow-[inset_0_0_0_1px_rgba(244,63,94,0.1)]">
+                      <td className="py-4 px-6 relative">
+                        <span className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-rose-300 via-rose-400 to-orange-300 opacity-70" />
+                        <div className="flex items-center gap-3">
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-rose-500 to-orange-400 text-white shadow-sm">
+                            VIP+
+                          </span>
+                          <div className="flex-1">
+                            <h3 style={{ 
+                              color: {
+                                'red': '#dc2626',
+                                'orange': '#ea580c',
+                                'yellow': '#ca8a04',
+                                'olive': '#556b2f',
+                                'lime': '#65a30d',
+                                'green': '#16a34a',
+                                'blue': '#2563eb',
+                                'indigo': '#4f46e5',
+                                'pink': '#db2777',
+                                'purple': '#9333ea',
+                                'black': '#000000'
+                              }[titleColor]
+                            }} className="font-medium group-hover:text-rose-500 transition-colors">
+                              {postTitle || "글 제목을 입력해주세요"}
+                            </h3>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-4 px-6 text-center whitespace-nowrap">
+                        <span className="font-medium text-rose-600">가격 없음</span>
+                      </td>
+                      <td className="py-4 px-6 text-center whitespace-nowrap">
+                        <span className="text-rose-600/80">130</span>
+                      </td>
+                      <td className="py-4 px-6 text-center whitespace-nowrap">
+                        <span className="text-rose-600/80">0</span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              {/* 제목 색상 선택 */}
+              <div className="mt-4 p-4 bg-gray-50 rounded-xl">
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  제목 색상 선택
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { key: 'red', label: '빨강', bg: 'bg-red-500', color: '#dc2626' },
+                    { key: 'orange', label: '주황', bg: 'bg-orange-500', color: '#ea580c' },
+                    { key: 'yellow', label: '노랑', bg: 'bg-yellow-500', color: '#ca8a04' },
+                    { key: 'olive', label: '올리브', bg: 'bg-[#808000]', color: '#556b2f' },
+                    { key: 'lime', label: '라임', bg: 'bg-lime-500', color: '#65a30d' },
+                    { key: 'green', label: '초록', bg: 'bg-green-500', color: '#16a34a' },
+                    { key: 'blue', label: '파랑', bg: 'bg-blue-500', color: '#2563eb' },
+                    { key: 'indigo', label: '남색', bg: 'bg-indigo-500', color: '#4f46e5' },
+                    { key: 'pink', label: '분홍', bg: 'bg-pink-500', color: '#db2777' },
+                    { key: 'purple', label: '보라', bg: 'bg-purple-500', color: '#9333ea' },
+                    { key: 'black', label: '검정', bg: 'bg-black', color: '#000000' }
+                  ].map(color => (
+                    <button
+                      key={color.key}
+                      type="button"
+                      onClick={() => setTitleColor(color.key)}
+                      className={`relative p-2 rounded-lg transition-all duration-200 ${
+                        titleColor === color.key 
+                          ? 'ring-2 ring-offset-2 ring-gray-400' 
+                          : 'hover:ring-2 hover:ring-offset-2 hover:ring-gray-200'
+                      }`}
+                    >
+                      <div className={`w-8 h-8 rounded-full ${color.bg} mb-1`} />
+                      <span className="text-xs text-gray-600">{color.label}</span>
+                      {titleColor === color.key && (
+                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-white rounded-full flex items-center justify-center shadow-sm">
+                          <span className="w-2 h-2 rounded-full bg-gray-800" />
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 글 제목 입력 (VIP+ 모드에서) */}
+              <div className="mt-4">
+                <label className="block font-medium text-gray-700 mb-2">
+                  글 제목 <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="예) [지역/업체명] 여기닷 애견펜션"
+                  value={postTitle}
+                  onChange={(e) => setPostTitle(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
+                />
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -328,18 +486,21 @@ export default function SubmitForm({
         />
       </div>
 
-      <div className="mt-4">
-        <label className="block font-semibold mb-1">
-          글 제목 <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
-          placeholder="예) [지역/업체명] 여기닷 애견펜션"
-          value={postTitle}
-          onChange={(e) => setPostTitle(e.target.value)}
-          className="w-full border-[0.3px] border-zinc-700 rounded px-2 py-1"
-        />
-      </div>
+      {/* 기존 글 제목 입력 (VIP+ 아닐 때만 표시) */}
+      {adType !== "VIP+" && (
+        <div className="mt-4">
+          <label className="block font-medium text-gray-700 mb-2">
+            글 제목 <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            placeholder="예) [지역/업체명] 여기닷 애견펜션"
+            value={postTitle}
+            onChange={(e) => setPostTitle(e.target.value)}
+            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
+          />
+        </div>
+      )}
 
       <div className="mt-4">
         <label className="block font-semibold mb-1">

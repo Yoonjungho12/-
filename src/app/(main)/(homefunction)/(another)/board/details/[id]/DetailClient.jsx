@@ -495,7 +495,7 @@ export default function DetailClient({
         className="flex-[7] relative"
       >
         {showBlur && (
-          <div className="fixed inset-0 bg-white/80 backdrop-blur-sm z-10 flex items-center justify-center">
+          <div className="fixed inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center">
             <div className="text-center">
               <p className="text-xl font-bold mb-2">
                 {!session ? "로그인이 필요한 컨텐츠입니다" : "성인 인증이 필요한 컨텐츠입니다"}
@@ -579,7 +579,7 @@ export default function DetailClient({
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={handleSave}
-                  className={`absolute top-4 right-4 w-10 h-10 z-10
+                  className={`absolute top-4 right-4 w-10 h-10 z-20
                     rounded-full flex items-center justify-center
                     bg-black/80 backdrop-blur-sm shadow-sm
                     ${isSaved ? "text-red-400" : "text-white"}

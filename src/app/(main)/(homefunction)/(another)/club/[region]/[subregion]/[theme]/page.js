@@ -2,6 +2,8 @@
 
 import RegionSelectorSSR from "./RegionSelector";
 import PartnershipTable from "./PartnershipTable";
+import { useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 /* -----------------------------------------------------
    (0) 테마별 메타 정보 (title + description)
@@ -117,6 +119,8 @@ export default async function BoardPage({ params:a, searchParams:b }) {
   console.log("subregion:", subregion, "=> subregionDecoded:", subregionDecoded);
   console.log("theme:", theme, "=> themeDecoded:", themeDecoded);
 
+  const [adType, setAdType] = useState("선택 안함");
+
   return (
     <div className="mx-auto w-full max-w-7xl md:px-4">
       <div className="flex items-center mt-5 mb-3">
@@ -147,6 +151,45 @@ export default async function BoardPage({ params:a, searchParams:b }) {
         subregionSlug={subregionDecoded}
         themeName={themeDecoded}
       />
+
+      {/* 광고 타입 선택 */}
+      <div className="mb-6">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          광고 타입
+        </label>
+        <div className="flex gap-4">
+          <label className="flex items-center">
+            <input
+              type="radio"
+              name="adType"
+              value="VIP"
+              checked={adType === "VIP"}
+              onChange={(e) => setAdType(e.target.value)}
+              className="h-4 w-4 text-orange-500 focus:ring-orange-500 border-gray-300"
+            />
+            <span className="ml-2 text-sm text-gray-700">VIP</span>
+          </label>
+          <label className="flex items-center">
+            <input
+              type="radio"
+              name="adType"
+              value="VIP+"
+              checked={adType === "VIP+"}
+              onChange={(e) => setAdType(e.target.value)}
+              className="h-4 w-4 text-orange-500 focus:ring-orange-500 border-gray-300"
+            />
+            <span className="ml-2 text-sm text-gray-700">VIP+</span>
+          </label>
+          <input
+            type="radio"
+            name="adType"
+            value="선택 안함"
+            checked={adType === "선택 안함"}
+            onChange={(e) => setAdType(e.target.value)}
+            className="hidden"
+          />
+        </div>
+      </div>
     </div>
   );
 }

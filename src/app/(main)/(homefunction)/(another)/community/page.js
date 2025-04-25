@@ -8,7 +8,9 @@ import {
   FaceSmileIcon,
   QuestionMarkCircleIcon,
   BuildingStorefrontIcon,
-  MapIcon
+  MapIcon,
+  UserIcon,
+  UsersIcon
 } from '@heroicons/react/24/outline';
 
 // Supabase 서버 컴포넌트 설정
@@ -26,6 +28,9 @@ const boardMap = [
   { id: 6, name: '질문답변', icon: QuestionMarkCircleIcon },
   { id: 7, name: '제휴업체 SNS', icon: BuildingStorefrontIcon },
   { id: 8, name: '맛집/핫플/데이트 코스 공유', icon: MapIcon },
+  { id: 9, name: '패션 꿀팁', icon: BuildingStorefrontIcon },
+  { id: 10, name: '여성 조각 모임', icon: UserIcon },
+  { id: 11, name: '남성 조각 모임', icon: UsersIcon },
 ];
 
 // Next.js가 매 요청마다 DB 쿼리를 실행하도록 (정적 캐시X)

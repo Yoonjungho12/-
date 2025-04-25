@@ -15,6 +15,9 @@ const boardMap = [
   { id: 6, name: '질문답변' },
   { id: 7, name: '제휴업체 SNS' },
   { id: 8, name: '맛집/핫플/데이트 코스 공유' },
+  { id: 9, name: '패션 꿀팁'},
+  { id: 10, name: '여성 조각 모임'},
+  { id: 11, name: '남성 조각 모임'},
 ];
 
 export default async function PostDetailPage({ params: ParamsPromise }) {

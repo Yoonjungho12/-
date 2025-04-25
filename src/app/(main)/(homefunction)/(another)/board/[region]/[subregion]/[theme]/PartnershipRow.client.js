@@ -46,6 +46,22 @@ const mobileInfoStyle = {
  */
 export default function PartnershipRow({ item, displayPrice, mobileInfo, slug }) {
   const isVIP = item.ad_type === "VIP" || item.ad_type === "VIP+";
+  const isVIPPlus = item.ad_type === "VIP+";
+
+  // title_color에 따른 색상 매핑
+  const titleColorMap = {
+    'red': '#dc2626',
+    'orange': '#ea580c',
+    'yellow': '#ca8a04',
+    'olive': '#556b2f',
+    'lime': '#65a30d',
+    'green': '#16a34a',
+    'blue': '#2563eb',
+    'indigo': '#4f46e5',
+    'pink': '#db2777',
+    'purple': '#9333ea',
+    'black': '#000000'
+  };
 
   return (
     <tr className={`group transition-all duration-300 relative ${
@@ -67,9 +83,15 @@ export default function PartnershipRow({ item, displayPrice, mobileInfo, slug })
             )}
             
             <div className="flex-1">
-              <h3 className={`font-medium group-hover:text-rose-500 transition-colors ${
-                isVIP ? "text-rose-900" : "text-gray-900"
-              }`}>
+              <h3 
+                className={`transition-colors ${
+                  isVIPPlus ? "font-bold" : "font-medium"
+                }`}
+                style={isVIPPlus && item.title_color 
+                  ? { color: titleColorMap[item.title_color] } 
+                  : { color: '#000000' }
+                }
+              >
                 {item.post_title}
               </h3>
             </div>
@@ -92,7 +114,13 @@ export default function PartnershipRow({ item, displayPrice, mobileInfo, slug })
             )}
             
             <div className="flex-1 min-w-0">
-              <h3 className={`font-medium truncate ${isVIP ? "text-rose-900" : "text-gray-900"}`}>
+              <h3 
+                className={`truncate ${isVIPPlus ? "font-bold" : "font-medium"}`}
+                style={isVIPPlus && item.title_color 
+                  ? { color: titleColorMap[item.title_color] } 
+                  : { color: '#000000' }
+                }
+              >
                 {item.post_title}
               </h3>
               <div className="flex items-center gap-2 mt-1.5 text-xs text-gray-500">
