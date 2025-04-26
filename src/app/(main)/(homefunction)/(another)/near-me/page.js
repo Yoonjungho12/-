@@ -11,19 +11,6 @@ function createSlug(text) {
     return "no-slug";
   }
 
-function convertAddressToCoord(address, callback) {
-  if (!window.kakao || !window.kakao.maps) return;
-  const geocoder = new window.kakao.maps.services.Geocoder();
-  geocoder.addressSearch(address, (result, status) => {
-    if (status === window.kakao.maps.services.Status.OK) {
-      const lat = parseFloat(result[0].y);
-      const lng = parseFloat(result[0].x);
-      callback({ lat, lng });
-    } else {
-      alert("주소를 찾을 수 없습니다.");
-    }
-  });
-}
   return text
     .trim()
     .replace(/\s+/g, "-")

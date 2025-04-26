@@ -328,11 +328,11 @@ export default function MyMobileUI() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                     </svg>
                   </div>
-                  <span className="text-gray-900">가고싶다</span>
+                  <span className="text-gray-900">여기닷</span>
                 </div>
                 {wishList.length === 0 ? (
                   <div className="text-sm text-gray-500 bg-neutral-50 rounded-xl p-6 text-center">
-                    {isLoggedIn ? "가고싶다 목록이 비어있습니다." : "로그인 후 이용해주세요."}
+                    {isLoggedIn ? "여기닷 목록이 비어있습니다." : "로그인 후 이용해주세요."}
                   </div>
                 ) : (
                   <div className="grid gap-2 lg:grid-cols-2">

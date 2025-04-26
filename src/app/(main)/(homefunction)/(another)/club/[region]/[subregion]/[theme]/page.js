@@ -2,8 +2,6 @@
 
 import RegionSelectorSSR from "./RegionSelector";
 import PartnershipTable from "./PartnershipTable";
-import { useState } from "react";
-import { supabase } from "@/lib/supabase";
 
 /* -----------------------------------------------------
    (0) 테마별 메타 정보 (title + description)
@@ -37,51 +35,55 @@ function convertSlugToSlash(str) {
    - theme에 따라 다른 title, description 적용
    - regionDecoded => regionName(= 슬래시 치환) => {region} 치환
 ------------------------------------------------------ */
-export async function generateMetadata({ params:a, searchParams:b}) {
-  const params = await a;
-  const searchParams = await b;
-  const { region, subregion, theme } = params;
+export async function generateMetadata({ params }) {
+  const { region: rawRegion, subregion: rawSubregion, theme: rawTheme } = await params;
+  
+  const region = rawRegion ? decodeURIComponent(rawRegion) : "전체";
+  const subregion = rawSubregion ? decodeURIComponent(rawSubregion) : "전체";
+  const theme = rawTheme ? decodeURIComponent(rawTheme) : "전체";
 
-  // 1) 퍼센트 인코딩을 풀어준다.
-  const regionDecoded = decodeURIComponent(region); // 예: "인천-부천-부평"
-  const themeDecoded = decodeURIComponent(theme);   // 예: "클럽"
+  // 전체/전체/전체 경우의 특별 처리
+  if (region === "전체" && subregion === "전체" && theme === "전체") {
+    return {
+      title: "나이트클럽, 가장 많이 찾는 클럽 순위 - 여기닷",
+      description: "나이트클럽, 클럽을 찾으신다면 여기닷에서 찾으세요! 서울, 경기, 인천, 대전, 천안, 세종, 충청, 강원 부산, 대구 울산, 경상도, 전라도, 광주, 제주도 등 모든 지역별 가장 저렴하고 인기 있는 나이트와 클럽, 웨이터, MD의 인지도 부분을 모두 비교 분석하여 소비자에게 가장 합리적이고 정확한 대한민국 모든 나이트클럽을 찾을 수 있도록 도와드립니다.",
+      openGraph: {
+        title: "나이트클럽, 가장 많이 찾는 클럽 순위 - 여기닷",
+        description: "나이트클럽, 클럽을 찾으신다면 여기닷에서 찾으세요! 서울, 경기, 인천, 대전, 천안, 세종, 충청, 강원 부산, 대구 울산, 경상도, 전라도, 광주, 제주도 등 모든 지역별 가장 저렴하고 인기 있는 나이트와 클럽, 웨이터, MD의 인지도 부분을 모두 비교 분석하여 소비자에게 가장 합리적이고 정확한 대한민국 모든 나이트클럽을 찾을 수 있도록 도와드립니다.",
+        url: `https://yeogidot.com/club/${rawRegion}/${rawSubregion}/${rawTheme}`
+      }
+    };
+  }
 
-  // 2) 하이픈 -> 슬래시 치환
-  const regionName = convertSlugToSlash(regionDecoded);
+  // regionName 결정 로직
+  let regionName = "";
+  if (subregion !== "전체") {
+    regionName = subregion;
+  } else {
+    regionName = region;
+  }
 
-  console.log("===== [DEBUG] generateMetadata Params =====");
-  console.log("region:", region, "=> regionDecoded:", regionDecoded, "=> regionName:", regionName);
-  console.log("subregion:", subregion, "(not used in meta)");
-  console.log("theme:", theme, "=> themeDecoded:", themeDecoded);
+  // themeMap에서 테마 객체 찾기
+  const themeObj = themeMetaMap[theme];
 
-  // 3) themeMetaMap에서 해당 테마 정보 가져오기
-  const metaObj = themeMetaMap[themeDecoded];
-  console.log("[DEBUG] metaObj:", metaObj);
-
-  // 4) 매핑이 없으면 fallback
-  if (!metaObj) {
-    console.log("[DEBUG] Fallback triggered!");
-    const fallbackTitle = `${regionName} ${themeDecoded} 추천 및 정보 - 여기닷`;
-    const fallbackDesc = `${regionName}의 ${themeDecoded} 업소 정보 및 리뷰를 확인하세요!`;
+  // 만약 themeObj가 없으면 fallback
+  if (!themeObj) {
+    const fallbackTitle = `${regionName} ${theme} 정보 - 여기닷`;
+    const fallbackDesc = `${regionName}의 ${theme} 업체 정보 및 리뷰를 확인하세요!`;
     return {
       title: fallbackTitle,
       description: fallbackDesc,
       openGraph: {
         title: fallbackTitle,
         description: fallbackDesc,
-        url: `https://yeogidot.com/club/${region}/${subregion}/${theme}?sort=${searchParams?.sort || ""}`,
-        type: 'website',
-        siteName: '여기닷'
+        url: `https://yeogidot.com/club/${rawRegion}/${rawSubregion}/${rawTheme}`
       }
     };
   }
 
-  // 5) {region} 치환 → regionName
-  const replacedTitle = metaObj.title.replace(/{region}/g, regionName);
-  const replacedDesc = metaObj.description.replace(/{region}/g, regionName);
-
-  console.log("[DEBUG] replacedTitle:", replacedTitle);
-  console.log("[DEBUG] replacedDesc :", replacedDesc);
+  // 있으면 "{region}" 플레이스홀더를 실제 지역명으로 교체
+  const replacedTitle = themeObj.title.replace(/\{region\}/g, regionName);
+  const replacedDesc = themeObj.description.replace(/\{region\}/g, regionName);
 
   return {
     title: replacedTitle,
@@ -89,9 +91,7 @@ export async function generateMetadata({ params:a, searchParams:b}) {
     openGraph: {
       title: replacedTitle,
       description: replacedDesc,
-      url: `https://yeogidot.com/club/${region}/${subregion}/${theme}?sort=${searchParams?.sort || ""}`,
-      type: 'website',
-      siteName: '여기닷'
+      url: `https://yeogidot.com/club/${rawRegion}/${rawSubregion}/${rawTheme}`
     }
   };
 }
@@ -118,8 +118,6 @@ export default async function BoardPage({ params:a, searchParams:b }) {
   console.log("region:", region, "=> regionDecoded:", regionDecoded, "=> regionName:", regionName);
   console.log("subregion:", subregion, "=> subregionDecoded:", subregionDecoded);
   console.log("theme:", theme, "=> themeDecoded:", themeDecoded);
-
-  const [adType, setAdType] = useState("선택 안함");
 
   return (
     <div className="mx-auto w-full max-w-7xl md:px-4">
@@ -151,45 +149,6 @@ export default async function BoardPage({ params:a, searchParams:b }) {
         subregionSlug={subregionDecoded}
         themeName={themeDecoded}
       />
-
-      {/* 광고 타입 선택 */}
-      <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          광고 타입
-        </label>
-        <div className="flex gap-4">
-          <label className="flex items-center">
-            <input
-              type="radio"
-              name="adType"
-              value="VIP"
-              checked={adType === "VIP"}
-              onChange={(e) => setAdType(e.target.value)}
-              className="h-4 w-4 text-orange-500 focus:ring-orange-500 border-gray-300"
-            />
-            <span className="ml-2 text-sm text-gray-700">VIP</span>
-          </label>
-          <label className="flex items-center">
-            <input
-              type="radio"
-              name="adType"
-              value="VIP+"
-              checked={adType === "VIP+"}
-              onChange={(e) => setAdType(e.target.value)}
-              className="h-4 w-4 text-orange-500 focus:ring-orange-500 border-gray-300"
-            />
-            <span className="ml-2 text-sm text-gray-700">VIP+</span>
-          </label>
-          <input
-            type="radio"
-            name="adType"
-            value="선택 안함"
-            checked={adType === "선택 안함"}
-            onChange={(e) => setAdType(e.target.value)}
-            className="hidden"
-          />
-        </div>
-      </div>
     </div>
   );
 }

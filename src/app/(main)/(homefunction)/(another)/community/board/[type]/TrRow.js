@@ -55,31 +55,25 @@ export default function TrRow({ post, boardInfo, number }) {
       className="group hover:bg-gray-50 cursor-pointer transition-colors"
       onClick={handleRowClick}
     >
-      <td className="py-4 text-center">
+      <td className={`py-4 text-center ${boardInfo.name === "방문후기" ? "px-6" : ""}`}>
         <div className="text-sm text-gray-600">{number}</div>
       </td>
-      <td className="py-4">
+      <td className="py-4 px-4">
         <div className="flex items-center gap-2">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-900 group-hover:text-orange-500 transition-colors truncate">
-                {post.title}
-              </span>
-              {commentCount > 0 && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-600">
-                  {commentCount}
-                </span>
-              )}
-            </div>
-            {/* 방문후기면 theme_id 표시 */}
-            {boardInfo.name === "방문후기" && post.theme_id ? (
-              <div className="mt-1">
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-                  {THEMES.find((t) => t.id === post.theme_id)?.name || "기타"}
-                </span>
-              </div>
-            ) : null}
-          </div>
+          <span className="text-sm text-gray-900 group-hover:text-orange-500 transition-colors truncate">
+            {post.title}
+          </span>
+          {commentCount > 0 && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-600">
+              {commentCount}
+            </span>
+          )}
+          {/* 방문후기면 theme_id 표시 */}
+          {boardInfo.name === "방문후기" && post.theme_id && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+              {THEMES.find((t) => t.id === post.theme_id)?.name || "기타"}
+            </span>
+          )}
         </div>
       </td>
       <td className="py-4 text-center">
@@ -88,7 +82,7 @@ export default function TrRow({ post, boardInfo, number }) {
       <td className="py-4 text-center">
         <div className="text-sm text-gray-500">{formattedDate}</div>
       </td>
-      <td className="py-4 text-center">
+      <td className={`py-4 text-center ${boardInfo.name === "방문후기" ? "px-6" : ""}`}>
         <div className="text-sm text-gray-500">{views}</div>
       </td>
     </tr>

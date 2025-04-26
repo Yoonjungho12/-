@@ -84,9 +84,7 @@ export default function PartnershipRow({ item, displayPrice, mobileInfo, slug })
             
             <div className="flex-1">
               <h3 
-                className={`transition-colors ${
-                  isVIPPlus ? "font-bold" : "font-medium"
-                }`}
+                className={isVIPPlus ? "font-bold" : "font-medium"}
                 style={isVIPPlus && item.title_color 
                   ? { color: titleColorMap[item.title_color] } 
                   : { color: '#000000' }
@@ -137,7 +135,7 @@ export default function PartnershipRow({ item, displayPrice, mobileInfo, slug })
                   </svg>
                   {item.comment || 0}
                 </span>
-                <span className={`font-medium ${isVIP ? "text-rose-600" : "text-orange-500"}`}>
+                <span className="text-gray-900">
                   {displayPrice}
                 </span>
               </div>
@@ -148,17 +146,17 @@ export default function PartnershipRow({ item, displayPrice, mobileInfo, slug })
 
       {/* 데스크톱 추가 열 */}
       <td className="hidden sm:table-cell py-4 px-6 text-center whitespace-nowrap">
-        <span className={`font-medium ${isVIP ? "text-rose-600" : "text-orange-500"}`}>
+        <span className="text-gray-900">
           {displayPrice}
         </span>
       </td>
       <td className="hidden sm:table-cell py-4 px-6 text-center whitespace-nowrap">
-        <span className={isVIP ? "text-rose-600/80" : "text-gray-600"}>
+        <span className="text-gray-900">
           {Number(item.views || 0).toLocaleString()}
         </span>
       </td>
       <td className="hidden sm:table-cell py-4 px-6 text-center whitespace-nowrap">
-        <span className={isVIP ? "text-rose-600/80" : "text-gray-600"}>
+        <span className="text-gray-900">
           {item.comment || 0}
         </span>
       </td>

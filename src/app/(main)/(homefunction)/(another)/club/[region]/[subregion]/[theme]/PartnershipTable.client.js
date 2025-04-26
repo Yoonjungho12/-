@@ -3,6 +3,21 @@
 import Link from "next/link";
 
 export default function PartnershipTableClient({ posts, baseUrl, sortParam }) {
+  // title_color에 따른 색상 매핑
+  const titleColorMap = {
+    'red': '#dc2626',
+    'orange': '#ea580c',
+    'yellow': '#ca8a04',
+    'olive': '#556b2f',
+    'lime': '#65a30d',
+    'green': '#16a34a',
+    'blue': '#2563eb',
+    'indigo': '#4f46e5',
+    'pink': '#db2777',
+    'purple': '#9333ea',
+    'black': '#000000'
+  };
+
   return (
     <div className="w-full mt-4">
       <div className="mb-4 flex justify-center items-center gap-4 text-sm font-medium">
@@ -48,6 +63,7 @@ export default function PartnershipTableClient({ posts, baseUrl, sortParam }) {
           <tbody className="bg-white divide-y divide-gray-100">
             {posts.map((item) => {
               const isVIP = item.ad_type === "VIP" || item.ad_type === "VIP+";
+              const isVIPPlus = item.ad_type === "VIP+";
               return (
                 <tr
                   key={item.id}
@@ -65,24 +81,27 @@ export default function PartnershipTableClient({ posts, baseUrl, sortParam }) {
                             VIP
                           </span>
                         )}
-                        <span className={`${isVIP ? "text-rose-900" : "text-gray-900"} font-medium group-hover:text-rose-500 transition-colors`}>
+                        <span 
+                          className={`${isVIPPlus ? "font-bold" : "font-medium"} group-hover:text-rose-500 transition-colors`}
+                          style={{ color: isVIPPlus ? titleColorMap[item.title_color] : '#000000' }}
+                        >
                           {item.post_title}
                         </span>
                       </div>
                     </Link>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
-                    <span className={`font-medium ${isVIP ? "text-rose-600" : "text-orange-500"}`}>
+                    <span className="text-gray-900">
                       {item.displayPrice}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
-                    <span className={isVIP ? "text-rose-600/80" : "text-gray-600"}>
+                    <span className="text-gray-900">
                       {Number(item.views || 0).toLocaleString()}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
-                    <span className={isVIP ? "text-rose-600/80" : "text-gray-600"}>
+                    <span className="text-gray-900">
                       {item.comment || 0}
                     </span>
                   </td>

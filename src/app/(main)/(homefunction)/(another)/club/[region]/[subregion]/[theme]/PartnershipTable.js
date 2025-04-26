@@ -202,6 +202,7 @@ export default async function PartnershipTable({
       comment,
       views,
       final_admitted,
+      title_color,
       partnershipsubmit_themes!inner(theme_id),
       sections (
         courses ( price )

@@ -36,6 +36,19 @@ const boardMap = [
 // Next.js가 매 요청마다 DB 쿼리를 실행하도록 (정적 캐시X)
 export const revalidate = 0;
 
+// 메타데이터 생성
+export async function generateMetadata() {
+  return {
+    title: "커뮤니티 - 여기닷",
+    description: "대한민국 모든 나이트클럽, 클럽, 라운지 바, 헌팅 포차, 눈썹 문신, 애견미용, 사주, 타로카페의 비교, 할인, 이벤트 정보를 무료로 제공하는 여기닷 커뮤니티입니다!",
+    openGraph: {
+      title: "커뮤니티 - 여기닷",
+      description: "대한민국 모든 나이트클럽, 클럽, 라운지 바, 헌팅 포차, 눈썹 문신, 애견미용, 사주, 타로카페의 비교, 할인, 이벤트 정보를 무료로 제공하는 여기닷 커뮤니티입니다!",
+      url: "https://yeogidot.com/community"
+    }
+  };
+}
+
 export default async function MainPage() {
   const boardPostsArray = await Promise.all(
     boardMap.map(async (board) => {

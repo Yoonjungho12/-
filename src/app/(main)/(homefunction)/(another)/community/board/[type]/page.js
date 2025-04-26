@@ -143,11 +143,11 @@ export default async function BoardPage({ params:param}) {
                 <table className="w-full">
                   <thead className="hidden sm:table-header-group">
                     <tr className="bg-gray-50">
-                      <th className="py-4 w-16 text-center text-xs font-medium text-gray-500">번호</th>
-                      <th className="py-4 text-left text-xs font-medium text-gray-500 px-4">제목</th>
+                      <th className={`py-4 w-16 text-center text-xs font-medium text-gray-500 ${boardInfo.name === "방문후기" ? "px-6" : ""}`}>번호</th>
+                      <th className="py-4 px-4 text-left text-xs font-medium text-gray-500">제목</th>
                       <th className="py-4 w-24 text-center text-xs font-medium text-gray-500">글쓴이</th>
                       <th className="py-4 w-20 text-center text-xs font-medium text-gray-500">작성일</th>
-                      <th className="py-4 w-16 text-center text-xs font-medium text-gray-500">조회</th>
+                      <th className={`py-4 w-16 text-center text-xs font-medium text-gray-500 ${boardInfo.name === "방문후기" ? "px-6" : ""}`}>조회</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">

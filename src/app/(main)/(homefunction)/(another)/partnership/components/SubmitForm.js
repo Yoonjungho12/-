@@ -138,20 +138,20 @@ export default function SubmitForm({
                           VIP
                         </span>
                         <div className="flex-1">
-                          <h3 className="font-medium text-rose-900 group-hover:text-rose-500 transition-colors">
+                          <h3 className="font-medium text-gray-900 group-hover:text-rose-500 transition-colors">
                             반갑습니다.
                           </h3>
                         </div>
                       </div>
                     </td>
                     <td className="py-4 px-6 text-center whitespace-nowrap">
-                      <span className="font-medium text-rose-600">가격 없음</span>
+                      <span className="font-medium text-gray-900">가격 없음</span>
                     </td>
                     <td className="py-4 px-6 text-center whitespace-nowrap">
-                      <span className="text-rose-600/80">130</span>
+                      <span className="text-gray-900">130</span>
                     </td>
                     <td className="py-4 px-6 text-center whitespace-nowrap">
-                      <span className="text-rose-600/80">0</span>
+                      <span className="text-gray-900">0</span>
                     </td>
                   </tr>
                 </tbody>
@@ -201,20 +201,20 @@ export default function SubmitForm({
                                 'purple': '#9333ea',
                                 'black': '#000000'
                               }[titleColor]
-                            }} className="font-medium group-hover:text-rose-500 transition-colors">
+                            }} className="font-bold group-hover:text-rose-500 transition-colors">
                               {postTitle || "글 제목을 입력해주세요"}
                             </h3>
                           </div>
                         </div>
                       </td>
                       <td className="py-4 px-6 text-center whitespace-nowrap">
-                        <span className="font-medium text-rose-600">가격 없음</span>
+                        <span className="text-gray-900">가격 없음</span>
                       </td>
                       <td className="py-4 px-6 text-center whitespace-nowrap">
-                        <span className="text-rose-600/80">130</span>
+                        <span className="text-gray-900">130</span>
                       </td>
                       <td className="py-4 px-6 text-center whitespace-nowrap">
-                        <span className="text-rose-600/80">0</span>
+                        <span className="text-gray-900">0</span>
                       </td>
                     </tr>
                   </tbody>
