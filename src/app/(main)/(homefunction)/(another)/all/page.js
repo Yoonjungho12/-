@@ -29,8 +29,8 @@ export default function MyMobileUI() {
   // ------------------------------------------------------------------------
   // [B] 아코디언: "region" / "chulgeun" / "community" / null
   // ------------------------------------------------------------------------
-  const [openDropdown, setOpenDropdown] = useState("region");
-  // 기본값: 지역별 검색이 열려 있음
+  const [openDropdown, setOpenDropdown] = useState(null);
+  // 기본값: 모두 닫혀있음
 
   // ------------------------------------------------------------------------
   // (1) 세션 / 닉네임 불러오기
@@ -231,16 +231,16 @@ export default function MyMobileUI() {
         <div className="p-6">
           {isLoggedIn ? (
             <div className="flex items-center gap-5">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-500 flex items-center justify-center text-xl font-medium text-white shadow-lg">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-500 flex items-center justify-center text-lg font-medium text-white shadow-lg">
                 {nickname[0]}
               </div>
               <div className="flex-1">
-                <span className="font-bold text-xl text-gray-900">{nickname}</span>
+                <span className="font-bold text-lg text-gray-900">{nickname}</span>
                 <div className="flex gap-2 mt-3">
-                  <button onClick={handleEditNickname} className="px-4 py-2 text-sm bg-gray-50 text-gray-700 rounded-xl hover:bg-gray-100 transition-all">
+                  <button onClick={handleEditNickname} className="px-3 py-1.5 text-sm bg-gray-50 text-gray-700 rounded-xl hover:bg-gray-100 transition-all">
                     정보수정
                   </button>
-                  <button onClick={handleLogout} className="px-4 py-2 text-sm bg-gray-50 text-gray-700 rounded-xl hover:bg-gray-100 transition-all">
+                  <button onClick={handleLogout} className="px-3 py-1.5 text-sm bg-gray-50 text-gray-700 rounded-xl hover:bg-gray-100 transition-all">
                     로그아웃
                   </button>
                 </div>
@@ -248,12 +248,12 @@ export default function MyMobileUI() {
             </div>
           ) : (
             <div className="flex flex-col gap-4">
-              <div className="text-xl font-bold text-gray-900">로그인을 해주세요</div>
+              <div className="text-lg font-bold text-gray-900">로그인을 해주세요</div>
               <div className="flex gap-2">
-                <button onClick={handleLogin} className="flex-1 px-4 py-2.5 bg-orange-500 text-white rounded-xl font-medium hover:bg-orange-600 transition-all shadow-sm">
+                <button onClick={handleLogin} className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-xl font-medium hover:bg-orange-600 transition-all shadow-sm">
                   로그인
                 </button>
-                <button onClick={handleSignup} className="flex-1 px-4 py-2.5 bg-gray-50 text-gray-700 rounded-xl font-medium hover:bg-gray-100 transition-all">
+                <button onClick={handleSignup} className="flex-1 px-4 py-2 bg-gray-50 text-gray-700 rounded-xl font-medium hover:bg-gray-100 transition-all">
                   회원가입
                 </button>
               </div>
@@ -289,7 +289,7 @@ export default function MyMobileUI() {
         {/* 아코디언: 지역별 검색 */}
         <Accordion
           title="지역별 검색"
-          titleClass="text-gray-900 font-bold text-lg"
+          titleClass="text-gray-900 font-medium text-base"
           isOpen={openDropdown === "region"}
           onToggle={() => toggleDropdown("region")}
         >
@@ -299,7 +299,7 @@ export default function MyMobileUI() {
                 <Link 
                   key={r.href} 
                   href={r.href}
-                  className="p-3 bg-white rounded-xl hover:bg-orange-50 transition-all text-gray-600 hover:text-orange-500"
+                  className="p-2.5 bg-white rounded-xl hover:bg-orange-50 transition-all text-gray-600 hover:text-orange-500 text-sm"
                 >
                   {r.label}
                 </Link>
@@ -311,7 +311,7 @@ export default function MyMobileUI() {
         {/* 실시간 인기 업체 */}
         <Accordion
           title="실시간 인기 업체"
-          titleClass="text-gray-900 font-bold text-lg"
+          titleClass="text-gray-900 font-medium text-base"
           isOpen={openDropdown === "chulgeun"}
           onToggle={() => toggleDropdown("chulgeun")}
         >
@@ -321,7 +321,7 @@ export default function MyMobileUI() {
                 <Link 
                   key={item.label} 
                   href={item.href}
-                  className="p-3 bg-white rounded-xl text-center hover:bg-orange-50 transition-all text-gray-600 hover:text-orange-500"
+                  className="p-2.5 bg-white rounded-xl text-center hover:bg-orange-50 transition-all text-gray-600 hover:text-orange-500 text-sm"
                 >
                   {item.label}
                 </Link>
@@ -332,11 +332,11 @@ export default function MyMobileUI() {
 
         <Link 
           href="/near-me" 
-          className="block p-5 bg-white rounded-2xl font-medium hover:bg-orange-50 transition-all group shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
+          className="block p-4 bg-white rounded-2xl font-medium hover:bg-orange-50 transition-all group shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
         >
           <div className="flex items-center justify-between">
-            <span className="text-gray-900 group-hover:text-orange-500 transition-colors">내 주변 업체 찾기</span>
-            <svg className="w-5 h-5 text-gray-400 group-hover:text-orange-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <span className="text-gray-900 group-hover:text-orange-500 transition-colors text-sm">내 주변 업체 찾기</span>
+            <svg className="w-4 h-4 text-gray-400 group-hover:text-orange-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </div>
@@ -344,11 +344,11 @@ export default function MyMobileUI() {
 
         <Link 
           href="/club/전체/전체/전체" 
-          className="block p-5 bg-white rounded-2xl font-medium hover:bg-orange-50 transition-all group shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
+          className="block p-4 bg-white rounded-2xl font-medium hover:bg-orange-50 transition-all group shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
         >
           <div className="flex items-center justify-between">
-            <span className="text-gray-900 group-hover:text-orange-500 transition-colors">클럽/나이트클럽</span>
-            <svg className="w-5 h-5 text-gray-400 group-hover:text-orange-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <span className="text-gray-900 group-hover:text-orange-500 transition-colors text-sm">클럽/나이트클럽</span>
+            <svg className="w-4 h-4 text-gray-400 group-hover:text-orange-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </div>
@@ -357,20 +357,20 @@ export default function MyMobileUI() {
         {/* 커뮤니티 */}
         <Accordion
           title="커뮤니티"
-          titleClass="text-gray-900 font-bold text-lg"
+          titleClass="text-gray-900 font-medium text-base"
           isOpen={openDropdown === "community"}
           onToggle={() => toggleDropdown("community")}
         >
           <div className="p-2">
             {communityBoards.length === 0 ? (
-              <div className="p-4 text-center text-gray-500">등록된 커뮤니티가 없습니다.</div>
+              <div className="p-4 text-center text-gray-500 text-sm">등록된 커뮤니티가 없습니다.</div>
             ) : (
               <div className="space-y-2">
                 {communityBoards.map((board) => (
                   <Link 
                     key={board.name} 
                     href={`/community/board/${board.name}`}
-                    className="block p-3 bg-white rounded-xl hover:bg-orange-50 transition-all text-gray-600 hover:text-orange-500"
+                    className="block p-2.5 bg-white rounded-xl hover:bg-orange-50 transition-all text-gray-600 hover:text-orange-500 text-sm"
                   >
                     {board.name}
                   </Link>
