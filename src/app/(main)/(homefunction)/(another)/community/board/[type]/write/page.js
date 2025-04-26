@@ -10,6 +10,15 @@ import "suneditor/dist/css/suneditor.min.css";
 const SunEditor = dynamic(() => import("suneditor-react"), { ssr: false });
 import DOMPurify from "dompurify";
 
+// 에디터 팝업 input 스타일 오버라이드
+const editorCustomStyle = `
+  .sun-editor .se-dialog-inner input[type="text"],
+  .sun-editor .se-dialog-inner input[type="url"],
+  .sun-editor .se-dialog-inner input[type="number"] {
+    font-size: 16px !important;
+  }
+`;
+
 // 테마 목록 상수
 const THEMES = [
   { id: 0,  name: "전체",         sort_order: 0 },
@@ -193,6 +202,7 @@ export default function WritePage() {
 
   return (
     <div className="max-w-6xl mx-auto mb-10">
+      <style>{editorCustomStyle}</style>
       {/* 게시판 이름과 등록 버튼을 포함하는 헤더 */}
       <div className="flex justify-between items-center mt-1 md:mt-3 pl-3 md:pl-0 mb-2 md:mb-4">
         <h2>

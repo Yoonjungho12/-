@@ -724,13 +724,13 @@ export default function DetailClientMobile({
 
       {/* (D) 코스안내 섹션 */}
       <section id="course" ref={courseRef} className="px-4 pt-4 pb-6 border-t">
-        <h2 className="text-xl font-bold mb-2">코스안내</h2>
+        <h2 className="text-xl font-bold mb-2">가격안내</h2>
         <p className="text-sm text-gray-500 mb-2">
           {row.program_info || "※ 휴대폰 전원이 OFF인 경우, 샵 휴무 또는 예약이 꽉 찼을 수 있습니다."}
         </p>
 
         {sections.length === 0 ? (
-          <div className="py-4 text-gray-500">등록된 코스가 없습니다.</div>
+          <div className="py-4 text-gray-500">등록된 가격 정보가 없습니다.</div>
         ) : (
           <div className="space-y-3">
             {sections.map((sec) => (
@@ -801,7 +801,7 @@ export default function DetailClientMobile({
       </section>
 
       {/* (G) 하단 fixed 바 (문자하기 / 전화하기) */}
-      <div className="fixed bottom-[60px] left-0 w-full flex shadow-sm">
+      <div className="fixed bottom-[60px] left-0 w-full flex shadow-sm z-20">
         <button
           onClick={() => {
             if (!row.phone_number) return alert("전화번호 없음");

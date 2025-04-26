@@ -748,8 +748,8 @@ export default function DetailClient({
             transition={{ duration: 0.3 }}
             className="mt-8"
           >
-            <h2 className="text-xl font-bold mb-4 text-gray-800">코스안내</h2>
-            <p className="text-sm text-gray-500 mb-4">{row.program_info || "코스 정보 없음"}</p>
+            <h2 className="text-xl font-bold mb-4 text-gray-800">가격 안내</h2>
+            <p className="text-sm text-gray-500 mb-4">{row.program_info || "가격 정보 없음"}</p>
             <div className="space-y-4">
               {sections.map((section) => (
                 <motion.div 
