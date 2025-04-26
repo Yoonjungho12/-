@@ -157,12 +157,16 @@ export default function NearMeListPage() {
   }, []);
 
   // ─────────────────────────────────────────────────────
-  // (C) 사용자 위치 준비되면 지도 초기화
+  // (C) 사용자 위치 준비되면 지도 초기화 및 주소 변환
   // ─────────────────────────────────────────────────────
   useEffect(() => {
     if (userLat && userLng) {
       loadKakaoMapScript(() => {
-        initMap(userLat, userLng);
+        if (!mapHidden) {
+          initMap(userLat, userLng);
+        }
+        // 지도 표시 여부와 상관없이 주소 변환 실행
+        convertCoordToAddress(userLng, userLat, (addr) => setAddress(addr));
       });
     }
   }, [userLat, userLng]);

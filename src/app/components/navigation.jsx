@@ -913,7 +913,7 @@ export default function NavBar() {
                     </li>
                     <li>
                       <Link
-                        href="/community/board/제휴업체 SNS 홍보"
+                        href="/community/board/제휴업체 SNS"
                         onClick={() => setShowMegaMenu(false)}
                       >
                         제휴업체 SNS 홍보
@@ -921,7 +921,7 @@ export default function NavBar() {
                     </li>
                     <li>
                       <Link
-                        href="/community/board/맛집-핫플-데이트 코스 공유"
+                        href="/community/board/맛집%2F핫플%2F데이트%20코스%20공유"
                         onClick={() => setShowMegaMenu(false)}
                       >
                         맛집/핫플/데이트 코스 공유
@@ -934,7 +934,7 @@ export default function NavBar() {
                     </li>
                     <li>
                       <Link
-                        href="/community/board/여성 조각 모임 (나이트&클럽&라운지)"
+                        href="/community/board/여성 조각 모임"
                         onClick={() => setShowMegaMenu(false)}
                       >
                         여성 조각 모임 (나이트&클럽&라운지)
@@ -942,7 +942,7 @@ export default function NavBar() {
                     </li>
                     <li>
                       <Link
-                        href="/community/board/남성 조각 모임 (나이트&클럽&라운지)"
+                        href="/community/board/남성 조각 모임"
                         onClick={() => setShowMegaMenu(false)}
                       >
                         남성 조각 모임 (나이트&클럽&라운지)

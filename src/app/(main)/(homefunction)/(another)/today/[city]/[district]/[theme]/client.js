@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabaseF";
+import Image from "next/image";
 
 // 자식 지역 카테고리(구·군) 목록
 import {
@@ -66,8 +68,11 @@ const THEMES = [
  * - 구·군 = 전체 → 필터 열림 / 아니면 닫힘
  * - 사용자는 언제든 toggle
  */
-export default function ClientUI({ city, district, theme }) {
+export default function ClientUI({ city, district, theme, children }) {
   const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState(null);
+  const [isSearching, setIsSearching] = useState(false);
 
   // 초기 렌더링 여부를 추적하는 state 추가
   const [isInitialRender, setIsInitialRender] = useState(true);
@@ -122,6 +127,56 @@ export default function ClientUI({ city, district, theme }) {
     router.push(`/today/${city}/${district}/${themeName}`);
   }
 
+  // 검색 핸들러 추가
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+    
+    setIsSearching(true);
+    try {
+      const safeQuery = searchQuery.replace(/'/g, "''");
+      
+      const { data, error } = await supabase
+        .from("partnershipsubmit")
+        .select(`
+          id,
+          final_admitted,
+          company_name,
+          address,
+          comment,
+          greeting,
+          thumbnail_url,
+          views,
+          partnershipsubmit_themes ( themes ( id, name ) ),
+          sections ( courses (price) )
+        `)
+        .eq("final_admitted", true)
+        .textSearch("search_tsv", safeQuery, {
+          type: "websearch",
+          config: "english",
+        })
+        .order("search_tsv", { ascending: false })
+        .limit(50);
+
+      if (error) {
+        console.error("검색 에러:", error);
+        return;
+      }
+
+      setSearchResults(data);
+    } catch (err) {
+      console.error("검색 중 오류 발생:", err);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // 엔터 키 핸들러
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
+
   // ---------------------------------------------------
   // (D) 시·도별 구·군 목록
   // ---------------------------------------------------
@@ -170,18 +225,31 @@ export default function ClientUI({ city, district, theme }) {
             <div className="relative">
               <input
                 type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyPress={handleKeyPress}
                 placeholder="지역명 검색 (예: 송파, 역삼)"
                 className="w-full rounded-full border-0 bg-gray-100 px-6 py-4 text-gray-900 ring-1 ring-inset ring-gray-200 placeholder:text-gray-400 focus:ring-2 focus:ring-orange-500"
               />
-              <button className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-orange-500 p-2.5 text-white transition-colors hover:bg-orange-600">
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+              <button 
+                onClick={handleSearch}
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-orange-500 p-2.5 text-white transition-colors hover:bg-orange-600"
+              >
+                {isSearching ? (
+                  <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                ) : (
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                )}
               </button>
             </div>
           </div>
 
-          {/* 필터 버튼들 */}
+          {/* 필터 버튼들 - 항상 표시 */}
           <div className="mx-auto mt-6 flex max-w-2xl items-center justify-center gap-3 flex-wrap">
             <button
               onClick={handleToggleFilter}
@@ -229,63 +297,160 @@ export default function ClientUI({ city, district, theme }) {
               </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* 필터 영역 */}
-      <div className={`w-full bg-white border-t border-gray-100 ${
-        isInitialRender 
-          ? isFilterOpen ? 'h-[500px] sm:h-[400px] opacity-100' : 'h-0 opacity-0 overflow-hidden'
-          : `transition-all duration-300 ease-in-out ${
-              isFilterOpen ? 'h-[500px] sm:h-[400px] opacity-100' : 'h-0 opacity-0 overflow-hidden'
-            }`
-      }`}>
-        <div className="mx-auto max-w-6xl h-full py-6 px-4">
-          <div className="flex flex-col sm:flex-row gap-6 sm:gap-12 h-full">
-            {/* 왼쪽 시·도 목록 */}
-            <div className="w-full sm:w-48 h-1/2 sm:h-full">
-              <h3 className="mb-3 text-sm font-medium text-gray-500">시·도</h3>
-              <div className="h-[calc(100%-2rem)] overflow-y-auto pr-2">
-                <div className="grid grid-cols-4 sm:grid-cols-1 gap-2">
-                  {REGIONS.map((region) => (
-                    <button
-                      key={region.id}
-                      onClick={() => handleSelectCity(region.name)}
-                      className={`w-full rounded-lg px-4 py-2.5 text-center sm:text-left text-sm transition-all ${
-                        city === region.name 
-                          ? "bg-orange-500 text-white" 
-                          : "text-gray-600 hover:bg-gray-100"
-                      }`}
-                    >
-                      {region.name}
-                    </button>
-                  ))}
+          {/* 필터 영역 */}
+          <div className={`w-full bg-white border-t border-gray-100 ${
+            isInitialRender 
+              ? isFilterOpen ? 'h-[500px] sm:h-[400px] opacity-100' : 'h-0 opacity-0 overflow-hidden'
+              : `transition-all duration-300 ease-in-out ${
+                  isFilterOpen ? 'h-[500px] sm:h-[400px] opacity-100' : 'h-0 opacity-0 overflow-hidden'
+                }`
+          }`}>
+            <div className="mx-auto max-w-6xl h-full py-6 px-4">
+              <div className="flex flex-col sm:flex-row gap-6 sm:gap-12 h-full">
+                {/* 왼쪽 시·도 목록 */}
+                <div className="w-full sm:w-48 h-1/2 sm:h-full">
+                  <h3 className="mb-3 text-sm font-medium text-gray-500">시·도</h3>
+                  <div className="h-[calc(100%-2rem)] overflow-y-auto pr-2">
+                    <div className="grid grid-cols-4 sm:grid-cols-1 gap-2">
+                      {REGIONS.map((region) => (
+                        <button
+                          key={region.id}
+                          onClick={() => handleSelectCity(region.name)}
+                          className={`w-full rounded-lg px-4 py-2.5 text-center sm:text-left text-sm transition-all ${
+                            city === region.name 
+                              ? "bg-orange-500 text-white" 
+                              : "text-gray-600 hover:bg-gray-100"
+                          }`}
+                        >
+                          {region.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            {/* 오른쪽 구·군 목록 */}
-            <div className="flex-1 h-1/2 sm:h-full">
-              <h3 className="mb-3 text-sm font-medium text-gray-500">구·군</h3>
-              <div className="h-[calc(100%-2rem)] overflow-y-auto pr-2">
-                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                  {districtsData.map((dist) => (
-                    <button
-                      key={dist.id}
-                      onClick={() => handleSelectDistrict(dist.name)}
-                      className={`rounded-lg py-2.5 px-3 text-sm transition-all ${
-                        district === dist.name 
-                          ? "bg-orange-500 text-white" 
-                          : "text-gray-600 hover:bg-gray-100"
-                      }`}
-                    >
-                      {dist.name}
-                    </button>
-                  ))}
+                {/* 오른쪽 구·군 목록 */}
+                <div className="flex-1 h-1/2 sm:h-full">
+                  <h3 className="mb-3 text-sm font-medium text-gray-500">구·군</h3>
+                  <div className="h-[calc(100%-2rem)] overflow-y-auto pr-2">
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                      {districtsData.map((dist) => (
+                        <button
+                          key={dist.id}
+                          onClick={() => handleSelectDistrict(dist.name)}
+                          className={`rounded-lg py-2.5 px-3 text-sm transition-all ${
+                            district === dist.name 
+                              ? "bg-orange-500 text-white" 
+                              : "text-gray-600 hover:bg-gray-100"
+                          }`}
+                        >
+                          {dist.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
+
+          {/* 검색 결과가 있으면 검색 결과를, 없으면 빈 div를 렌더링 */}
+          {searchResults ? (
+            <div className="mx-auto mt-6 max-w-6xl">
+              <h2 className="text-lg font-medium mb-4">검색 결과: {searchResults.length}개</h2>
+              {searchResults.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">검색 결과가 없습니다.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {searchResults.map((item) => {
+                    const imageUrl = process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL + "/" + item.thumbnail_url;
+                    
+                    // 최저가 계산
+                    let lowestPrice = null;
+                    if (item.sections?.length) {
+                      item.sections.forEach((sec) => {
+                        if (sec.courses?.length) {
+                          sec.courses.forEach((c) => {
+                            if (lowestPrice === null || (c.price && c.price < lowestPrice)) {
+                              lowestPrice = c.price;
+                            }
+                          });
+                        }
+                      });
+                    }
+
+                    return (
+                      <a
+                        key={item.id}
+                        href={`/board/details/${item.id}`}
+                        className="block bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                      >
+                        {/* 이미지 */}
+                        <div className="relative w-full pt-[60%]">
+                          <div className="absolute inset-0">
+                            <Image
+                              src={imageUrl}
+                              alt={item.company_name}
+                              fill
+                              className="object-cover"
+                            />
+                          </div>
+                        </div>
+
+                        {/* 컨텐츠 */}
+                        <div className="p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <h3 className="font-medium text-gray-900">{item.company_name}</h3>
+                            <div className="flex items-center gap-2 text-sm text-gray-500">
+                              <span className="flex items-center">
+                                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                                {item.views || 0}
+                              </span>
+                              <span className="flex items-center">
+                                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                                </svg>
+                                {item.comment || 0}
+                              </span>
+                            </div>
+                          </div>
+
+                          <p className="text-sm text-gray-600 mb-2">{item.address}</p>
+
+                          {lowestPrice !== null && (
+                            <p className="text-sm text-red-500 font-medium">
+                              최저가: {lowestPrice.toLocaleString()}원
+                            </p>
+                          )}
+
+                          {item.partnershipsubmit_themes && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {item.partnershipsubmit_themes.map((pt) => (
+                                <span
+                                  key={pt.themes.id}
+                                  className="text-xs px-2 py-0.5 bg-gray-100 rounded-full text-gray-600"
+                                >
+                                  #{pt.themes.name}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </a>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          ) : (
+            children
+          )}
         </div>
       </div>
     </div>
