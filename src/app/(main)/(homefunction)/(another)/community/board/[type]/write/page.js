@@ -227,7 +227,8 @@ export default function WritePage() {
               <input
                 type="text"
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full border p-2 text-base"
+                className="w-full border p-2 text-[16px]"
+                style={{ fontSize: '16px' }}
                 placeholder="제목을 입력하세요"
               />
             </td>
@@ -238,7 +239,8 @@ export default function WritePage() {
               <td className="w-24 p-2 bg-gray-100 align-middle hidden md:table-cell">테마</td>
               <td className="p-2">
                 <select
-                  className="w-full border p-2 text-base"
+                  className="w-full border p-2 text-[16px]"
+                  style={{ fontSize: '16px' }}
                   value={theme}
                   onChange={(e) => setTheme(Number(e.target.value))}
                 >
@@ -270,7 +272,8 @@ export default function WritePage() {
                   }}
                   setOptions={{
                     height: "300px",
-                    defaultStyle: "font-size: 16px;",
+                    defaultStyle: "font-size: 16px !important;",
+                    fontSize: ["16px", "18px", "20px", "24px", "28px", "32px"],
                     buttonList: [
                       ["fontSize"],
                       ["bold", "underline", "italic", "strike", "hiliteColor"],
