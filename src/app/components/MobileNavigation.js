@@ -128,7 +128,7 @@ export default function MobileBottomNav() {
               flex: 1,
               textAlign: "center",
               textDecoration: "none",
-              color: isActive ? "#ff5349" : "#aaa",
+              color: isActive ? "#f97316" : "#aaa",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
